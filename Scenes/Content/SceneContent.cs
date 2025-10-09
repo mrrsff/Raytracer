@@ -1,46 +1,35 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
-using System.Text.Json.Serialization;
-using Raytracer.Core.Datas;
-using Raytracer.IO.Converters;
-using Raytracer.Scenes.Datas;
+﻿using System.Numerics;
+using System.Text;
+using Raytracer.Scenes.Content.Datas;
+using Raytracer.Scenes.Content.Datas.Camera;
 
-namespace Raytracer.Scenes;
+namespace Raytracer.Scenes.Content;
 
 public class SceneContent
 {
     public Vector3 BackgroundColor;
-    public float ShadowRayEpsilon;
-    public float IntersectionTestEpsilon;
-    public int MaxRecursionDepth;
 
     public Cameras Cameras;
+    public float IntersectionTestEpsilon;
     public Lights Lights;
     public Materials Materials;
+    public int MaxRecursionDepth;
+    public Objects Objects;
+    public float ShadowRayEpsilon;
     public VertexData VertexData;
-    public SceneObjects SceneObjects;
-}
-public struct Cameras
-{
-    [JsonConverter(typeof(SingleOrArrayConverter<CameraData>))]
-    public List<CameraData> CameraDatas;
-}
-public struct Lights
-{
-    public Vector3 AmbientLight;
-    public List<PointLight> PointLights;
-}
 
-public struct Materials
-{
-    [JsonConverter(typeof(SingleOrArrayConverter<Material>))]
-    public List<Material> MaterialDatas;
-}
-
-public struct SceneObjects
-{
-    public SphereData[] SphereDatas;
-    public TriangleData[] TriangleDatas;
-    public MeshData[] MeshDatas;
-    public PlaneData[] PlaneDatas;
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Background Color: {BackgroundColor}");
+        sb.AppendLine($"Shadow Ray Epsilon: {ShadowRayEpsilon}");
+        sb.AppendLine($"Intersection Test Epsilon: {IntersectionTestEpsilon}");
+        sb.AppendLine($"Max Recursion Depth: {MaxRecursionDepth}");
+        sb.AppendLine(Cameras.ToString());
+        sb.AppendLine(Lights.ToString());
+        sb.AppendLine(Materials.ToString());
+        sb.AppendLine(VertexData.ToString());
+        sb.AppendLine(Objects.ToString());
+        return sb.ToString();
+    }
 }

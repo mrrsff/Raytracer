@@ -6,11 +6,9 @@ public class RayTracerRenderer
 {
     public RayTracerRenderer(Scene scene)
     {
-        
     }
 
     public void Render()
     {
-        
     }
 }

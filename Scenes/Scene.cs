@@ -1,12 +1,16 @@
-﻿using System.Drawing;
-using System.Numerics;
+﻿using System.Text.Json.Serialization;
+using Raytracer.Scenes.Content;
 
 namespace Raytracer.Scenes;
 
 public class Scene
 {
-    public SceneContent Content;
-    
+    [JsonPropertyName("Scene")] public SceneContent Content;
+
+    public Scene()
+    {
+    }
+
     public Scene(SceneContent content)
     {
         Content = content;

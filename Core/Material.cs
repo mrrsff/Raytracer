@@ -1,21 +1,34 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Numerics;
+using System.Text;
+using System.Text.Json.Serialization;
 
-namespace Raytracer.Core.Datas;
-public enum MaterialType
-{
-    Mirror,
-    Conductor,
-    Dielectric
-}
+namespace Raytracer.Core;
+
 public class Material
 {
+    public Vector3 AmbientReflectance;
+    public Vector3 DiffuseReflectance;
     [JsonPropertyName("_id")] public int Id;
-    
-    [JsonConverter(typeof(JsonStringEnumConverter))] public MaterialType Type;
-    
-    public float AmbientReflectance;
-    public float DiffuseReflectance;
-    public float SpecularReflectance;
     public float PhongExponent;
+    public Vector3 SpecularReflectance;
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public MaterialType Type;
+
+    public override string ToString()
+    {
+        return new StringBuilder().Append("Material(Id: ")
+            .Append(Id)
+            .Append(", Type: ")
+            .Append(Type)
+            .Append(", AmbientReflectance: ")
+            .Append(AmbientReflectance)
+            .Append(", DiffuseReflectance: ")
+            .Append(DiffuseReflectance)
+            .Append(", SpecularReflectance: ")
+            .Append(SpecularReflectance)
+            .Append(", PhongExponent: ")
+            .Append(PhongExponent)
+            .Append(')').ToString();
+    }
 }

@@ -1,12 +1,12 @@
 ﻿using System;
-using Raytracer.IO;
+using Raytracer.IO.SceneLoaders;
 using Raytracer.Rendering;
 
 namespace Raytracer;
 
-static class Program
+internal static class Program
 {
-    static void Main(string[] args)
+    private static void Main(string[] args)
     {
         if (args.Length != 1)
         {
@@ -14,12 +14,12 @@ static class Program
             return;
         }
 
-        string scenePath = args[0];
+        var scenePath = args[0];
         var scene = SceneLoader.Load(scenePath);
+
+        Console.WriteLine(scene.Content);
 
         var renderer = new RayTracerRenderer(scene);
         renderer.Render();
-
-        Console.WriteLine("Rendering complete!");
     }
 }
