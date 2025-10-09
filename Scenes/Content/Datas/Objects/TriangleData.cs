@@ -11,10 +11,13 @@ public struct TriangleData
 
     public override string ToString()
     {
-        return new StringBuilder()
-            .AppendLine($"Triangle ID: {Id}")
-            .AppendLine($"Material ID: {Material}")
-            .AppendLine($"Vertex Indices: [{string.Join(", ", indices)}]")
+        return new StringBuilder().Append("Triangle(Id: ")
+            .Append(Id)
+            .Append(", Material Id: ")
+            .Append(Material)
+            .Append(", Vertex Indices: [")
+            .Append(string.Join(", ", indices))
+            .Append("])")
             .ToString();
     }
 }
