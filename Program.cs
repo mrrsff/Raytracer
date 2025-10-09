@@ -1,4 +1,5 @@
-﻿using Raytracer.IO;
+﻿using System;
+using Raytracer.IO;
 using Raytracer.Rendering;
 
 namespace Raytracer;

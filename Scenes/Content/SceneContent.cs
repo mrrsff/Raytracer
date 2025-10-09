@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Collections.Generic;
+using System.Numerics;
 using System.Text.Json.Serialization;
 using Raytracer.Core.Datas;
 using Raytracer.IO.Converters;

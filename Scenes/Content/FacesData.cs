@@ -1,4 +1,6 @@
-﻿namespace Raytracer.Core.Datas;
+﻿using System.Collections.Generic;
+
+namespace Raytracer.Core.Datas;
 
 public enum FaceType
 {
