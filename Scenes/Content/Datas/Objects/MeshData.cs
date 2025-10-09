@@ -11,10 +11,13 @@ public struct MeshData
 
     public override string ToString()
     {
-        return new StringBuilder()
-            .AppendLine($"Mesh ID: {Id}")
-            .AppendLine($"Material ID: {Material}")
-            .AppendLine($"Faces: {Faces}")
+        return new StringBuilder().Append("Mesh(Id: ")
+            .Append(Id)
+            .Append(", Material Id: ")
+            .Append(Material)
+            .Append(", Vertex Indices: [")
+            .Append(Faces)
+            .Append("])")
             .ToString();
     }
 }

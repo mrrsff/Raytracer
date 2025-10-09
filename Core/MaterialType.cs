@@ -1,4 +1,6 @@
-﻿namespace Raytracer.Core;
+﻿using System.Text.Json.Serialization;
+
+namespace Raytracer.Core;
 
 public enum MaterialType
 {

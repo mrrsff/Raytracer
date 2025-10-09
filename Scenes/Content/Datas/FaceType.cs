@@ -2,6 +2,6 @@
 
 public enum FaceType
 {
-    triangle,
-    quad
+    Triangle,
+    Quad
 }

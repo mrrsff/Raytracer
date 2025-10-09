@@ -6,15 +6,19 @@ namespace Raytracer.Core;
 
 public class Material
 {
+    [JsonPropertyName("_id")] public int Id;
+    [JsonPropertyName("_type")] public MaterialType Type;
+    
     public Vector3 AmbientReflectance;
     public Vector3 DiffuseReflectance;
-    [JsonPropertyName("_id")] public int Id;
-    public float PhongExponent;
     public Vector3 SpecularReflectance;
+    public Vector3 MirrorReflectance;
+    
+    public float PhongExponent;
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public MaterialType Type;
-
+    public Vector3 AbsorptionCoefficient;
+    public float RefractionIndex;
+    
     public override string ToString()
     {
         return new StringBuilder().Append("Material(Id: ")
@@ -27,8 +31,14 @@ public class Material
             .Append(DiffuseReflectance)
             .Append(", SpecularReflectance: ")
             .Append(SpecularReflectance)
+            .Append(", MirrorReflectance: ")
+            .Append(MirrorReflectance)
             .Append(", PhongExponent: ")
             .Append(PhongExponent)
+            .Append(", AbsorptionCoefficient: ")
+            .Append(AbsorptionCoefficient)
+            .Append(", RefractionIndex: ")
+            .Append(RefractionIndex)
             .Append(')').ToString();
     }
 }

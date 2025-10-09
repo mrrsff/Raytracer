@@ -23,14 +23,26 @@ public struct Objects
     public override string ToString()
     {
         var sb = new StringBuilder();
-        foreach (var sphere in Sphere)
-            sb.AppendLine(sphere.ToString());
-        foreach (var triangle in Triangle)
-            sb.AppendLine(triangle.ToString());
-        foreach (var mesh in Mesh)
-            sb.AppendLine(mesh.ToString());
-        foreach (var plane in Plane)
-            sb.AppendLine(plane.ToString());
+        if (Triangle != null)
+        {
+            foreach (var triangle in Triangle)
+                sb.AppendLine(triangle.ToString());
+        }
+        if (Sphere != null)
+        {
+            foreach (var sphere in Sphere)
+                sb.AppendLine(sphere.ToString());
+        }
+        if (Mesh != null)
+        {
+            foreach (var mesh in Mesh)
+                sb.AppendLine(mesh.ToString());
+        }
+        if (Plane != null)
+        {
+            foreach (var plane in Plane)
+                sb.AppendLine(plane.ToString());
+        }
         return sb.ToString();
     }
 }
