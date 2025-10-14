@@ -1,4 +1,4 @@
-﻿namespace Raytracer.IO.SceneLoaders;
+﻿namespace Raytracer.IO.Ply;
 
 public class PlyHeader
 {

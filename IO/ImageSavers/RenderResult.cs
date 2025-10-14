@@ -1,8 +1,7 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
-using SixLabors.ImageSharp.PixelFormats;
 
-namespace Raytracer.IO;
+namespace Raytracer.IO.ImageSavers;
 
 public class RenderResult
 {

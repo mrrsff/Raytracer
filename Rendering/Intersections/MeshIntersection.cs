@@ -2,6 +2,7 @@
 using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Objects;
 using Raytracer.Scenes.Runtime;
+using Raytracer.Scenes.Runtime.Meshes;
 
 namespace Raytracer.Rendering.Intersections;
 

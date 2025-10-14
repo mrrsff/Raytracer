@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using Raytracer.IO;
+using Raytracer.IO.ImageSavers;
 using Raytracer.IO.SceneLoaders;
 using Raytracer.Rendering;
 

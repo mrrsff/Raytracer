@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Raytracer.IO.Ply;
 using Raytracer.IO.SceneLoaders;
 using Raytracer.Scenes.Runtime;
 

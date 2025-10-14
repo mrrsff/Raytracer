@@ -2,6 +2,7 @@
 using System.Numerics;
 using Raytracer.Core;
 using Raytracer.IO;
+using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Shading;
 using Raytracer.Scenes;

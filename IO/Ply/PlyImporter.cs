@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
+﻿using System.Globalization;
 using System.Numerics;
 using System.Text;
 
-namespace Raytracer.IO.SceneLoaders
+namespace Raytracer.IO.Ply
 {
     public static class PlyImporter
     {

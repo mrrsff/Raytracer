@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
 
-namespace Raytracer.Scenes.Runtime;
+namespace Raytracer.Scenes.Runtime.Meshes;
 
 public class BoundingBox
 {

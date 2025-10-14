@@ -1,7 +1,7 @@
-﻿namespace Raytracer.IO;
-
-using SixLabors.ImageSharp;
+﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+
+namespace Raytracer.IO.ImageSavers;
 
 public class ImageSaver
 {

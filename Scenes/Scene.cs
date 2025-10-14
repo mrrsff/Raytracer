@@ -4,6 +4,7 @@ using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime;
+using Raytracer.Scenes.Runtime.Meshes;
 
 namespace Raytracer.Scenes;
 
@@ -96,6 +97,55 @@ public class Scene
         }
 
         return closestIntersection;
+    }
+    
+    public bool IntersectAny(Ray ray, float maxDistance)
+    {
+        var triangles = Content.Objects.Triangle;
+        var planes = Content.Objects.Plane;
+        var intersection = IntersectionInfo.NoHit;
+
+        if (Spheres != null)
+        {
+            foreach (var sphere in Spheres)
+            {
+                if (!sphere.Intersect(ray, Content.VertexData, ref intersection)) continue;
+                if (intersection.Distance < maxDistance)
+                    return true;
+            }
+        }
+
+        if (triangles != null)
+        {
+            foreach (var triangle in triangles)
+            {
+                if (!triangle.Intersect(ray, Content.VertexData, ref intersection)) continue;
+                if (intersection.Distance < maxDistance)
+                    return true;
+            }
+        }
+
+        if (planes != null)
+        {
+            foreach (var plane in planes)
+            {
+                if (!plane.Intersect(ray, Content.VertexData, ref intersection)) continue;
+                if (intersection.Distance < maxDistance)
+                    return true;
+            }
+        }
+
+        if (Meshes != null)
+        {
+            foreach (var mesh in Meshes)
+            {
+                if (!mesh.Intersect(ray, ref intersection)) continue;
+                if (intersection.Distance < maxDistance)
+                    return true;
+            }
+        }
+
+        return false;
     }
     
     public Material GetMaterial(int index)

@@ -22,9 +22,9 @@ public static class BlinnPhongShading
             
             Ray shadowRay = new Ray(intersection.Point + intersection.Normal * RayTracerRenderer.ShadowRayEpsilon, lightDir);
             shadowRay.IsShadowRay = true;
-            IntersectionInfo shadowHit = renderer.Scene.Intersect(shadowRay);
             float lightDistance = lightDelta.Length();
-            if (shadowHit.Hit && shadowHit.Distance < lightDistance)
+            
+            if (renderer.Scene.IntersectAny(shadowRay, lightDistance))
                 continue;
 
             Vector3 irradiance = light.Intensity / (lightDistance * lightDistance);
