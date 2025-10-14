@@ -3,11 +3,18 @@ using System.Text.Json.Serialization;
 
 namespace Raytracer.Scenes.Content.Datas.Objects;
 
+public enum ShadingMode
+{
+    Flat,
+    Smooth
+}
 public struct MeshData
 {
     [JsonPropertyName("_id")] public int Id;
+    [JsonPropertyName("_shadingMode")] public ShadingMode ShadingMode;
     public int Material;
     public FacesData Faces;
+    
 
     public override string ToString()
     {

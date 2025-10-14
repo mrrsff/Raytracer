@@ -9,16 +9,20 @@ namespace Raytracer.Scenes.Content;
 public struct Objects
 {
     [JsonConverter(typeof(SingleOrListConverter<SphereData>))]
-    public List<SphereData> Sphere;
+    public List<SphereData> Sphere = new();
 
     [JsonConverter(typeof(SingleOrListConverter<TriangleData>))]
-    public List<TriangleData> Triangle;
+    public List<TriangleData> Triangle = new();
 
     [JsonConverter(typeof(SingleOrListConverter<MeshData>))]
-    public List<MeshData> Mesh;
+    public List<MeshData> Mesh = new();
 
     [JsonConverter(typeof(SingleOrListConverter<PlaneData>))]
-    public List<PlaneData> Plane;
+    public List<PlaneData> Plane = new();
+
+    public Objects()
+    {
+    }
 
     public override string ToString()
     {

@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using Raytracer.Core;
-using Raytracer.IO;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Shading;
@@ -43,7 +42,7 @@ public class RayTracerRenderer
         int height = result.Height;
 
         Stopwatch sw = Stopwatch.StartNew();
-        Console.WriteLine($"Rendering started... TIME: {DateTime.Now:HH:mm:ss}");
+        Console.WriteLine($"Rendering started for {Camera.ImageName}... TIME: {DateTime.Now:HH:mm:ss}");
 
         int totalRows = height;
         int completedRows = 0;
@@ -85,7 +84,7 @@ public class RayTracerRenderer
         progressTask.Wait();
 
         sw.Stop();
-        Console.WriteLine($"Rendering finished in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
+        Console.WriteLine($"Rendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
         
         result.OutputName = Camera.ImageName;
         return result;

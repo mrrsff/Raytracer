@@ -7,8 +7,9 @@ using Raytracer.Rendering;
 
 namespace Raytracer;
 
-internal static class Program
+public static class Program
 {
+    public static string WorkingDirectory;
     private static void Main(string[] args)
     {
         if (args.Length == 0)
@@ -19,6 +20,7 @@ internal static class Program
 
         var scenePath = args[0];
         var scene = SceneLoader.Load(scenePath);
+        WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";
         int overrideAmount = 1;
         if (args.Length >= 2)
         {

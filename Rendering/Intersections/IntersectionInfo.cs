@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
+using Raytracer.Scenes.Content.Datas.Objects;
 
 namespace Raytracer.Rendering.Intersections;
 

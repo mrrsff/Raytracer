@@ -25,16 +25,7 @@ public class PlyData
         {
             var f = faces[i];
             if (f.Length < 3) continue; // Skip invalid faces
-
-            try
-            {
-                triangles[i] = new Triangle(vertices[f[0]], vertices[f[1]], vertices[f[2]]);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error creating triangle for face {f[0]}, {f[1]}, {f[2]}, mesh has {vertices.Length} vertices and {faces.Length} faces. Exception: {e.Message}");
-                throw;
-            }
+            triangles[i] = new Triangle(vertices[f[0]], vertices[f[1]], vertices[f[2]]);
         }
     }
 }
