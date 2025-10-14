@@ -4,3 +4,6 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 **/*.exe
+Outputs/*
+.idea/
+hw1/

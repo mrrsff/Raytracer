@@ -7,8 +7,8 @@ namespace Raytracer.Scenes.Content.Datas.Camera;
 
 public struct Cameras
 {
-    [JsonConverter(typeof(SingleOrListConverter<CameraData>))]
-    public List<CameraData> Camera;
+    [JsonConverter(typeof(SingleOrListConverter<Camera>))]
+    public List<Camera> Camera;
 
     public override string ToString()
     {

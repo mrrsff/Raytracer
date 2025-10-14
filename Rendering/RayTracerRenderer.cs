@@ -1,14 +1,180 @@
-﻿using Raytracer.Scenes;
+﻿using System.Diagnostics;
+using System.Numerics;
+using Raytracer.Core;
+using Raytracer.IO;
+using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.Shading;
+using Raytracer.Scenes;
+using Raytracer.Scenes.Content.Datas.Camera;
+using Raytracer.Utility;
 
 namespace Raytracer.Rendering;
 
 public class RayTracerRenderer
 {
+    public static float IntersectionTestEpsilon;
+    public static float ShadowRayEpsilon;
+    public Scene Scene { get; }
+    private Camera Camera { get; set; } = null!;
+
     public RayTracerRenderer(Scene scene)
     {
+        Scene = scene;
+        IntersectionTestEpsilon = scene.Content.IntersectionTestEpsilon == 0 ? 1e-6f : scene.Content.IntersectionTestEpsilon;
+        ShadowRayEpsilon = scene.Content.ShadowRayEpsilon == 0 ? 1e-3f : scene.Content.ShadowRayEpsilon;
+    }
+    
+    public RenderResult Render(int cameraIndex, int overrideResolution = 1)
+    {
+        Camera = Scene.GetCamera(cameraIndex);
+        Camera.InitializeCamera();
+
+        if (overrideResolution > 1)
+        {
+            Camera.ImageResolution = new Resolution(
+                Camera.ImageResolution.Width / overrideResolution,
+                Camera.ImageResolution.Height / overrideResolution);
+            Camera.InitializeCamera();
+        }
+
+        RenderResult result = new RenderResult(Camera.ImageResolution, Scene.Content.BackgroundColor);
+        int width = result.Width;
+        int height = result.Height;
+
+        Stopwatch sw = Stopwatch.StartNew();
+        Console.WriteLine($"Rendering started... TIME: {DateTime.Now:HH:mm:ss}");
+
+        int totalRows = height;
+        int completedRows = 0;
+        bool done = false;
+
+        Task progressTask = Task.Run(() =>
+        {
+            int lastPercent = -1;
+            while (!done)
+            {
+                int percent = (int)(Volatile.Read(ref completedRows) * 100.0 / totalRows);
+                if (percent != lastPercent)
+                {
+                    lastPercent = percent;
+                    Console.Write($"\rProgress: {percent,3}%");
+                }
+                Thread.Sleep(250); // check 4 times per second
+            }
+            Console.Write("\rProgress: 100%\n");
+        });
+
+        Parallel.For(0, height, j =>
+        {
+            Vector3[] rowBuffer = new Vector3[width];
+            for (int i = 0; i < width; i++)
+            {
+                Ray primaryRay = Camera.GetPrimaryRay(i, j);
+                Vector3 color = TraceRay(primaryRay, 0, out _);
+                rowBuffer[i] = ColorUtility.Clamp(color);
+            }
+
+            for (int i = 0; i < width; i++)
+                result.SetPixel(i, j, rowBuffer[i]);
+
+            Interlocked.Increment(ref completedRows);
+        });
+
+        done = true;
+        progressTask.Wait();
+
+        sw.Stop();
+        Console.WriteLine($"Rendering finished in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
+
+        result.OutputName = Camera.ImageName;
+        return result;
+    }
+    
+    private Vector3 TraceRay(Ray ray, int depth, out float distanceTraveled)
+    {
+        distanceTraveled = 0;
+        if (depth > Scene.Content.MaxRecursionDepth)
+            return ColorUtility.Black;
+
+        IntersectionInfo hit = Scene.Intersect(ray);
+        if (!hit.Hit)
+            return Scene.Content.BackgroundColor;
+
+        distanceTraveled = hit.Distance;
+        Vector3 finalColor = Shade(hit);
+
+        Vector3 nRef = hit.Normal;
+        if (Vector3.Dot(ray.Direction, nRef) > 0f) // When exiting sphere 
+            nRef = -nRef;
+        
+        float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
+        
+        Vector3 reflectDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, nRef));
+        Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectDir);
+        Vector3 reflectedColor = TraceRay(reflectedRay, depth + 1, out _);
+        
+        if (hit.material.Type == MaterialType.Mirror)
+        {
+            finalColor += hit.material.MirrorReflectance * reflectedColor;
+        }
+        else if (hit.material.Type == MaterialType.Conductor)
+        {
+            var fresnel = FresnelComputation.ComputeFresnelConductor(ray, hit.material, cosThetaI);
+            finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
+        }
+        else if (hit.material.Type == MaterialType.Dielectric)
+        {
+            const float airRefractionIndex = 1.0f;
+            
+            float cosiRaw = Vector3.Dot(ray.Direction, hit.Normal);
+            bool entering = (cosiRaw < 0f);
+
+            Vector3 n = entering ? hit.Normal : -hit.Normal;
+            float etai = entering ? airRefractionIndex : hit.material.RefractionIndex;
+            float etat = entering ? hit.material.RefractionIndex : airRefractionIndex;
+            float eta = etai / etat;
+
+            float fresnel = FresnelComputation.ComputeFresnelDielectric(ray.Direction, n, etai, etat);
+
+            if (Refract(ray.Direction, n, eta, out Vector3 refrDir))
+            {
+                Ray refractedRay = new Ray(hit.Point - n * Scene.Content.ShadowRayEpsilon, refrDir);
+                var refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
+
+                if (entering && insideDistance > 0)
+                {
+                    Vector3 c = hit.material.AbsorptionCoefficient;
+                    refractedColor *= new Vector3(
+                        MathF.Exp(-c.X * insideDistance),
+                        MathF.Exp(-c.Y * insideDistance),
+                        MathF.Exp(-c.Z * insideDistance)
+                    );
+                }
+                
+                finalColor += (1f - fresnel) * refractedColor;
+            }
+
+            Vector3 reflectionTerm = hit.material.MirrorReflectance * (fresnel * reflectedColor);
+
+            finalColor += reflectionTerm;
+        }
+
+        return finalColor;
+    }
+    
+    private Vector3 Shade(IntersectionInfo intersection)
+    {
+        return BlinnPhongShading.Shade(intersection, this);
+    }
+    
+    private static bool Refract(Vector3 I, Vector3 n, float eta, out Vector3 T)
+    {
+        // I and n are normalized, n is oriented *against* I (see caller).
+        float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
+        float k = 1f - eta * eta * (1f - cosi * cosi);
+        if (k < 0f) { T = Vector3.Zero; return false; }     // Total Internal Reflection
+        T = Vector3.Normalize(eta * I - (eta * cosi + MathF.Sqrt(k)) * n);
+        return true;
     }
 
-    public void Render()
-    {
-    }
 }

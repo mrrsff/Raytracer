@@ -1,16 +1,12 @@
-# ==============================================================
-# Makefile for CENG795 HW1 - Raytracer (.NET 9.0)
-# Supports fast build and single-file publish
-# ==============================================================
-
 TARGET = raytracer
 BIN_DIR = bin
 BUILD_DIR = $(BIN_DIR)\Release\net9.0
 PUBLISH_DIR = $(BUILD_DIR)\win-x64\publish
 DOTNET = dotnet
-FLAGS = -nowarn:*
+FLAGS = -nowarn:* /p:Optimize=true
 
-ARGS = ../hw1/inputs/simple.json
+INPUTS_FOLDER = hw1\inputs
+ARGS = spheres.json
 
 all: fast
 
@@ -18,7 +14,7 @@ fast:
 	@$(DOTNET) publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:AssemblyName=$(TARGET) $(FLAGS)
 
 fastrun: fast
-	@$(PUBLISH_DIR)\$(TARGET).exe $(ARGS) 
+	@$(PUBLISH_DIR)\$(TARGET).exe .\$(INPUTS_FOLDER)\$(ARGS)
 
 single:
 	@echo "=== Building single-file, self-contained version ==="

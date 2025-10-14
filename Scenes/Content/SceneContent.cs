@@ -2,20 +2,21 @@
 using System.Text;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Camera;
+using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Content;
 
 public class SceneContent
 {
-    public Vector3 BackgroundColor;
+    public Vector3 BackgroundColor = ColorUtility.Black;
 
     public Cameras Cameras;
-    public float IntersectionTestEpsilon;
+    public float IntersectionTestEpsilon = 1e-6f;
     public Lights Lights;
     public Materials Materials;
-    public int MaxRecursionDepth;
+    public int MaxRecursionDepth = 1;
     public Objects Objects;
-    public float ShadowRayEpsilon;
+    public float ShadowRayEpsilon = 1e-3f;
     public VertexData VertexData;
 
     public override string ToString()

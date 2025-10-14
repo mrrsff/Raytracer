@@ -7,4 +7,13 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Ply.Net" Version="5.5.10" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Outputs\" />
+    </ItemGroup>
+
 </Project>

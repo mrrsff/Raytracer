@@ -18,6 +18,7 @@ public class Material
 
     public Vector3 AbsorptionCoefficient;
     public float RefractionIndex;
+    public float AbsorptionIndex;
     
     public override string ToString()
     {
@@ -39,6 +40,8 @@ public class Material
             .Append(AbsorptionCoefficient)
             .Append(", RefractionIndex: ")
             .Append(RefractionIndex)
+            .Append(", AbsorptionIndex: ")
+            .Append(AbsorptionIndex)
             .Append(')').ToString();
     }
 }

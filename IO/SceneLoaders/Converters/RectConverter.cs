@@ -13,15 +13,15 @@ public class RectConverter : JsonConverter<Rect>
         var p = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         return new Rect
         {
-            XMin = float.Parse(p[0]),
-            XMax = float.Parse(p[1]),
-            YMin = float.Parse(p[2]),
-            YMax = float.Parse(p[3])
+            Left = float.Parse(p[0]),
+            Right = float.Parse(p[1]),
+            Bottom = float.Parse(p[2]),
+            Top = float.Parse(p[3])
         };
     }
 
     public override void Write(Utf8JsonWriter writer, Rect value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue($"{value.XMin} {value.XMax} {value.YMin} {value.YMax}");
+        writer.WriteStringValue($"{value.Left} {value.Right} {value.Bottom} {value.Top}");
     }
 }

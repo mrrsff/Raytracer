@@ -1,14 +1,14 @@
 ﻿namespace Raytracer.Core;
 
-public struct Rect(float xMin, float yMin, float xMax, float yMax)
+public struct Rect(float left, float bottom, float right, float top)
 {
-    public float XMin = xMin;
-    public float YMin = yMin;
-    public float XMax = xMax;
-    public float YMax = yMax;
+    public float Left = left;
+    public float Bottom = bottom;
+    public float Right = right;
+    public float Top = top;
 
     public override string ToString()
     {
-        return $"Rect(XMin: {XMin}, YMin: {YMin}, XMax: {XMax}, YMax: {YMax})";
+        return $"Rect(XMin: {Left}, YMin: {Bottom}, XMax: {Right}, YMax: {Top})";
     }
 }
