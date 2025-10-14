@@ -7,22 +7,29 @@ namespace Raytracer.Rendering.Intersections;
 
 public static class MeshIntersection
 {
-    public static IntersectionInfo Intersect(this Mesh mesh, Ray ray)
+    public static bool Intersect(this Mesh mesh, in Ray ray, ref IntersectionInfo info)
     {
-        IntersectionInfo closestIntersection = new IntersectionInfo();
-        var triangles = mesh.Triangles;
-        for (int i = 0; i < triangles.Length; i++)
+        if (!mesh.BoundingBox.Intersects(ray))
         {
-            var v0 = triangles[i].V0;
-            var v1 = triangles[i].V1;
-            var v2 = triangles[i].V2;
-            var normal = triangles[i].Normal;
-            var intersection = TriangleIntersection.Intersect(ray, v0, v1, v2, normal);
-            if (intersection.Hit && intersection.Distance < closestIntersection.Distance)
+            return false;
+        }
+        var triangles = mesh.Triangles;
+        info = IntersectionInfo.NoHit;
+        foreach (var t in triangles)
+        {
+            var v0 = t.V0;
+            var v1 = t.V1;
+            var v2 = t.V2;
+            var normal = t.Normal;
+            var e1 = t.E1;
+            var e2 = t.E2;
+            var intersection = IntersectionInfo.NoHit;
+            if (TriangleIntersection.Intersect(ray, v0, v1, v2, e1, e2, normal, ref intersection) && intersection.Distance < info.Distance)
             {
-                closestIntersection = intersection;
+                info = intersection;
             }
         }
-        return closestIntersection;
+
+        return info.Hit;
     }
 }

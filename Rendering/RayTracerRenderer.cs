@@ -85,22 +85,24 @@ public class RayTracerRenderer
 
         sw.Stop();
         Console.WriteLine($"Rendering finished in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
-
+        
         result.OutputName = Camera.ImageName;
         return result;
     }
     
-    private Vector3 TraceRay(Ray ray, int depth, out float distanceTraveled)
+    private Vector3 TraceRay(in Ray ray, in int depth, out float distanceTraveled)
     {
         distanceTraveled = 0;
         if (depth > Scene.Content.MaxRecursionDepth)
             return ColorUtility.Black;
-
+        
         IntersectionInfo hit = Scene.Intersect(ray);
+        
         if (!hit.Hit)
             return Scene.Content.BackgroundColor;
 
         distanceTraveled = hit.Distance;
+        
         Vector3 finalColor = Shade(hit);
 
         Vector3 nRef = hit.Normal;
@@ -119,7 +121,7 @@ public class RayTracerRenderer
         }
         else if (hit.material.Type == MaterialType.Conductor)
         {
-            var fresnel = FresnelComputation.ComputeFresnelConductor(ray, hit.material, cosThetaI);
+            var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
             finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
         }
         else if (hit.material.Type == MaterialType.Dielectric)
@@ -139,6 +141,7 @@ public class RayTracerRenderer
             if (Refract(ray.Direction, n, eta, out Vector3 refrDir))
             {
                 Ray refractedRay = new Ray(hit.Point - n * Scene.Content.ShadowRayEpsilon, refrDir);
+                refractedRay.IsShadowRay = entering; // To disable backface culling inside objects
                 var refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
 
                 if (entering && insideDistance > 0)
@@ -162,12 +165,12 @@ public class RayTracerRenderer
         return finalColor;
     }
     
-    private Vector3 Shade(IntersectionInfo intersection)
+    private Vector3 Shade(in IntersectionInfo intersection)
     {
         return BlinnPhongShading.Shade(intersection, this);
     }
     
-    private static bool Refract(Vector3 I, Vector3 n, float eta, out Vector3 T)
+    private static bool Refract(in Vector3 I, in Vector3 n, in float eta, out Vector3 T)
     {
         // I and n are normalized, n is oriented *against* I (see caller).
         float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
@@ -176,5 +179,4 @@ public class RayTracerRenderer
         T = Vector3.Normalize(eta * I - (eta * cosi + MathF.Sqrt(k)) * n);
         return true;
     }
-
 }

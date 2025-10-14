@@ -12,6 +12,7 @@ public class Scene
     [JsonPropertyName("Scene")] public SceneContent Content;
     
     public List<Mesh> Meshes = new List<Mesh>();
+    public List<Sphere> Spheres = new List<Sphere>();
     public Scene() { }
 
     public Scene(SceneContent content)
@@ -21,15 +22,20 @@ public class Scene
     
     public void Initialize()
     {
-        if (Content.Objects.Mesh == null) return;
+        if (Content.Objects.Mesh != null)
+            foreach (var meshData in Content.Objects.Mesh)
+            {
+                if (!string.IsNullOrEmpty(meshData.Faces.PlyData))
+                    Meshes.Add(new Mesh(meshData.Faces.PlyData));
+                else
+                    Meshes.Add(new Mesh(meshData, this));
+            }
         
-        foreach (var meshData in Content.Objects.Mesh)
-        {
-            if (!string.IsNullOrEmpty(meshData.Faces.PlyData))
-                Meshes.Add(new Mesh(meshData.Faces.PlyData));
-            else
-                Meshes.Add(new Mesh(meshData, this));
-        }
+        if (Content.Objects.Sphere != null)
+            foreach (var sphereData in Content.Objects.Sphere)
+            {
+                Spheres.Add(new Sphere(sphereData));
+            }
     }
     
     public Camera GetCamera(int index)
@@ -41,19 +47,17 @@ public class Scene
     public IntersectionInfo Intersect(Ray ray)
     {
         IntersectionInfo closestIntersection = new IntersectionInfo();
-        var spheres = Content.Objects.Sphere;
         var triangles = Content.Objects.Triangle;
         var planes = Content.Objects.Plane;
-        var meshDatas = Content.Objects.Mesh;
+        var intersection = IntersectionInfo.NoHit;
 
-        if (spheres != null)
+        if (Spheres != null)
         {
-            foreach (var sphere in spheres)
+            foreach (var sphere in Spheres)
             {
-                var intersection = sphere.Intersect(ray, Content.VertexData);
-                if (!intersection.Hit || intersection.Distance > closestIntersection.Distance) continue;
+                if (!sphere.Intersect(ray, Content.VertexData, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
                 
-                intersection.material = GetMaterial(sphere.Material);
+                intersection.material = GetMaterial(sphere.data.Material);
                 closestIntersection = intersection;
             }
         }
@@ -62,8 +66,7 @@ public class Scene
         {
             foreach (var triangle in triangles)
             {
-                var intersection = triangle.Intersect(ray, Content.VertexData);
-                if (!intersection.Hit || intersection.Distance > closestIntersection.Distance) continue;
+                if (!triangle.Intersect(ray, Content.VertexData, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
                 
                 intersection.material = GetMaterial(triangle.Material);
                 closestIntersection = intersection;
@@ -74,23 +77,21 @@ public class Scene
         {
             foreach (var plane in planes)
             {
-                var intersection = plane.Intersect(ray, Content.VertexData);
-                if (!intersection.Hit || intersection.Distance > closestIntersection.Distance) continue;
+                if (!plane.Intersect(ray, Content.VertexData, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
                 
                 intersection.material = GetMaterial(plane.Material);
                 closestIntersection = intersection;
             }
         }
 
-        if (meshDatas != null)
+        if (Meshes != null)
         {
             foreach (var mesh in Meshes)
             {
-                var meshIntersection = mesh.Intersect(ray);
-                if (!meshIntersection.Hit || meshIntersection.Distance > closestIntersection.Distance) continue;
+                if (!mesh.Intersect(ray, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
                 
-                meshIntersection.material = GetMaterial(mesh.Material);
-                closestIntersection = meshIntersection;
+                intersection.material = GetMaterial(mesh.Material);
+                closestIntersection = intersection;
             }
         }
 

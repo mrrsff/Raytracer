@@ -7,7 +7,7 @@ namespace Raytracer.Rendering.Intersections;
 
 public static class PlaneIntersection
 {
-    public static IntersectionInfo Intersect(this PlaneData planeData, Ray ray, VertexData vertexData)
+    public static bool Intersect(this PlaneData planeData, in Ray ray, in VertexData vertexData, ref IntersectionInfo info)
     {
         Vector3 pointOnPlane = vertexData.At(planeData.Point);
         Vector3 planeNormal = planeData.Normal;
@@ -15,25 +15,23 @@ public static class PlaneIntersection
         Vector3 d = ray.Direction;
 
         float denom = Vector3.Dot(d, planeNormal);
-        
+
         if (MathF.Abs(denom) < RayTracerRenderer.ShadowRayEpsilon)
-            return IntersectionInfo.NoHit;
+            return false;
 
         float t = Vector3.Dot(pointOnPlane - o, planeNormal) / denom;
 
         if (t < RayTracerRenderer.ShadowRayEpsilon)
-            return IntersectionInfo.NoHit;
+            return false;
 
         Vector3 intersectionPoint = o + t * d;
         Vector3 normal = Vector3.Normalize(planeNormal);
 
-        return new IntersectionInfo()
-        {
-            HitRay = ray,
-            Hit = true,
-            Distance = t,
-            Point = intersectionPoint,
-            Normal = normal
-        };
+        info.HitRay = ray;
+        info.Hit = true;
+        info.Distance = t;
+        info.Point = intersectionPoint;
+        info.Normal = normal;
+        return true;
     }
 }

@@ -8,7 +8,7 @@ namespace Raytracer.Rendering.Shading;
 
 public static class BlinnPhongShading
 {
-    public static Vector3 Shade(IntersectionInfo intersection, RayTracerRenderer renderer)
+    public static Vector3 Shade(in IntersectionInfo intersection, in RayTracerRenderer renderer)
     {
         Vector3 ambient = intersection.material.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
         Vector3 diffuse = Vector3.Zero;

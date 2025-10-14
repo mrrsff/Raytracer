@@ -5,7 +5,7 @@ namespace Raytracer.Rendering.Shading;
 
 public static class FresnelComputation
 {
-    public static Vector3 ComputeFresnelConductor(Ray incomingRay, Material mat, float cosThetaI)
+    public static Vector3 ComputeFresnelConductor(Material mat, float cosThetaI)
     {
         Vector3 n = new Vector3(mat.RefractionIndex);
         Vector3 k = new Vector3(mat.AbsorptionIndex);
