@@ -49,40 +49,51 @@ public partial class Scene
         IntersectionInfo closestIntersection = new IntersectionInfo();
         var triangles = Content.Objects.Triangle;
         var planes = Content.Objects.Plane;
-        var intersection = IntersectionInfo.NoHit;
+        IntersectionInfo intersection = IntersectionInfo.NoHit;
         
         foreach (var mesh in Meshes)
         {
-            if (!mesh.Intersect(ray, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
-                
-            intersection.material = GetMaterial(mesh.Material);
-            closestIntersection = intersection;
+            intersection.Reset();
+            if (mesh.Intersect(ray, ref intersection) && (intersection.Distance < closestIntersection.Distance))
+            {
+                intersection.material = GetMaterial(mesh.Material);
+                closestIntersection = intersection;
+            }
         }
         
         foreach (var sphere in Spheres)
         {
-            if (!sphere.Intersect(ray, Content.VertexData, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
-                
-            intersection.material = GetMaterial(sphere.data.Material);
-            closestIntersection = intersection;
+            intersection.Reset();
+            if (sphere.Intersect(ray, Content.VertexData, ref intersection) &&
+                (intersection.Distance < closestIntersection.Distance))
+            {
+                intersection.material = GetMaterial(sphere.data.Material);
+                closestIntersection = intersection;
+            }
         }
 
         foreach (var triangle in triangles)
         {
-            if (!triangle.Intersect(ray, Content.VertexData, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
-                
-            intersection.material = GetMaterial(triangle.Material);
-            closestIntersection = intersection;
+            intersection.Reset();
+            if (triangle.Intersect(ray, Content.VertexData, ref intersection) &&
+                (intersection.Distance < closestIntersection.Distance))
+            {
+                intersection.material = GetMaterial(triangle.Material);
+                closestIntersection = intersection;
+            }
         }
 
         foreach (var plane in planes)
         {
-            if (!plane.Intersect(ray, Content.VertexData, ref intersection) || intersection.Distance > closestIntersection.Distance) continue;
-                
-            intersection.material = GetMaterial(plane.Material);
-            closestIntersection = intersection;
+            intersection.Reset();
+            if (plane.Intersect(ray, Content.VertexData, ref intersection) &&
+                (intersection.Distance < closestIntersection.Distance))
+            {
+                intersection.material = GetMaterial(plane.Material);
+                closestIntersection = intersection;
+            }
         }
-
+        
         return closestIntersection;
     }
     

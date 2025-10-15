@@ -25,7 +25,7 @@ public static class TriangleIntersection
         Vector3 o = ray.Origin;
         Vector3 d = ray.Direction;
         
-        if ((Vector3.Dot(normal, d) > 0f) & !ray.IsShadowRay)
+        if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f)
             return false;
         
         Vector3 pvec = Vector3.Cross(d, e2);
@@ -57,7 +57,7 @@ public static class TriangleIntersection
         info.Normal = normal;
         return true;
     }
-    public static bool Intersect(in Ray ray,
+    public static bool IntersectBarycentric(in Ray ray,
         in Vector3 v0, in Vector3 v1, in Vector3 v2,
         in Vector3 e1, in Vector3 e2,
         in Vector3 normal, ref IntersectionInfo info,
@@ -67,27 +67,24 @@ public static class TriangleIntersection
         Vector3 o = ray.Origin;
         Vector3 d = ray.Direction;
 
-        // Optional backface culling (skip back-facing triangles)
-        if ((Vector3.Dot(normal, d) > 0f) && !ray.IsShadowRay)
+        if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f)
             return false;
 
-        // Möller–Trumbore intersection algorithm (barycentric form)
         Vector3 pvec = Vector3.Cross(d, e2);
         float det = Vector3.Dot(e1, pvec);
 
-        // Parallel or nearly parallel
         if (MathF.Abs(det) < RayTracerRenderer.IntersectionTestEpsilon)
             return false;
 
         float invDet = 1f / det;
 
         Vector3 tvec = o - v0;
-        beta = Vector3.Dot(tvec, pvec) * invDet; // barycentric coordinate β
+        beta = Vector3.Dot(tvec, pvec) * invDet;
         if (beta < 0f || beta > 1f)
             return false;
 
         Vector3 qvec = Vector3.Cross(tvec, e1);
-        gamma = Vector3.Dot(d, qvec) * invDet; // barycentric coordinate γ
+        gamma = Vector3.Dot(d, qvec) * invDet;
         if (gamma < 0f || beta + gamma > 1f)
             return false;
 

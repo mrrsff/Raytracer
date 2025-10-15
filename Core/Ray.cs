@@ -2,10 +2,10 @@
 
 namespace Raytracer.Core;
 
-public struct Ray(Vector3 origin, Vector3 direction, float tMin = 0.001f, float tMax = float.MaxValue)
+public struct Ray(Vector3 origin, Vector3 direction, bool isSecondary = false, float tMin = 0.001f, float tMax = float.MaxValue)
 {
     public static Ray Default => new Ray(Vector3.Zero, Vector3.UnitZ);
-    public bool IsShadowRay = false;
+    public bool IsSecondary = isSecondary;
     public Vector3 Origin = origin;
     public Vector3 Direction = Vector3.Normalize(direction);
     public float TMin = tMin;

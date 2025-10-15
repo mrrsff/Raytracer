@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Raytracer.Core;
 
-public class Material
+public struct Material
 {
     [JsonPropertyName("_id")] public int Id;
     [JsonPropertyName("_type")] public MaterialType Type;

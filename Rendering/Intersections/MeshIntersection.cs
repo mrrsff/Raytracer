@@ -16,7 +16,7 @@ public static class MeshIntersection
             return false;
         }
         var triangles = mesh.Triangles;
-        info = IntersectionInfo.NoHit;
+        var intersection = IntersectionInfo.NoHit;
         foreach (var t in triangles)
         {
             var v0 = t.V0;
@@ -25,18 +25,20 @@ public static class MeshIntersection
             var normal = t.Normal;
             var e1 = t.E1;
             var e2 = t.E2;
-            var intersection = IntersectionInfo.NoHit;
-            if (mesh.ShadingMode == ShadingMode.Flat)
+            intersection.Reset();
+            switch (mesh.ShadingMode)
             {
-                if (TriangleIntersection.Intersect(ray, v0, v1, v2, e1, e2, normal, ref intersection) && intersection.Distance < info.Distance)
+                case ShadingMode.Flat:
                 {
+                    if (!TriangleIntersection.Intersect(ray, v0, v1, v2, e1, e2, normal, ref intersection) || 
+                        intersection.Distance > info.Distance) continue;
                     info = intersection;
+                    break;
                 }
-            }
-            else
-            {
-                if (TriangleIntersection.Intersect(ray, v0, v1, v2, e1, e2, normal, ref intersection, out var beta, out var gamma) && intersection.Distance < info.Distance)
+                case ShadingMode.Smooth:
                 {
+                    if (!TriangleIntersection.IntersectBarycentric(ray, v0, v1, v2, e1, e2, normal, ref intersection, out var beta, out var gamma) || 
+                        intersection.Distance > info.Distance) continue;
                     info = intersection;
                     var alpha = 1.0f - beta - gamma;
                 
@@ -45,7 +47,11 @@ public static class MeshIntersection
                     Vector3 n2 = mesh.VertexNormals[t.I2];
 
                     info.Normal = Vector3.Normalize(alpha * n0 + beta * n1 + gamma * n2);
-                }   
+                    break;
+                }
+                default:
+                    Console.WriteLine($"[Warning] Unsupported shading mode {mesh.ShadingMode} in MeshIntersection.");
+                    break;
             }
         }
         return info.Hit;

@@ -53,31 +53,20 @@ public class Camera
         if (Type == CameraType.LookAt)
         {
             float aspect = (float)ImageResolution.Width / ImageResolution.Height;
-            float halfHeight = (float)Math.Tan(FovY * 0.5f * MathF.PI / 180f) * NearDistance;
+            float halfHeight = MathF.Tan(FovY * 0.5f * MathF.PI / 180f) * NearDistance;
             float halfWidth = aspect * halfHeight;
             NearPlane = new Rect(-halfWidth, halfWidth, -halfHeight, halfHeight);
-            Forward = Vector3.Normalize(GazePoint - Position);
-            Gaze = -Forward;
+            Gaze = Vector3.Normalize(GazePoint - Position);
         }
-        else
-        {
-            Forward = Vector3.Normalize(Gaze);
-        }
+        var w = Vector3.Normalize(-Gaze);
+        var v = Vector3.Normalize(Up - Vector3.Dot(Up, w) * w);
+        var u = Vector3.Cross(v, w);
 
-        // Check if gaze and up are perpendicular
-        if (MathF.Abs(Vector3.Dot(Forward, Up)) > float.Epsilon)
-        {
-            // Recompute Up to be perpendicular to Forward
-            var w = -Gaze / Gaze.Length();
-            var u2 = Up / Up.Length();
-            var u = Vector3.Cross(u2, w);
-            var v = Vector3.Cross(w, u);
-            Up = v;
-        }
-        
-        Right = Vector3.Normalize(Vector3.Cross(Forward, Up));
-        
-        m = Position + (Forward * NearDistance);
+        Forward = -w;  // points into scene
+        Right = u;
+        Up = v;
+
+        m = Position + Forward * NearDistance;
         q = m + (NearPlane.Left * Right) + (NearPlane.Top * Up);
     }
 

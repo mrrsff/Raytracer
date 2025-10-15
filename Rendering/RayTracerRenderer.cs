@@ -102,17 +102,20 @@ public class RayTracerRenderer
             return Scene.Content.BackgroundColor;
 
         distanceTraveled = hit.Distance;
-        
-        Vector3 finalColor = Shade(hit);
 
-        Vector3 nRef = hit.Normal;
-        if (Vector3.Dot(ray.Direction, nRef) > 0f) // When exiting sphere 
-            nRef = -nRef;
+        bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
+        if (!entering)
+        {
+            hit.Normal = -hit.Normal;
+        }
+
+        Vector3 finalColor = entering ? Shade(hit) : ColorUtility.Green;
+
         
         float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
         
-        Vector3 reflectDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, nRef));
-        Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectDir);
+        Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, hit.Normal));
+        Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true);
         Vector3 reflectedColor = TraceRay(reflectedRay, depth + 1, out _);
         
         if (hit.material.Type == MaterialType.Mirror)
@@ -126,40 +129,35 @@ public class RayTracerRenderer
         }
         else if (hit.material.Type == MaterialType.Dielectric)
         {
-            const float airRefractionIndex = 1.0f;
-            
-            float cosiRaw = Vector3.Dot(ray.Direction, hit.Normal);
-            bool entering = (cosiRaw < 0f);
-
-            Vector3 n = entering ? hit.Normal : -hit.Normal;
+            const float airRefractionIndex = 1.00029f;
             float etai = entering ? airRefractionIndex : hit.material.RefractionIndex;
             float etat = entering ? hit.material.RefractionIndex : airRefractionIndex;
-            float eta = etai / etat;
-
-            float fresnel = FresnelComputation.ComputeFresnelDielectric(ray.Direction, n, etai, etat);
-
-            if (Refract(ray.Direction, n, eta, out Vector3 refrDir))
+            float eta  = etai / etat;
+    
+            // Try to compute refraction
+            if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
             {
-                Ray refractedRay = new Ray(hit.Point - n * Scene.Content.ShadowRayEpsilon, refrDir);
-                refractedRay.IsShadowRay = entering; // To disable backface culling inside objects
-                var refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
-
+                Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
+                Vector3 refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
+        
                 if (entering && insideDistance > 0)
                 {
-                    Vector3 c = hit.material.AbsorptionCoefficient;
-                    refractedColor *= new Vector3(
-                        MathF.Exp(-c.X * insideDistance),
-                        MathF.Exp(-c.Y * insideDistance),
-                        MathF.Exp(-c.Z * insideDistance)
-                    );
+                    refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
                 }
-                
-                finalColor += (1f - fresnel) * refractedColor;
+        
+                float fresnel = FresnelComputation.ComputeFresnelDielectric(ray.Direction, hit.Normal, etai, etat);
+        
+                finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor + (1f - fresnel) * refractedColor;
             }
+            else
+            {
+                Vector3 tirColor = TraceRay(reflectedRay, depth + 1, out var traveled);
 
-            Vector3 reflectionTerm = hit.material.MirrorReflectance * (fresnel * reflectedColor);
-
-            finalColor += reflectionTerm;
+                traveled += distanceTraveled;
+                Vector3 absorption = GetAbsorption(hit.material.AbsorptionCoefficient, traveled);
+        
+                finalColor += hit.material.MirrorReflectance * tirColor * absorption;
+            }
         }
 
         return finalColor;
@@ -170,13 +168,25 @@ public class RayTracerRenderer
         return BlinnPhongShading.Shade(intersection, this);
     }
     
-    private static bool Refract(in Vector3 I, in Vector3 n, in float eta, out Vector3 T)
+    private static bool Refract(in Vector3 I, in Vector3 n, in float eta, out Vector3 refractedRay)
     {
-        // I and n are normalized, n is oriented *against* I (see caller).
         float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
         float k = 1f - eta * eta * (1f - cosi * cosi);
-        if (k < 0f) { T = Vector3.Zero; return false; }     // Total Internal Reflection
-        T = Vector3.Normalize(eta * I - (eta * cosi + MathF.Sqrt(k)) * n);
+        if (k < 0f) // Total Internal Reflection
+        {
+            refractedRay = Vector3.Zero;
+            return false;
+        }
+        refractedRay = Vector3.Normalize(eta * I - (eta * cosi + MathF.Sqrt(k)) * n);
         return true;
+    }
+    
+    private static Vector3 GetAbsorption(in Vector3 absorptionCoefficient, in float distance)
+    {
+        return new Vector3(
+            MathF.Exp(-absorptionCoefficient.X * distance),
+            MathF.Exp(-absorptionCoefficient.Y * distance),
+            MathF.Exp(-absorptionCoefficient.Z * distance)
+        );
     }
 }
