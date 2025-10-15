@@ -25,11 +25,9 @@ public static class FresnelComputation
     
     public static float ComputeFresnelDielectric(Vector3 I, Vector3 n, float etai, float etat)
     {
-        // Full Fresnel (unpolarized)
         float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
-        // Snell: sin_t
         float sint = (etai / etat) * MathF.Sqrt(MathF.Max(0f, 1f - cosi * cosi));
-        if (sint >= 1f) return 1f;                          // TIR
+        if (sint >= 1f) return 1f; // Total Internal Reflection
 
         float cost = MathF.Sqrt(MathF.Max(0f, 1f - sint * sint));
         cosi = MathF.Abs(cosi);

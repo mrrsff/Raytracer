@@ -10,6 +10,7 @@ public partial class Scene
     public bool IntersectAny(Ray ray, float maxDistance)
     {
         var intersection = IntersectionInfo.NoHit;
+        
         foreach (var mesh in Meshes)
         {
             if (!mesh.Intersect(ray, ref intersection)) continue;
@@ -45,8 +46,7 @@ public partial class Scene
     {
         var dir = Vector3.Normalize(lightPos - point);
         float maxT = Vector3.Distance(lightPos, point);
-        var ray = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, dir);
-        ray.IsShadowRay = true;
+        var ray = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, dir, true);
         return IntersectAny(ray, maxT);
     }
 }

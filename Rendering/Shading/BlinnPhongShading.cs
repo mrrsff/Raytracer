@@ -20,16 +20,13 @@ public static class BlinnPhongShading
 
         foreach (var light in renderer.Scene.Content.Lights.PointLight)
         {
-            var lightDelta = light.Position - point;
-            Vector3 lightDir = Vector3.Normalize(lightDelta);
-            
-            Ray shadowRay = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, lightDir);
-            shadowRay.IsShadowRay = true;
-            float lightDistance = lightDelta.Length();
-            
             if (renderer.Scene.IsOccluded(point, light.Position, normal))
                 continue;
 
+            var lightDelta = light.Position - point;
+            Vector3 lightDir = Vector3.Normalize(lightDelta);
+            
+            float lightDistance = lightDelta.Length();
             Vector3 irradiance = light.Intensity / (lightDistance * lightDistance);
             // Diffuse
             float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);

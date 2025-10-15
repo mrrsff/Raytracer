@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Raytracer.Rendering;
 using Raytracer.Scenes.Content.Datas.Objects;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
@@ -37,6 +38,7 @@ public class Mesh
             min = Vector3.Min(min, Vertices[i]);
             max = Vector3.Max(max, Vertices[i]);
         }
+        BoundingBox = new BoundingBox(min, max);
 
         int triangleCount = faceIndices.Length / 3;
         Triangles = new Triangle[triangleCount];
@@ -57,7 +59,6 @@ public class Mesh
             );
         }
         
-        BoundingBox = new BoundingBox(min, max);
         
         if (ShadingMode == ShadingMode.Smooth)
         {
