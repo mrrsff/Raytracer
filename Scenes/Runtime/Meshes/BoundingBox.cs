@@ -3,16 +3,10 @@ using Raytracer.Core;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
-public class BoundingBox
+public struct BoundingBox(Vector3 min, Vector3 max)
 {
-    public Vector3 Min { get; private set; }
-    public Vector3 Max { get; private set; }
-    
-    public BoundingBox(Vector3 min, Vector3 max)
-    {
-        Min = min;
-        Max = max;
-    }
+    public Vector3 Min { get; private set; } = min;
+    public Vector3 Max { get; private set; } = max;
 
     public bool Intersects(Ray ray)
     {

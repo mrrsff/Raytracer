@@ -6,7 +6,6 @@ namespace Raytracer.Rendering.Intersections;
 
 public struct IntersectionInfo()
 {
-    // Data about an intersection
     public Ray HitRay = default;
     public Material material = default;
     public bool Hit = false;
