@@ -94,25 +94,18 @@ public class Mesh
     private void ComputeSmoothNormals()
     {
         VertexNormals = new Vector3[Vertices.Length];
-        var accum = new Vector3[Vertices.Length];
 
         // accumulate area-weighted face normals
         foreach (var tri in Triangles)
         {
-            Vector3 v0 = tri.V0;
-            Vector3 v1 = tri.V1;
-            Vector3 v2 = tri.V2;
+            Vector3 n = Vector3.Cross(tri.V1 - tri.V0, tri.V2 - tri.V0);
 
-            Vector3 n = Vector3.Cross(v1 - v0, v2 - v0);
-            float area = n.Length() * 0.5f;
-            n = Vector3.Normalize(n);
-
-            accum[tri.I0] += n * area;
-            accum[tri.I1] += n * area;
-            accum[tri.I2] += n * area;
+            VertexNormals[tri.I0] += n;
+            VertexNormals[tri.I1] += n;
+            VertexNormals[tri.I2] += n;
         }
 
-        for (int i = 0; i < Vertices.Length; i++)
-            VertexNormals[i] = Vector3.Normalize(accum[i]);
+        for (int i = 0; i < VertexNormals.Length; i++)
+            VertexNormals[i] = Vector3.Normalize(VertexNormals[i]);
     }
 }

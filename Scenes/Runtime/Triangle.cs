@@ -3,7 +3,7 @@ using Raytracer.Scenes.Content.Datas.Objects;
 
 namespace Raytracer.Scenes.Runtime;
 
-public class Triangle
+public struct Triangle
 {
     public int I0, I1, I2;
     public Vector3 V0, V1, V2;

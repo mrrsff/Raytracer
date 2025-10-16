@@ -19,6 +19,8 @@ public static class Program
         }
 
         var scenePath = args[0];
+        var sceneDir = Path.GetDirectoryName(scenePath)?.Split(Path.DirectorySeparatorChar).Last();
+        AssureOutputDirectory(sceneDir ?? "");
         var scene = SceneLoader.Load(scenePath);
         WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";
         int overrideAmount = 1;
@@ -37,9 +39,18 @@ public static class Program
         for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
         {
             var result = renderer.Render(i, overrideAmount);
-            ImageSaver.SaveImage("Outputs/" + result.OutputName, result);
+            ImageSaver.SaveImage("Outputs/" + sceneDir + "/" + result.OutputName, result);
         }
         
         Console.WriteLine("All renderings complete.");
+    }
+    
+    private static void AssureOutputDirectory(string sceneDir)
+    {
+        var outputDir = Path.Combine("Outputs", sceneDir);
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
     }
 }

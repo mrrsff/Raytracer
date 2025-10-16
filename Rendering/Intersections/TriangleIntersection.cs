@@ -15,15 +15,15 @@ public static class TriangleIntersection
         Vector3 v1 = vertexData.At(triangle.indices[1]);
         Vector3 v2 = vertexData.At(triangle.indices[2]);
         Vector3 normal = Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
-        Vector3 e1 = v1 - v0;
-        Vector3 e2 = v2 - v0;
 
-        return Intersect(ray, v0, v1, v2, e1, e2, normal, ref info);
+        return Intersect(ray, v0, v1, v2, normal, ref info);
     }
-    public static bool Intersect(in Ray ray, in Vector3 v0, in Vector3 v1, in Vector3 v2, in Vector3 e1, in Vector3 e2, in Vector3 normal, ref IntersectionInfo info)
+    public static bool Intersect(in Ray ray, in Vector3 v0, in Vector3 v1, in Vector3 v2, in Vector3 normal, ref IntersectionInfo info)
     {
         Vector3 o = ray.Origin;
         Vector3 d = ray.Direction;
+        Vector3 e1 = v1 - v0;
+        Vector3 e2 = v2 - v0;
         
         if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f)
             return false;
@@ -59,13 +59,14 @@ public static class TriangleIntersection
     }
     public static bool IntersectBarycentric(in Ray ray,
         in Vector3 v0, in Vector3 v1, in Vector3 v2,
-        in Vector3 e1, in Vector3 e2,
         in Vector3 normal, ref IntersectionInfo info,
         out float beta, out float gamma)
     {
         beta = gamma = 0f;
         Vector3 o = ray.Origin;
         Vector3 d = ray.Direction;
+        Vector3 e1 = v1 - v0;
+        Vector3 e2 = v2 - v0;
 
         if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f)
             return false;

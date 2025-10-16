@@ -25,9 +25,8 @@ public static class BlinnPhongShading
 
             var lightDelta = light.Position - point;
             Vector3 lightDir = Vector3.Normalize(lightDelta);
+            Vector3 irradiance = light.Intensity / (lightDelta.LengthSquared());
             
-            float lightDistance = lightDelta.Length();
-            Vector3 irradiance = light.Intensity / (lightDistance * lightDistance);
             // Diffuse
             float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);
             diffuse += diff * intersection.material.DiffuseReflectance * irradiance;

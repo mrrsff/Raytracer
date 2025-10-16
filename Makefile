@@ -9,7 +9,7 @@ INPUTS_FOLDER = hw1\inputs
 OUTPUTS_FOLDER = hw1\outputs
 ARGS = spheres.json
 
-all: fast
+all: linux
 
 fast:
 	@$(DOTNET) publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:AssemblyName=$(TARGET) $(FLAGS)
@@ -18,16 +18,16 @@ fastrun: fast
 	@$(PUBLISH_DIR)\$(TARGET).exe .\$(INPUTS_FOLDER)\$(ARGS)
 
 single:
-	@echo "=== Building single-file, self-contained version ==="
+	@echo "Building single-file, self-contained version"
 	$(DOTNET) publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:AssemblyName=$(TARGET)
 	@copy "$(PUBLISH_DIR)\$(TARGET).exe" ".\$(TARGET).exe" >nul
-	@echo "=== Single-file build complete. ==="
+	@echo "Single-file build complete."
 
 compare: fastrun
 	@py imageCompare.py .\$(OUTPUTS_FOLDER)\$(ARGS:.json=.png) .\Outputs\$(ARGS:.json=.png)
 
 run-single:
-	@echo "=== Running single-file executable ==="
+	@echo "Running single-file executable"
 	@.\$(TARGET).exe $(ARGS) 
 
 linux:

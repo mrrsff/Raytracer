@@ -23,21 +23,19 @@ public static class MeshIntersection
             var v1 = t.V1;
             var v2 = t.V2;
             var normal = t.Normal;
-            var e1 = t.E1;
-            var e2 = t.E2;
             intersection.Reset();
             switch (mesh.ShadingMode)
             {
                 case ShadingMode.Flat:
                 {
-                    if (!TriangleIntersection.Intersect(ray, v0, v1, v2, e1, e2, normal, ref intersection) || 
+                    if (!TriangleIntersection.Intersect(ray, v0, v1, v2, normal, ref intersection) || 
                         intersection.Distance > info.Distance) continue;
                     info = intersection;
                     break;
                 }
                 case ShadingMode.Smooth:
                 {
-                    if (!TriangleIntersection.IntersectBarycentric(ray, v0, v1, v2, e1, e2, normal, ref intersection, out var beta, out var gamma) || 
+                    if (!TriangleIntersection.IntersectBarycentric(ray, v0, v1, v2, normal, ref intersection, out var beta, out var gamma) || 
                         intersection.Distance > info.Distance) continue;
                     info = intersection;
                     var alpha = 1.0f - beta - gamma;
