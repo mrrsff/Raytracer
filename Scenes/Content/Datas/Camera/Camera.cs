@@ -68,16 +68,21 @@ public class Camera
 
         m = Position + Forward * NearDistance;
         q = m + (NearPlane.Left * Right) + (NearPlane.Top * Up);
+        
+        sUMultiplier = (NearPlane.Right - NearPlane.Left) / ImageResolution.Width;
+        sVMultiplier = (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
     }
 
     private Vector3 Forward;
     private Vector3 Right;
     private Vector3 m;
     private Vector3 q;
+    private float sUMultiplier;
+    private float sVMultiplier;
     public Ray GetPrimaryRay(int i, int j)
     {
-        float sU = (i + 0.5f) * (NearPlane.Right - NearPlane.Left) / ImageResolution.Width;
-        float sV = (j + 0.5f) * (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
+        float sU = (i + 0.5f) * sUMultiplier;
+        float sV = (j + 0.5f) * sVMultiplier;
         
         Vector3 s = q + (sU * Right) - (sV * Up);
         Vector3 d = Vector3.Normalize(s - Position);

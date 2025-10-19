@@ -24,18 +24,10 @@ public class RayTracerRenderer
         ShadowRayEpsilon = scene.Content.ShadowRayEpsilon == 0 ? 1e-3f : scene.Content.ShadowRayEpsilon;
     }
     
-    public RenderResult Render(int cameraIndex, int overrideResolution = 1)
+    public RenderResult Render(int cameraIndex)
     {
         Camera = Scene.GetCamera(cameraIndex);
         Camera.InitializeCamera();
-
-        if (overrideResolution > 1)
-        {
-            Camera.ImageResolution = new Resolution(
-                Camera.ImageResolution.Width / overrideResolution,
-                Camera.ImageResolution.Height / overrideResolution);
-            Camera.InitializeCamera();
-        }
 
         RenderResult result = new RenderResult(Camera.ImageResolution, Scene.Content.BackgroundColor);
         int width = result.Width;
@@ -47,6 +39,8 @@ public class RayTracerRenderer
         int totalRows = height;
         int completedRows = 0;
         bool done = false;
+        const int timesPerSecond = 5;
+        const int interval = 1000 / timesPerSecond;
 
         Task progressTask = Task.Run(() =>
         {
@@ -59,7 +53,7 @@ public class RayTracerRenderer
                     lastPercent = percent;
                     Console.Write($"\rProgress: {percent,3}%");
                 }
-                Thread.Sleep(250); // check 4 times per second
+                Thread.Sleep(interval); // check 4 times per second
             }
             Console.Write("\rProgress: 100%\n");
         });

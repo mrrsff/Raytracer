@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Raytracer.Rendering;
+using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Objects;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
