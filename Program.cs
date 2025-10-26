@@ -10,6 +10,7 @@ namespace Raytracer;
 public static class Program
 {
     public static string WorkingDirectory;
+    private const string OutputDirectory = "Outputs";
     private static void Main(string[] args)
     {
         if (args.Length == 0)
@@ -19,13 +20,14 @@ public static class Program
         }
 
         var scenePath = args[0];
-        var sceneDir = Path.GetDirectoryName(scenePath)?.Split(Path.DirectorySeparatorChar).Last();
         if (!File.Exists(scenePath))
         {
             throw new FileNotFoundException("Scene file not found: " + scenePath);
         }
-        
-        AssureOutputDirectory(sceneDir ?? "");
+
+        var x = 896;
+        var y = 561;
+        AssureOutputDirectory();
         var scene = SceneLoader.Load(scenePath);
         WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";
         
@@ -35,18 +37,21 @@ public static class Program
         for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
         {
             var result = renderer.Render(i);
-            ImageSaver.SaveImage("Outputs/" + sceneDir + "/" + result.OutputName, result);
+            ImageSaver.SaveImage($"{OutputDirectory}/{result.OutputName}", result);
         }
+
+        // var delta = 50;
+        // var result = renderer.RenderPartition(x - delta, y - delta, x + delta, y + delta);
+        // ImageSaver.SaveImage($"{result.OutputName}", result);
         
         Console.WriteLine("All renderings complete.");
     }
     
-    private static void AssureOutputDirectory(string sceneDir)
+    private static void AssureOutputDirectory()
     {
-        var outputDir = Path.Combine("Outputs", sceneDir);
-        if (!Directory.Exists(outputDir))
+        if (!Directory.Exists(OutputDirectory))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(OutputDirectory);
         }
     }
 }

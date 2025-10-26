@@ -4,6 +4,8 @@ using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Objects;
 using Raytracer.Scenes.Runtime;
 using Raytracer.Scenes.Runtime.Meshes;
+using Raytracer.Utility;
+using SixLabors.ImageSharp;
 
 namespace Raytracer.Rendering.Intersections;
 
@@ -45,6 +47,10 @@ public static class MeshIntersection
                     Vector3 n2 = mesh.VertexNormals[t.I2];
 
                     info.Normal = Vector3.Normalize(alpha * n0 + beta * n1 + gamma * n2);
+                    if (info.Normal == Vector3.Zero)
+                    {
+                        Console.WriteLine("Zero normal");
+                    }
                     break;
                 }
                 default:
@@ -53,23 +59,5 @@ public static class MeshIntersection
             }
         }
         return info.Hit;
-    }
-    
-    private static void CalculateBarycentricCoordinates(Triangle triangle, Vector3 point, out float alpha, out float beta, out float gamma)
-    {
-        Vector3 v0 = triangle.V1 - triangle.V0;
-        Vector3 v1 = triangle.V2 - triangle.V0;
-        Vector3 v2 = point - triangle.V0;
-
-        float d00 = Vector3.Dot(v0, v0);
-        float d01 = Vector3.Dot(v0, v1);
-        float d11 = Vector3.Dot(v1, v1);
-        float d20 = Vector3.Dot(v2, v0);
-        float d21 = Vector3.Dot(v2, v1);
-
-        float denom = d00 * d11 - d01 * d01;
-        beta = (d11 * d20 - d01 * d21) / denom;
-        gamma = (d00 * d21 - d01 * d20) / denom;
-        alpha = 1.0f - beta - gamma;
     }
 }

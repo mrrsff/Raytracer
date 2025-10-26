@@ -43,4 +43,20 @@ clean:
 	@if exist "$(TARGET).exe" del "$(TARGET).exe"
 	@echo "Clean complete."
 
-.PHONY: all fast fastrun single run-single clean linux copy-linux compare
+tar:
+	@mkdir Tarfile || true
+	@rm -f Tarfile/raytracer.tar.gz
+	@tar -czf ./Tarfile/raytracer.tar.gz \
+		--exclude=hw1 \
+		--exclude=Outputs \
+		--exclude=.git \
+		--exclude=.idea \
+		--exclude=bin \
+		--exclude=obj \
+		--exclude=.gitignore \
+		--exclude=Tarfile \
+		--exclude=raytracer \
+		.
+
+
+.PHONY: all fast fastrun single run-single clean linux copy-linux compare tar

@@ -94,17 +94,11 @@ public class RayTracerRenderer
         
         if (!hit.Hit)
             return Scene.Content.BackgroundColor;
-
+        
         distanceTraveled = hit.Distance;
-
-        bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
-        if (!entering)
-        {
-            hit.Normal = -hit.Normal;
-        }
-
-        Vector3 finalColor = entering ? Shade(hit) : ColorUtility.Green;
-
+        
+        
+        Vector3 finalColor;
         
         float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
         
@@ -114,15 +108,25 @@ public class RayTracerRenderer
         
         if (hit.material.Type == MaterialType.Mirror)
         {
+            finalColor = Shade(hit);
             finalColor += hit.material.MirrorReflectance * reflectedColor;
         }
         else if (hit.material.Type == MaterialType.Conductor)
         {
+            bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
+            if (!entering) hit.Normal = -hit.Normal;
+            
+            finalColor = entering ? Shade(hit) : ColorUtility.Black;
             var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
             finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
         }
         else if (hit.material.Type == MaterialType.Dielectric)
         {
+            bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
+            if (!entering) hit.Normal = -hit.Normal;
+         
+            finalColor = entering ? Shade(hit) : ColorUtility.Black;
+            
             const float airRefractionIndex = 1.00029f;
             float etai = entering ? airRefractionIndex : hit.material.RefractionIndex;
             float etat = entering ? hit.material.RefractionIndex : airRefractionIndex;
@@ -153,6 +157,10 @@ public class RayTracerRenderer
                 finalColor += hit.material.MirrorReflectance * tirColor * absorption;
             }
         }
+        else
+        {
+            finalColor = Shade(hit);
+        }
 
         return finalColor;
     }
@@ -182,5 +190,25 @@ public class RayTracerRenderer
             MathF.Exp(-absorptionCoefficient.Y * distance),
             MathF.Exp(-absorptionCoefficient.Z * distance)
         );
+    }
+
+    public RenderResult RenderPartition(int minX, int minY, int maxX, int maxY)
+    {
+        Camera = Scene.GetCamera(0);
+        var result = new RenderResult(maxX - minX, maxY - minY, Scene.Content.BackgroundColor);
+
+        for (int i = minX; i < maxX; i++)
+        {
+            for (int j = minY; j < maxY; j++)
+            {
+                Ray primaryRay = Camera.GetPrimaryRay(i, j);
+                Vector3 color = TraceRay(primaryRay, 0, out _);
+                color = ColorUtility.Clamp(color);
+                result.SetPixel(i - minX, j - minY, color);
+            }
+        }
+
+        result.OutputName = Camera.ImageName;
+        return result;
     }
 }
