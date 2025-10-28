@@ -1,112 +1,63 @@
 ﻿using System.Numerics;
-using Raytracer.Rendering;
-using Raytracer.Scenes.Content.Datas;
+using Raytracer.Core;
+using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content.Datas.Objects;
+using Raytracer.Scenes.Runtime.Meshes.BVH;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
-public class Mesh
+public class Mesh : Geometry
 {
-    public Vector3[] Vertices { get; private set; }
-    public Triangle[] Triangles { get; private set; }
+    public Transform Transform { get; set; }
+    public MeshDefinition MeshDefinition { get; set; }
     public ShadingMode ShadingMode { get; set; }
-    public int Material { get; set; }
-    public BoundingBox BoundingBox { get; private set; }
-    public Vector3[] VertexNormals { get; private set; }
-    
-    public Mesh(MeshData data, Scene scene)
+    public BoundingVolumeHierarchy BVH { get; set; }
+
+    public override int GetPrimitiveCount() => MeshDefinition.Triangles.Length;
+    private Vector3[] Vertices => MeshDefinition.Vertices;
+    private Triangle[] Triangles => MeshDefinition.Triangles;
+    private Vector3[] VertexNormals => MeshDefinition.VertexNormals;
+
+    public Mesh(MeshData meshData, Scene scene)
     {
-        ShadingMode = data.ShadingMode;
-        Material = data.Material;
+        ShadingMode = meshData.ShadingMode;
+        MaterialIndex = meshData.Material;
 
-        var vertexData = scene.Content.VertexData;
-        var faceIndices = data.Faces.Data;
-
-        var uniqueIndices = faceIndices.Distinct().ToArray();
-        Vertices = new Vector3[uniqueIndices.Length];
-
-        // Compute the bounding box
-        Vector3 min = new Vector3(float.MaxValue);
-        Vector3 max = new Vector3(float.MinValue);
-        
-        var vertexMap = new Dictionary<int, int>();
-        for (int i = 0; i < uniqueIndices.Length; i++)
-        {
-            int globalId = uniqueIndices[i];
-            Vertices[i] = vertexData.At(globalId);
-            vertexMap[globalId] = i;
-            
-            min = Vector3.Min(min, Vertices[i]);
-            max = Vector3.Max(max, Vertices[i]);
-        }
-        BoundingBox = new BoundingBox(min, max);
-
-        int triangleCount = faceIndices.Length / 3;
-        Triangles = new Triangle[triangleCount];
-
-        for (int i = 0; i < triangleCount; i++)
-        {
-            int i0 = vertexMap[faceIndices[i * 3]];
-            int i1 = vertexMap[faceIndices[i * 3 + 1]];
-            int i2 = vertexMap[faceIndices[i * 3 + 2]];
-
-            Triangles[i] = new Triangle(
-                i0,
-                i1,
-                i2,
-                Vertices[i0],
-                Vertices[i1],
-                Vertices[i2]
-            );
-        }
-        
-        
-        if (ShadingMode == ShadingMode.Smooth)
-        {
-            ComputeSmoothNormals();
-        }
+        MeshDefinition = new MeshDefinition(meshData, scene.Content.VertexData);
+        BuildBVH();
     }
 
     public Mesh(string plyPath, ShadingMode shadingMode, int material)
     {
         ShadingMode = shadingMode;
-        Material = material;
-        var data = new PlyData(plyPath); // Load the PLY data from the file
-        Triangles = data.triangles;
-        Vertices = data.vertices;
+        MaterialIndex = material;
         
-        // Compute the bounding box
-        Vector3 min = new Vector3(float.MaxValue);
-        Vector3 max = new Vector3(float.MinValue);
-        foreach (var vertex in Vertices)
-        {
-            min = Vector3.Min(min, vertex);
-            max = Vector3.Max(max, vertex);
-        }
-        
-        BoundingBox = new BoundingBox(min, max);
-        
-        if (ShadingMode == ShadingMode.Smooth)
-        {
-            ComputeSmoothNormals();
-        }
+        var data = new PlyData(plyPath);
+        MeshDefinition = new MeshDefinition(data);
+        BuildBVH();
     }
-    
-    private void ComputeSmoothNormals()
+    private void BuildBVH()
     {
-        VertexNormals = new Vector3[Vertices.Length];
-
-        // accumulate area-weighted face normals
-        foreach (var tri in Triangles)
-        {
-            Vector3 n = Vector3.Cross(tri.V1 - tri.V0, tri.V2 - tri.V0);
-
-            VertexNormals[tri.I0] += n;
-            VertexNormals[tri.I1] += n;
-            VertexNormals[tri.I2] += n;
-        }
-
-        for (int i = 0; i < VertexNormals.Length; i++)
-            VertexNormals[i] = Vector3.Normalize(VertexNormals[i]);
+        BVH = new BoundingVolumeHierarchy(MeshDefinition);
+    }
+    public override bool Intersect(in Ray ray, ref IntersectionInfo info)
+    {
+        var hit = BVH.Intersect(in ray, ref info);
+        if (!hit) return false;
+        
+        if (ShadingMode == ShadingMode.Flat) return hit;
+        
+        if (info.PrimitiveIndex < 0 || info.PrimitiveIndex >= Triangles.Length)
+            return hit;
+        
+        var t = Triangles[info.PrimitiveIndex];
+        t.CalculateBarycentricCoordinates(info.Point, out var alpha, out var beta, out var gamma);
+        
+        Vector3 n0 = VertexNormals[t.I0];
+        Vector3 n1 = VertexNormals[t.I1];
+        Vector3 n2 = VertexNormals[t.I2];
+        
+        info.Normal = Vector3.Normalize(alpha * n0 + beta * n1 + gamma * n2);
+        return hit;
     }
 }

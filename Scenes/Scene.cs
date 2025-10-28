@@ -3,7 +3,6 @@ using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content;
 using Raytracer.Scenes.Content.Datas.Camera;
-using Raytracer.Scenes.Content.Datas.Objects;
 using Raytracer.Scenes.Runtime;
 using Raytracer.Scenes.Runtime.Meshes;
 
@@ -13,8 +12,8 @@ public partial class Scene
 {
     [JsonPropertyName("Scene")] public SceneContent Content;
     
-    public List<Mesh> Meshes = [];
-    public List<Sphere> Spheres = [];
+    public List<Geometry> Geometries = [];
+    public List<Plane> Planes = [];
     public Scene() { }
 
     public Scene(SceneContent content)
@@ -27,15 +26,20 @@ public partial class Scene
         foreach (var meshData in Content.Objects.Mesh)
         {
             if (!string.IsNullOrEmpty(meshData.Faces.PlyData))
-                Meshes.Add(new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material));
+                Geometries.Add(new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material));
             else
-                Meshes.Add(new Mesh(meshData, this));
+                Geometries.Add(new Mesh(meshData, this));
         }
         
         foreach (var sphereData in Content.Objects.Sphere)
         {
-            Spheres.Add(new Sphere(sphereData));
-        } 
+            Geometries.Add(new Sphere(sphereData, Content.VertexData));
+        }
+
+        foreach (var planeData in Content.Objects.Plane)
+        {
+            Planes.Add(new Plane(planeData, Content.VertexData));
+        }
     }
     
     public Camera GetCamera(int index)
@@ -47,49 +51,36 @@ public partial class Scene
     public IntersectionInfo Intersect(Ray ray)
     {
         IntersectionInfo closestIntersection = new IntersectionInfo();
-        var triangles = Content.Objects.Triangle;
-        var planes = Content.Objects.Plane;
         IntersectionInfo intersection = IntersectionInfo.NoHit;
-        
-        foreach (var mesh in Meshes)
+
+        foreach (var geometry in Geometries)
         {
             intersection.Reset();
-            if (mesh.Intersect(ray, ref intersection) && (intersection.Distance < closestIntersection.Distance))
+            if (geometry.Intersect(ray, ref intersection) && (intersection.Distance < closestIntersection.Distance))
             {
-                intersection.material = GetMaterial(mesh.Material);
+                intersection.material ??= GetMaterial(geometry.MaterialIndex);
                 closestIntersection = intersection;
-            }
+            } 
         }
         
-        foreach (var sphere in Spheres)
+        foreach (var plane in Planes)
         {
             intersection.Reset();
-            if (sphere.Intersect(ray, Content.VertexData, ref intersection) &&
+            if (plane.Intersect(ray, ref intersection) &&
                 (intersection.Distance < closestIntersection.Distance))
             {
-                intersection.material = GetMaterial(sphere.data.Material);
+                intersection.material = GetMaterial(plane.MaterialIndex);
                 closestIntersection = intersection;
             }
         }
 
-        foreach (var triangle in triangles)
+        foreach (var triangle in Content.Objects.Triangle)
         {
             intersection.Reset();
             if (triangle.Intersect(ray, Content.VertexData, ref intersection) &&
                 (intersection.Distance < closestIntersection.Distance))
             {
                 intersection.material = GetMaterial(triangle.Material);
-                closestIntersection = intersection;
-            }
-        }
-
-        foreach (var plane in planes)
-        {
-            intersection.Reset();
-            if (plane.Intersect(ray, Content.VertexData, ref intersection) &&
-                (intersection.Distance < closestIntersection.Distance))
-            {
-                intersection.material = GetMaterial(plane.Material);
                 closestIntersection = intersection;
             }
         }

@@ -10,17 +10,10 @@ public partial class Scene
     public bool IntersectAny(Ray ray, float maxDistance)
     {
         var intersection = IntersectionInfo.NoHit;
-        
-        foreach (var mesh in Meshes)
+
+        foreach (var geometry in Geometries)
         {
-            if (!mesh.Intersect(ray, ref intersection)) continue;
-            if (intersection.Distance < maxDistance)
-                return true;
-        }
-        
-        foreach (var sphere in Spheres)
-        {
-            if (!sphere.Intersect(ray, Content.VertexData, ref intersection)) continue;
+            if (!geometry.Intersect(ray, ref intersection)) continue;
             if (intersection.Distance < maxDistance)
                 return true;
         }
@@ -31,14 +24,6 @@ public partial class Scene
             if (intersection.Distance < maxDistance)
                 return true;
         }
-        
-        foreach (var plane in Content.Objects.Plane)
-        {
-            if (!plane.Intersect(ray, Content.VertexData, ref intersection)) continue;
-            if (intersection.Distance < maxDistance)
-                return true;
-        }
-
         return false;
     }
 

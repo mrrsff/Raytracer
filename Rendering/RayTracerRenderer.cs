@@ -7,6 +7,7 @@ using Raytracer.Rendering.Shading;
 using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Utility;
+using Debug = Raytracer.Core.Debug;
 
 namespace Raytracer.Rendering;
 
@@ -29,12 +30,41 @@ public class RayTracerRenderer
         Camera = Scene.GetCamera(cameraIndex);
         Camera.InitializeCamera();
 
+        Stopwatch sw = Stopwatch.StartNew();
+        Console.WriteLine($"Rendering started for {Camera.ImageName}... TIME: {DateTime.Now:HH:mm:ss}");
         RenderResult result = new RenderResult(Camera.ImageResolution, Scene.Content.BackgroundColor);
+        result = Debug.UseMultiThreading ? MultithreadRender(Camera, result) : SingleThreadRender(Camera, result);
+        
+        sw.Stop();
+        Console.WriteLine($"\nRendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
+        
+        result.OutputName = Camera.ImageName;
+        return result;
+    }
+    private RenderResult SingleThreadRender(Camera RenderCamera, RenderResult result)
+    {
         int width = result.Width;
         int height = result.Height;
 
-        Stopwatch sw = Stopwatch.StartNew();
-        Console.WriteLine($"Rendering started for {Camera.ImageName}... TIME: {DateTime.Now:HH:mm:ss}");
+
+        for (int j = 0; j < height; j++)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
+                Vector3 color = TraceRay(primaryRay, 0, out _);
+                result.SetPixel(i, j, ColorUtility.Clamp(color));
+            }
+            Console.Write($"\rProgress: {(j + 1) * 100 / height,3}%");
+        }
+
+        
+        return result;
+    }
+    private RenderResult MultithreadRender(Camera RenderCamera, RenderResult result)
+    {
+        int width = result.Width;
+        int height = result.Height;
 
         int totalRows = height;
         int completedRows = 0;
@@ -63,7 +93,7 @@ public class RayTracerRenderer
             Vector3[] rowBuffer = new Vector3[width];
             for (int i = 0; i < width; i++)
             {
-                Ray primaryRay = Camera.GetPrimaryRay(i, j);
+                Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
                 Vector3 color = TraceRay(primaryRay, 0, out _);
                 rowBuffer[i] = ColorUtility.Clamp(color);
             }
@@ -76,14 +106,8 @@ public class RayTracerRenderer
 
         done = true;
         progressTask.Wait();
-
-        sw.Stop();
-        Console.WriteLine($"Rendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
-        
-        result.OutputName = Camera.ImageName;
         return result;
     }
-    
     private Vector3 TraceRay(in Ray ray, in int depth, out float distanceTraveled)
     {
         distanceTraveled = 0;
@@ -94,11 +118,15 @@ public class RayTracerRenderer
         
         if (!hit.Hit)
             return Scene.Content.BackgroundColor;
+
+        // return hit.Normal * 255f;
         
         distanceTraveled = hit.Distance;
         
+        bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
+        if (!entering) hit.Normal = -hit.Normal;
         
-        Vector3 finalColor;
+        Vector3 finalColor = entering ? Shade(hit) : ColorUtility.Magenta;
         
         float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
         
@@ -106,60 +134,54 @@ public class RayTracerRenderer
         Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true);
         Vector3 reflectedColor = TraceRay(reflectedRay, depth + 1, out _);
         
-        if (hit.material.Type == MaterialType.Mirror)
+        switch (hit.material.Type)
         {
-            finalColor = Shade(hit);
-            finalColor += hit.material.MirrorReflectance * reflectedColor;
-        }
-        else if (hit.material.Type == MaterialType.Conductor)
-        {
-            bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
-            if (!entering) hit.Normal = -hit.Normal;
-            
-            finalColor = entering ? Shade(hit) : ColorUtility.Black;
-            var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
-            finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
-        }
-        else if (hit.material.Type == MaterialType.Dielectric)
-        {
-            bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
-            if (!entering) hit.Normal = -hit.Normal;
-         
-            finalColor = entering ? Shade(hit) : ColorUtility.Black;
-            
-            const float airRefractionIndex = 1.00029f;
-            float etai = entering ? airRefractionIndex : hit.material.RefractionIndex;
-            float etat = entering ? hit.material.RefractionIndex : airRefractionIndex;
-            float eta  = etai / etat;
+            case MaterialType.Mirror:
+                finalColor += hit.material.MirrorReflectance * reflectedColor;
+                break;
+            case MaterialType.Conductor:
+            {
+                var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
+                finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
+                break;
+            }
+            case MaterialType.Dielectric:
+            {
+                finalColor = entering ? Shade(hit) : ColorUtility.Black;
+                const float airRefractionIndex = 1.00029f;
+                float etai = entering ? airRefractionIndex : hit.material.RefractionIndex;
+                float etat = entering ? hit.material.RefractionIndex : airRefractionIndex;
+                float eta  = etai / etat;
     
-            // Try to compute refraction
-            if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
-            {
-                Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
-                Vector3 refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
-        
-                if (entering && insideDistance > 0)
+                if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
                 {
-                    refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
-                }
+                    Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
+                    Vector3 refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
         
-                float fresnel = FresnelComputation.ComputeFresnelDielectric(ray.Direction, hit.Normal, etai, etat);
-        
-                finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor + (1f - fresnel) * refractedColor;
-            }
-            else
-            {
-                Vector3 tirColor = TraceRay(reflectedRay, depth + 1, out var traveled);
+                    if (entering && insideDistance > 0)
+                    {
+                        refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
+                    }
 
-                traveled += distanceTraveled;
-                Vector3 absorption = GetAbsorption(hit.material.AbsorptionCoefficient, traveled);
+                    float fresnel = FresnelComputation.ComputeFresnelDielectric(ray.Direction, hit.Normal, etai, etat, cosThetaI);
         
-                finalColor += hit.material.MirrorReflectance * tirColor * absorption;
+                    finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor + (1f - fresnel) * refractedColor;
+                }
+                else
+                {
+                    Vector3 tirColor = TraceRay(reflectedRay, depth + 1, out var traveled);
+
+                    traveled += distanceTraveled;
+                    Vector3 absorption = GetAbsorption(hit.material.AbsorptionCoefficient, traveled);
+        
+                    finalColor += hit.material.MirrorReflectance * tirColor * absorption;
+                }
+
+                break;
             }
-        }
-        else
-        {
-            finalColor = Shade(hit);
+            default:
+                finalColor = Shade(hit);
+                break;
         }
 
         return finalColor;

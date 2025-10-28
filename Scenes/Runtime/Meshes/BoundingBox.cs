@@ -1,57 +1,99 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
+using Raytracer.Rendering.Intersections;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
-public struct BoundingBox(Vector3 min, Vector3 max)
+public class BoundingBox(Vector3 min, Vector3 max) : Geometry
 {
     public Vector3 Min { get; private set; } = min;
     public Vector3 Max { get; private set; } = max;
+    public Vector3 Center { get; private set; } = (min + max) * 0.5f;
 
-    public bool Intersects(Ray ray)
+    public bool Intersects(Ray ray, out float tMin, out float tMax)
     {
-        float tMin = (Min.X - ray.Origin.X) / ray.Direction.X;
-        float tMax = (Max.X - ray.Origin.X) / ray.Direction.X;
+        tMin = float.NegativeInfinity;
+        tMax = float.PositiveInfinity;
 
-        if (tMin > tMax)
+        for (int i = 0; i < 3; i++)
         {
-            (tMin, tMax) = (tMax, tMin);
+            float origin = ray.Origin[i];
+            float direction = ray.Direction[i];
+            float min = Min[i];
+            float max = Max[i];
+
+            if (MathF.Abs(direction) < 1e-8f)
+            {
+                // Ray is parallel to slab; if origin not within slab, no hit
+                if (origin < min || origin > max)
+                    return false;
+                continue;
+            }
+
+            float t1 = (min - origin) / direction;
+            float t2 = (max - origin) / direction;
+
+            if (t1 > t2)
+                (t1, t2) = (t2, t1);
+
+            if (t1 > tMin) tMin = t1;
+            if (t2 < tMax) tMax = t2;
+
+            if (tMin > tMax)
+                return false;
         }
-
-        float tyMin = (Min.Y - ray.Origin.Y) / ray.Direction.Y;
-        float tyMax = (Max.Y - ray.Origin.Y) / ray.Direction.Y;
-
-        if (tyMin > tyMax)
-        {
-            (tyMin, tyMax) = (tyMax, tyMin);
-        }
-
-        if ((tMin > tyMax) || (tyMin > tMax))
-            return false;
-
-        if (tyMin > tMin)
-            tMin = tyMin;
-
-        if (tyMax < tMax)
-            tMax = tyMax;
-
-        float tzMin = (Min.Z - ray.Origin.Z) / ray.Direction.Z;
-        float tzMax = (Max.Z - ray.Origin.Z) / ray.Direction.Z;
-
-        if (tzMin > tzMax)
-        {
-            (tzMin, tzMax) = (tzMax, tzMin);
-        }
-
-        if ((tMin > tzMax) || (tzMin > tMax))
-            return false;
-
-        if (tzMin > tMin)
-            tMin = tzMin;
-
-        if (tzMax < tMax)
-            tMax = tzMax;
 
         return tMax >= MathF.Max(tMin, 0.0f);
+    }
+
+    public override bool Intersect(in Ray ray, ref IntersectionInfo info)
+    {
+        return Intersects(ray, out float tMin, out float tMax);
+    }
+    
+    public bool IntersectEdge(in Ray ray, out float t)
+    {
+        t = 0f;
+        if (!Intersects(ray, out float tMin, out float tMax))
+            return false;
+
+        if (tMin < 0f) tMin = tMax >= 0 ? tMax : 0f;
+
+        Vector3 hit = ray.Origin + tMin * ray.Direction;
+        const float edgeThickness = 1e-3f;
+
+        int nearCount = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            float v = hit[i];
+            if (MathF.Abs(v - Min[i]) < edgeThickness ||
+                MathF.Abs(v - Max[i]) < edgeThickness)
+                nearCount++;
+        }
+
+        if (nearCount >= 2)
+        {
+            t = tMin;
+            return true;
+        }
+
+        // Optional: also check exit point for rays starting inside the box
+        Vector3 exit = ray.Origin + tMax * ray.Direction;
+        nearCount = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            float v = exit[i];
+            if (MathF.Abs(v - Min[i]) < edgeThickness ||
+                MathF.Abs(v - Max[i]) < edgeThickness)
+                nearCount++;
+        }
+
+        if (nearCount >= 2)
+        {
+            t = tMax;
+            return true;
+        }
+
+        return false;
     }
 }

@@ -57,47 +57,4 @@ public static class TriangleIntersection
         info.Normal = normal;
         return true;
     }
-    public static bool IntersectBarycentric(in Ray ray,
-        in Vector3 v0, in Vector3 v1, in Vector3 v2,
-        in Vector3 normal, ref IntersectionInfo info,
-        out float beta, out float gamma)
-    {
-        beta = gamma = 0f;
-        Vector3 o = ray.Origin;
-        Vector3 d = ray.Direction;
-        Vector3 e1 = v1 - v0;
-        Vector3 e2 = v2 - v0;
-
-        if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f)
-            return false;
-
-        Vector3 pvec = Vector3.Cross(d, e2);
-        float det = Vector3.Dot(e1, pvec);
-
-        if (MathF.Abs(det) < RayTracerRenderer.IntersectionTestEpsilon)
-            return false;
-
-        float invDet = 1f / det;
-
-        Vector3 tvec = o - v0;
-        beta = Vector3.Dot(tvec, pvec) * invDet;
-        if (beta < 0f || beta > 1f)
-            return false;
-
-        Vector3 qvec = Vector3.Cross(tvec, e1);
-        gamma = Vector3.Dot(d, qvec) * invDet;
-        if (gamma < 0f || beta + gamma > 1f)
-            return false;
-
-        float t = Vector3.Dot(e2, qvec) * invDet;
-        if (t <= RayTracerRenderer.IntersectionTestEpsilon)
-            return false;
-
-        info.HitRay = ray;
-        info.Hit = true;
-        info.Distance = t;
-        info.Point = o + d * t;
-        info.Normal = normal;
-        return true;
-    }
 }

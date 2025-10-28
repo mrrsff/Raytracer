@@ -32,17 +32,13 @@ public static class Program
         WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";
         
         scene.Initialize();
-        Console.WriteLine("Scene loaded and initialized. Polygon count: " + scene.Meshes.ConvertAll(m => m.Triangles.Length).Sum());
+        Console.WriteLine("Scene loaded and initialized. Primitive count: " + scene.Geometries.ConvertAll(m => m.GetPrimitiveCount()).Sum());
         var renderer = new RayTracerRenderer(scene);
         for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
         {
             var result = renderer.Render(i);
             ImageSaver.SaveImage($"{OutputDirectory}/{result.OutputName}", result);
         }
-
-        // var delta = 50;
-        // var result = renderer.RenderPartition(x - delta, y - delta, x + delta, y + delta);
-        // ImageSaver.SaveImage($"{result.OutputName}", result);
         
         Console.WriteLine("All renderings complete.");
     }
