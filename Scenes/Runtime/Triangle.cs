@@ -17,18 +17,6 @@ public class Triangle : Geometry
     public Vector3 E2; // V2 - V0
 
     public Vector3 Normal;
-
-    public Triangle(int primitiveIndex, Vector3 v0, Vector3 v1, Vector3 v2)
-    {
-        PrimitiveIndex = primitiveIndex;
-        V0 = v0;
-        V1 = v1;
-        V2 = v2;
-        Centroid = (v0 + v1 + v2) / 3f;
-        Normal = Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
-        E1 = v1 - v0;
-        E2 = v2 - v0;
-    }
     
     public Triangle(int primitiveIndex, int i0, int i1, int i2, Vector3 v0, Vector3 v1, Vector3 v2)
     {

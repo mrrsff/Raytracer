@@ -25,7 +25,7 @@ public class PlyData
         {
             var f = faces[i];
             if (f.Length < 3) continue; // Skip invalid faces
-            triangles[i] = new Triangle(i,vertices[f[0]], vertices[f[1]], vertices[f[2]]);
+            triangles[i] = new Triangle(i,f[0], f[1], f[2],vertices[f[0]], vertices[f[1]], vertices[f[2]]);
         }
     }
 }

@@ -156,8 +156,27 @@ namespace Raytracer.IO.Ply
                         case "float":
                         case "float32":
                             float fv = ReadFloat(br, h.Format);
-                            if (name == "x") x = fv; else if (name == "y") y = fv; else if (name == "z") z = fv;
-                            else if (name == "nx") nx = fv; else if (name == "ny") ny = fv; else if (name == "nz") nz = fv;
+                            switch (name)
+                            {
+                                case "x":
+                                    x = fv;
+                                    break;
+                                case "y":
+                                    y = fv;
+                                    break;
+                                case "z":
+                                    z = fv;
+                                    break;
+                                case "nx":
+                                    nx = fv;
+                                    break;
+                                case "ny":
+                                    ny = fv;
+                                    break;
+                                case "nz":
+                                    nz = fv;
+                                    break;
+                            }
                             break;
                         case "double":
                         case "float64":

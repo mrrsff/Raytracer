@@ -21,8 +21,8 @@ public class RayTracerRenderer
     public RayTracerRenderer(Scene scene)
     {
         Scene = scene;
-        IntersectionTestEpsilon = scene.Content.IntersectionTestEpsilon == 0 ? 1e-6f : scene.Content.IntersectionTestEpsilon;
-        ShadowRayEpsilon = scene.Content.ShadowRayEpsilon == 0 ? 1e-3f : scene.Content.ShadowRayEpsilon;
+        IntersectionTestEpsilon = scene.Content.IntersectionTestEpsilon;
+        ShadowRayEpsilon = scene.Content.ShadowRayEpsilon;
     }
     
     public RenderResult Render(int cameraIndex)
@@ -53,7 +53,7 @@ public class RayTracerRenderer
             {
                 Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
                 Vector3 color = TraceRay(primaryRay, 0, out _);
-                result.SetPixel(i, j, ColorUtility.Clamp(color));
+                result.SetPixel(i, j, ColorUtility.Normalize(color));
             }
             Console.Write($"\rProgress: {(j + 1) * 100 / height,3}%");
         }
@@ -95,7 +95,7 @@ public class RayTracerRenderer
             {
                 Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
                 Vector3 color = TraceRay(primaryRay, 0, out _);
-                rowBuffer[i] = ColorUtility.Clamp(color);
+                rowBuffer[i] = ColorUtility.Normalize(color);
             }
 
             for (int i = 0; i < width; i++)
@@ -118,15 +118,20 @@ public class RayTracerRenderer
         
         if (!hit.Hit)
             return Scene.Content.BackgroundColor;
-
-        // return hit.Normal * 255f;
         
         distanceTraveled = hit.Distance;
         
-        bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
-        if (!entering) hit.Normal = -hit.Normal;
+        if (Debug.RenderNormals) return hit.Normal * 255f;
         
-        Vector3 finalColor = entering ? Shade(hit) : ColorUtility.Magenta;
+        Vector3 finalColor = Vector3.Zero;
+        
+        bool entering = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
+        if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor)
+        {
+            if (!entering) hit.Normal = -hit.Normal;
+            finalColor = entering ? Shade(hit) : ColorUtility.Magenta;
+        }
+        else finalColor = Shade(hit);
         
         float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
         
@@ -137,6 +142,7 @@ public class RayTracerRenderer
         switch (hit.material.Type)
         {
             case MaterialType.Mirror:
+                finalColor = Shade(hit);
                 finalColor += hit.material.MirrorReflectance * reflectedColor;
                 break;
             case MaterialType.Conductor:
@@ -147,8 +153,7 @@ public class RayTracerRenderer
             }
             case MaterialType.Dielectric:
             {
-                finalColor = entering ? Shade(hit) : ColorUtility.Black;
-                const float airRefractionIndex = 1.00029f;
+                const float airRefractionIndex = 1f;
                 float etai = entering ? airRefractionIndex : hit.material.RefractionIndex;
                 float etat = entering ? hit.material.RefractionIndex : airRefractionIndex;
                 float eta  = etai / etat;
@@ -192,16 +197,16 @@ public class RayTracerRenderer
         return BlinnPhongShading.Shade(intersection, this);
     }
     
-    private static bool Refract(in Vector3 I, in Vector3 n, in float eta, out Vector3 refractedRay)
+    private static bool Refract(in Vector3 I, in Vector3 n, in float eta, out Vector3 refractedDir)
     {
         float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
         float k = 1f - eta * eta * (1f - cosi * cosi);
         if (k < 0f) // Total Internal Reflection
         {
-            refractedRay = Vector3.Zero;
+            refractedDir = Vector3.Zero;
             return false;
         }
-        refractedRay = Vector3.Normalize(eta * I - (eta * cosi + MathF.Sqrt(k)) * n);
+        refractedDir = Vector3.Normalize(eta * I - (eta * cosi + MathF.Sqrt(k)) * n);
         return true;
     }
     
@@ -225,7 +230,7 @@ public class RayTracerRenderer
             {
                 Ray primaryRay = Camera.GetPrimaryRay(i, j);
                 Vector3 color = TraceRay(primaryRay, 0, out _);
-                color = ColorUtility.Clamp(color);
+                color = ColorUtility.Normalize(color);
                 result.SetPixel(i - minX, j - minY, color);
             }
         }

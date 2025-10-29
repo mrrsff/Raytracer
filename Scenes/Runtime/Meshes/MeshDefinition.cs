@@ -1,6 +1,8 @@
 ﻿using System.Numerics;
+using Raytracer.Rendering;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Objects;
+using Raytracer.Scenes.Runtime.Meshes.BVH;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
@@ -9,7 +11,7 @@ public class MeshDefinition
     public Vector3[] Vertices { get; private set; }
     public Triangle[] Triangles { get; private set; }
     public Vector3[] VertexNormals { get; private set; }
-
+    public BoundingVolumeHierarchy BVH { get; set; }
     public MeshDefinition(in MeshData meshData, in VertexData vertexData)
     {
         var faceIndices = meshData.Faces.Data;
@@ -48,8 +50,8 @@ public class MeshDefinition
 
     public MeshDefinition(in PlyData plyData)
     {
-        Triangles = plyData.triangles;
         Vertices = plyData.vertices;
+        Triangles = plyData.triangles;
         
         ComputeSmoothNormals();
     }
@@ -59,7 +61,6 @@ public class MeshDefinition
         foreach (var tri in Triangles)
         {
             Vector3 n = Vector3.Cross(tri.V1 - tri.V0, tri.V2 - tri.V0);
-
             VertexNormals[tri.I0] += n;
             VertexNormals[tri.I1] += n;
             VertexNormals[tri.I2] += n;
@@ -67,5 +68,7 @@ public class MeshDefinition
 
         for (int i = 0; i < VertexNormals.Length; i++)
             VertexNormals[i] = Vector3.Normalize(VertexNormals[i]);
+        
+        BVH = new BoundingVolumeHierarchy(this);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Raytracer.Core;
+using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 
 namespace Raytracer.Scenes.Runtime;
@@ -15,14 +16,12 @@ public class TriangleGeometry : Geometry
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
         IntersectionInfo closestInfo = IntersectionInfo.NoHit;
-        foreach (var tri in triangles.Span) 
+        foreach (var tri in triangles.Span)
         {
-            if (tri.Intersect(in ray, ref closestInfo))
+            if (!tri.Intersect(in ray, ref closestInfo)) continue;
+            if (closestInfo.Distance < info.Distance)
             {
-                if (closestInfo.Distance < info.Distance)
-                {
-                    info = closestInfo;
-                }
+                info = closestInfo;
             }
         }
         return info.Hit;

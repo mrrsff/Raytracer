@@ -50,7 +50,15 @@ public class Transform
     private Matrix4x4 transformMatrix;
     private Matrix4x4 inverseTransformMatrix;
     
-    
+    public Transform Copy()
+    {
+        return new Transform
+        {
+            Position = Position,
+            Rotation = Rotation,
+            Scale = Scale
+        };
+    }
     public Transform()
     {
         Position = Vector3.Zero;
@@ -58,6 +66,32 @@ public class Transform
         Scale = Vector3.One;
     }
     
-    public Matrix4x4 GetTransformMatrix() => transformMatrix;
-    public Matrix4x4 GetInverseTransformMatrix() => inverseTransformMatrix;
+    public Vector3 ToWorldPoint(Vector3 point)
+    {
+        return Vector3.Transform(point, transformMatrix);
+    }
+    public Vector3 ToLocalPoint(Vector3 point)
+    {
+        return Vector3.Transform(point, inverseTransformMatrix);
+    }
+    public Vector3 ToWorldDirection(Vector3 dir)
+    {
+        return Vector3.Normalize(Vector3.TransformNormal(dir, transformMatrix));
+    }
+    public Vector3 ToLocalDirection(Vector3 dir) 
+    {
+        return Vector3.Normalize(Vector3.TransformNormal(dir, inverseTransformMatrix));
+    }
+    public Ray ToLocalRay(Ray ray)
+    {
+        Vector3 localOrigin = ToLocalPoint(ray.Origin);
+        Vector3 localDirection = ToLocalDirection(ray.Direction);
+        return new Ray(localOrigin, localDirection, ray.IsSecondary);
+    }
+    public Ray ToWorldRay(Ray ray)
+    {
+        Vector3 worldOrigin = ToWorldPoint(ray.Origin);
+        Vector3 worldDirection = ToWorldDirection(ray.Direction);
+        return new Ray(worldOrigin, worldDirection, ray.IsSecondary);
+    }
 }

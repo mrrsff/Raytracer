@@ -25,12 +25,18 @@ public class BVHNode : Geometry
         // visualize the bounding box itself
         if (Debug.ShowBVHBoxes)
         {
-            if (TryRenderBoxIntersection(ray, ref info))
-                return true; // early return for visible boxes
+            var isLeaf = left == null && right == null;
+            if (isLeaf || !Debug.ShowBVHBoxesLeafNodesOnly)
+            {
+                if (TryRenderBoxIntersection(ray, ref info))
+                    return true; // early return for visible boxes
+            }
         }
         
         var leftInfo = IntersectionInfo.NoHit;
+        leftInfo.IntersectionTestEpsilon = info.IntersectionTestEpsilon;
         var rightInfo = IntersectionInfo.NoHit;
+        rightInfo.IntersectionTestEpsilon = info.IntersectionTestEpsilon;
 
         bool? hitLeft = left?.Intersect(ray, ref leftInfo);
         bool? hitRight = right?.Intersect(ray, ref rightInfo);

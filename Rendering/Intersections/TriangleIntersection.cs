@@ -30,8 +30,9 @@ public static class TriangleIntersection
         
         Vector3 pvec = Vector3.Cross(d, e2);
         float det = Vector3.Dot(e1, pvec);
-        
-        if (MathF.Abs(det) < RayTracerRenderer.IntersectionTestEpsilon)
+
+        // Console.WriteLine(RayTracerRenderer.IntersectionTestEpsilon + " " + info.IntersectionTestEpsilon);
+        if (MathF.Abs(det) < info.IntersectionTestEpsilon)
             return false;
         
         float invDet = 1f / det;
@@ -47,7 +48,7 @@ public static class TriangleIntersection
             return false;
         
         float t = Vector3.Dot(e2, qvec) * invDet;
-        if (t <= RayTracerRenderer.IntersectionTestEpsilon)
+        if (t <= info.IntersectionTestEpsilon)
             return false;
 
         info.HitRay = ray;

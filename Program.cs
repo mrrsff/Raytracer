@@ -31,9 +31,11 @@ public static class Program
         var scene = SceneLoader.Load(scenePath);
         WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";
         
+        var renderer = new RayTracerRenderer(scene);
+        
         scene.Initialize();
         Console.WriteLine("Scene loaded and initialized. Primitive count: " + scene.Geometries.ConvertAll(m => m.GetPrimitiveCount()).Sum());
-        var renderer = new RayTracerRenderer(scene);
+        
         for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
         {
             var result = renderer.Render(i);

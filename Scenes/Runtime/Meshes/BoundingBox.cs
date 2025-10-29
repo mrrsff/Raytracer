@@ -60,7 +60,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
         if (tMin < 0f) tMin = tMax >= 0 ? tMax : 0f;
 
         Vector3 hit = ray.Origin + tMin * ray.Direction;
-        const float edgeThickness = 1e-3f;
+        const float edgeThickness = 0.01f;
 
         int nearCount = 0;
         for (int i = 0; i < 3; i++)

@@ -13,6 +13,7 @@ public struct IntersectionInfo()
     public float Distance = float.MaxValue;
     public Vector3 Point = default;
     public Vector3 Normal = default;
+    public float IntersectionTestEpsilon;
 
     public void Reset()
     {

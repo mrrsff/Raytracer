@@ -1,10 +1,12 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Numerics;
+using System.Text.Json.Serialization;
 using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime;
 using Raytracer.Scenes.Runtime.Meshes;
+using Plane = Raytracer.Scenes.Runtime.Plane;
 
 namespace Raytracer.Scenes;
 
@@ -26,9 +28,15 @@ public partial class Scene
         foreach (var meshData in Content.Objects.Mesh)
         {
             if (!string.IsNullOrEmpty(meshData.Faces.PlyData))
-                Geometries.Add(new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material));
+            {
+                var mesh = new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material);
+                Geometries.Add(mesh);
+            }
             else
-                Geometries.Add(new Mesh(meshData, this));
+            {
+                var mesh = new Mesh(meshData, this);
+                Geometries.Add(mesh);
+            }
         }
         
         foreach (var sphereData in Content.Objects.Sphere)
