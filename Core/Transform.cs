@@ -1,71 +1,62 @@
 ﻿using System.Numerics;
+using Raytracer.Utility;
 
 namespace Raytracer.Core;
 
 public class Transform
 {
-    public Vector3 Position
-    {
-        get => _position;
-        set
-        {
-            translationMatrix = Matrix4x4.CreateTranslation(value);
-            transformMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
-            _position = value;
-        }
-    }
-
-    public Quaternion Rotation 
-    { 
-        get => _rotation;
-        set
-        {
-            rotationMatrix = Matrix4x4.CreateFromQuaternion(value);
-            transformMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
-            _rotation = value;
-        }
-    }
-    public Vector3 Scale 
-    { 
-        get => _scale;
-        set
-        {
-            scaleMatrix = Matrix4x4.CreateScale(value);
-            transformMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
-            _scale = value;
-        }
-    }
-    
-    private Vector3 _position;
-    private Quaternion _rotation;
-    private Vector3 _scale;
-    
-    private Matrix4x4 translationMatrix;
-    private Matrix4x4 rotationMatrix;
-    private Matrix4x4 scaleMatrix;
-    
     private Matrix4x4 transformMatrix;
     private Matrix4x4 inverseTransformMatrix;
-    
-    public Transform Copy()
-    {
-        return new Transform
-        {
-            Position = Position,
-            Rotation = Rotation,
-            Scale = Scale
-        };
-    }
+    public Matrix4x4 Matrix => transformMatrix;
+    public Matrix4x4 InverseMatrix => inverseTransformMatrix;
     public Transform()
     {
-        Position = Vector3.Zero;
-        Rotation = Quaternion.Identity;
-        Scale = Vector3.One;
+        transformMatrix = Matrix4x4.Identity;
+        inverseTransformMatrix = Matrix4x4.Identity;
     }
-    
+    public Transform(Matrix4x4 matrix)
+    {
+        transformMatrix = matrix;
+        Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
+    }
+    public void SetMatrix(Matrix4x4 matrix)
+    {
+        transformMatrix = matrix;
+        Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
+    }
+    public void ApplyTranslation(Vector3 translation)
+    {
+        Matrix4x4 translationMat = Matrix4x4.CreateTranslation(translation);
+        transformMatrix *= translationMat;
+        Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
+    }
+
+    public void ApplyRotation(Quaternion rotation)
+    {
+        Matrix4x4 rotationMat = Matrix4x4.CreateFromQuaternion(rotation);
+        transformMatrix *= rotationMat;
+        Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
+    }
+    public void ApplyRotation(Vector4 axisAngle)
+    {
+        Vector3 axis = new Vector3(axisAngle.X, axisAngle.Y, axisAngle.Z);
+        float degrees = axisAngle.W;
+        ApplyRotation(axis, degrees);
+    }
+
+    public void ApplyRotation(Vector3 axis, float degrees)
+    {
+        float radians = degrees * (float)(Math.PI / 180.0);
+        Quaternion q = Quaternion.CreateFromAxisAngle(Vector3.Normalize(axis), radians);
+        ApplyRotation(q);
+    }
+
+    public void ApplyScale(Vector3 scale)
+    {
+        Matrix4x4 scaleMat = Matrix4x4.CreateScale(scale);
+        transformMatrix *= scaleMat;
+        Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
+    }
     public Vector3 ToWorldPoint(Vector3 point)
     {
         return Vector3.Transform(point, transformMatrix);
@@ -76,22 +67,31 @@ public class Transform
     }
     public Vector3 ToWorldDirection(Vector3 dir)
     {
-        return Vector3.Normalize(Vector3.TransformNormal(dir, transformMatrix));
+        Matrix4x4 invT = Matrix4x4.Transpose(inverseTransformMatrix);
+        return Vector3.Normalize(Vector3.TransformNormal(dir, invT));
     }
-    public Vector3 ToLocalDirection(Vector3 dir) 
+    public Vector3 ToLocalDirection(Vector3 dir)
     {
         return Vector3.Normalize(Vector3.TransformNormal(dir, inverseTransformMatrix));
     }
     public Ray ToLocalRay(Ray ray)
     {
-        Vector3 localOrigin = ToLocalPoint(ray.Origin);
-        Vector3 localDirection = ToLocalDirection(ray.Direction);
-        return new Ray(localOrigin, localDirection, ray.IsSecondary);
+        Vector3 o = ToLocalPoint(ray.Origin);
+        Vector3 d = ToLocalDirection(ray.Direction);
+        return new Ray(o, d, ray.IsSecondary);
     }
     public Ray ToWorldRay(Ray ray)
     {
-        Vector3 worldOrigin = ToWorldPoint(ray.Origin);
-        Vector3 worldDirection = ToWorldDirection(ray.Direction);
-        return new Ray(worldOrigin, worldDirection, ray.IsSecondary);
+        Vector3 o = ToWorldPoint(ray.Origin);
+        Vector3 d = ToWorldDirection(ray.Direction);
+        return new Ray(o, d, ray.IsSecondary);
+    }
+    public Transform Copy()
+    {
+        return new Transform(transformMatrix);
+    }
+    public override string ToString()
+    {
+        return transformMatrix.ToString();
     }
 }

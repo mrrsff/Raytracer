@@ -60,7 +60,6 @@ public class BVHNode : Geometry
         info.Point = ray.Origin + ray.Direction * t;
         info.Normal = Vector3.Normalize(info.Point - boundingBox.Center);
         info.Hit = true;
-        info.HitRay = ray;
         info.material = Debug.DebugMaterial;
         return true;
     }

@@ -24,6 +24,8 @@ public class Camera
     public int NumSamples = 1;
     public Resolution ImageResolution;
     public string ImageName;
+    public string Transformations;
+    public Transform Transform = new Transform();
 
     public override string ToString()
     {
@@ -51,13 +53,16 @@ public class Camera
     public void InitializeCamera()
     {
         if (Type == CameraType.LookAt)
-        {
-            float aspect = (float)ImageResolution.Width / ImageResolution.Height;
-            float halfHeight = MathF.Tan(FovY * 0.5f * MathF.PI / 180f) * NearDistance;
-            float halfWidth = aspect * halfHeight;
-            NearPlane = new Rect(-halfWidth, halfWidth, -halfHeight, halfHeight);
+        { 
             Gaze = Vector3.Normalize(GazePoint - Position);
+        
+            float aspect = (float)ImageResolution.Width / ImageResolution.Height;
+            NearPlane.Top = NearDistance * MathF.Tan(FovY * MathF.PI / 360.0f);
+            NearPlane.Bottom = -NearPlane.Top;
+            NearPlane.Right = aspect * NearPlane.Top;
+            NearPlane.Left = -NearPlane.Right;
         }
+        
         var w = Vector3.Normalize(-Gaze);
         var v = Vector3.Normalize(Up - Vector3.Dot(Up, w) * w);
         var u = Vector3.Cross(v, w);

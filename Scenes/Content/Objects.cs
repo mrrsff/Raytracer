@@ -16,6 +16,9 @@ public struct Objects
 
     [JsonConverter(typeof(SingleOrListConverter<MeshData>))]
     public List<MeshData> Mesh = new();
+    
+    [JsonConverter(typeof(SingleOrListConverter<MeshInstance>))]
+    public List<MeshInstance> MeshInstance = new();
 
     [JsonConverter(typeof(SingleOrListConverter<PlaneData>))]
     public List<PlaneData> Plane = new();

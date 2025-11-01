@@ -24,7 +24,7 @@ public static class SceneLoader
                 new FloatConverter(),
                 new IntConverter(),
                 new IntArrayConverter(),
-                new FloatArrayConverter()
+                new FloatArrayConverter(),
             }
         };
 

@@ -10,14 +10,10 @@ public struct PlaneData
     public int Material;
     public int Point;
     public Vector3 Normal;
+    public string Transformations;
 
     public override string ToString()
     {
-        return new StringBuilder()
-            .AppendLine($"Plane ID: {Id}")
-            .AppendLine($"Material ID: {Material}")
-            .AppendLine($"Point: {Point}")
-            .AppendLine($"Normal: {Normal}")
-            .ToString();
+        return $"Plane (ID: {Id}) - Point Vertex Index: {Point}, Normal: {Normal}, Material Index: {Material} Transformations: {Transformations}";
     }
 }

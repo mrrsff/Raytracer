@@ -4,11 +4,14 @@ using System.Text.Json.Serialization;
 
 namespace Raytracer.Core;
 
-public struct PointLight
+public class PointLight
 {
     [JsonPropertyName("_id")] public int Id;
+    public string Transformations;
     public Vector3 Position;
     public Vector3 Intensity;
+
+    public Transform Transform;
 
     public override string ToString()
     {

@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
 
@@ -48,7 +49,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
 
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
-        return Intersects(ray, out float tMin, out float tMax);
+        return Intersects(ray, out _, out _);
     }
     
     public bool IntersectEdge(in Ray ray, out float t)

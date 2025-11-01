@@ -24,9 +24,7 @@ public static class Program
         {
             throw new FileNotFoundException("Scene file not found: " + scenePath);
         }
-
-        var x = 896;
-        var y = 561;
+        
         AssureOutputDirectory();
         var scene = SceneLoader.Load(scenePath);
         WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";

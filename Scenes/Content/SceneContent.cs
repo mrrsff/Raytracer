@@ -17,6 +17,7 @@ public class SceneContent
     public int MaxRecursionDepth = 1;
     public Objects Objects;
     public float ShadowRayEpsilon = 1e-3f;
+    public Transformations Transformations;
     public VertexData VertexData;
 
     public override string ToString()
@@ -29,6 +30,7 @@ public class SceneContent
         sb.AppendLine(Cameras.ToString());
         sb.AppendLine(Lights.ToString());
         sb.AppendLine(Materials.ToString());
+        sb.AppendLine(Transformations.ToString());
         sb.AppendLine(VertexData.ToString());
         sb.AppendLine(Objects.ToString());
         return sb.ToString();

@@ -12,6 +12,7 @@ public class Mesh : Geometry
     public Transform Transform { get; set; }
     public MeshDefinition MeshDefinition { get; set; }
     public ShadingMode ShadingMode { get; set; }
+    public BoundingBox AABB { get; set; }
 
     public override int GetPrimitiveCount() => MeshDefinition.Triangles.Length;
 
@@ -21,6 +22,7 @@ public class Mesh : Geometry
         MaterialIndex = meshData.Material;
 
         MeshDefinition = new MeshDefinition(meshData, scene.Content.VertexData);
+        Transform = new Transform();
         Initialize();
     }
 
@@ -31,18 +33,21 @@ public class Mesh : Geometry
         
         var data = new PlyData(plyPath);
         MeshDefinition = new MeshDefinition(data);
+        Transform = new Transform();
         Initialize();
     }
-    public Mesh(Mesh other)
+
+    public Mesh(Mesh originalMesh, Transform newTransform)
     {
-        Transform = other.Transform.Copy();
-        MeshDefinition = other.MeshDefinition;
-        ShadingMode = other.ShadingMode;
-        MaterialIndex = other.MaterialIndex;
+        ShadingMode = originalMesh.ShadingMode;
+        MaterialIndex = originalMesh.MaterialIndex;
+
+        MeshDefinition = originalMesh.MeshDefinition;
+        Transform = newTransform;
+        Initialize();
     }
     private void Initialize()
     {
-        Transform = new Transform();
     }
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
@@ -53,9 +58,12 @@ public class Mesh : Geometry
         if (!hit) return false;
 
         var localHitPoint = info.Point;
-
+        
         info.Point = Transform.ToWorldPoint(localHitPoint);
         info.Normal = Transform.ToWorldDirection(info.Normal);
+        
+        if (info.Normal.LengthSquared() < 1e-12f)
+            return false; // invalid hit
         
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
         

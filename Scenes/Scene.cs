@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content;
@@ -25,28 +24,57 @@ public partial class Scene
     
     public void Initialize()
     {
+        foreach (var pLight in Content.Lights.PointLight)
+        {
+            if (pLight.Transformations != null)
+            {
+                Content.Transformations.ApplyTransformations(pLight.Transform, pLight.Transformations);
+            }
+        }
+        foreach (var camera in Content.Cameras.Camera)
+        {
+            if (camera.Transformations != null)
+                Content.Transformations.ApplyTransformations(camera.Transform, camera.Transformations);
+        }
+        var originalMeshes = new Dictionary<int, Mesh>();
         foreach (var meshData in Content.Objects.Mesh)
         {
-            if (!string.IsNullOrEmpty(meshData.Faces.PlyData))
-            {
-                var mesh = new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material);
-                Geometries.Add(mesh);
-            }
-            else
-            {
-                var mesh = new Mesh(meshData, this);
-                Geometries.Add(mesh);
-            }
+            var mesh = !string.IsNullOrEmpty(meshData.Faces.PlyData)
+                ? new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material)
+                : new Mesh(meshData, this);
+            if (meshData.Transformations != null)
+                Content.Transformations.ApplyTransformations(mesh.Transform, meshData.Transformations);
+            Geometries.Add(mesh);
+            originalMeshes.Add(meshData.Id, mesh);
+        }
+        foreach (var meshInstance in Content.Objects.MeshInstance)
+        {
+            if (!originalMeshes.TryGetValue(meshInstance.BaseMeshId, out var mesh)) continue;
+            
+            var transform = meshInstance.ResetTransform ? new Transform() : mesh.Transform.Copy();
+            if (meshInstance.Transformations != null) 
+                Content.Transformations.ApplyTransformations(transform, meshInstance.Transformations);
+            var instancedMesh = new Mesh(mesh, transform);
+            instancedMesh.MaterialIndex = meshInstance.Material != -1 ? meshInstance.Material : mesh.MaterialIndex;
+            Geometries.Add(instancedMesh);
+            originalMeshes.Add(meshInstance.Id, instancedMesh);
         }
         
         foreach (var sphereData in Content.Objects.Sphere)
         {
-            Geometries.Add(new Sphere(sphereData, Content.VertexData));
+            var sphere = new Sphere(sphereData, Content.VertexData);
+            if (sphereData.Transformations != null)
+                Content.Transformations.ApplyTransformations(sphere.Transform, sphereData.Transformations);
+            Geometries.Add(sphere);
         }
 
         foreach (var planeData in Content.Objects.Plane)
         {
-            Planes.Add(new Plane(planeData, Content.VertexData));
+            var plane = new Plane(planeData, Content.VertexData);
+            if (planeData.Transformations != null)
+                Content.Transformations.ApplyTransformations(plane.Transform, planeData.Transformations);
+
+            Planes.Add(plane);
         }
     }
     
@@ -92,6 +120,9 @@ public partial class Scene
                 closestIntersection = intersection;
             }
         }
+        
+        closestIntersection.RayOrigin = ray.Origin;
+        closestIntersection.RayDirection = ray.Direction;
         
         return closestIntersection;
     }

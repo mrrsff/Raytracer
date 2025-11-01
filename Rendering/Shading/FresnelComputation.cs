@@ -23,7 +23,7 @@ public static class FresnelComputation
         return 0.5f * (Rs + Rp);
     }
     
-    public static float ComputeFresnelDielectric(Vector3 I, Vector3 n, float etai, float etat, float cosThetaI)
+    public static float ComputeFresnelDielectric(float etai, float etat, float cosThetaI)
     {
         float cosi = Math.Clamp(cosThetaI, -1f, 1f);
         float sint = (etai / etat) * MathF.Sqrt(MathF.Max(0f, 1f - cosi * cosi));

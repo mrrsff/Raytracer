@@ -1,49 +1,68 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
+using Debug = Raytracer.Core.Debug;
 
 namespace Raytracer.Scenes.Runtime.Meshes.BVH;
 
 public static class BVHBuilder
 {
-    private static int minTrianglesPerNode = 2;
-    private static int maxRecursionDepth = 20;
-    public static BVHNode Build(MeshDefinition meshDefinition)
+    public static BVHNodeFlat[] Build(MeshDefinition meshDefinition)
     {
-        Stopwatch stopwatch = Stopwatch.StartNew();
         var triangles = meshDefinition.Triangles;
-        var root = BuildRecursive(ref triangles, 0, triangles.Length);
-        stopwatch.Stop();
-        Console.WriteLine($"BVH built in {stopwatch.ElapsedMilliseconds} ms");
-        return root;
+        int triangleCount = triangles.Length;
+
+        // adaptive params
+        int minTris = triangleCount < 10_000 ? 32 :
+            triangleCount < 100_000 ? 16 : 
+            triangleCount < 1000_000 ? 8 : 4;
+        int maxDepth = triangleCount < 10_000 ? 12 :
+            triangleCount < 100_000 ? 16 :
+            triangleCount < 1000_000 ? 20 : 24;
+
+        var nodes = new List<BVHNodeFlat>(triangleCount * 2);
+        Stopwatch sw = Stopwatch.StartNew();
+        BuildRecursive(ref triangles, 0, triangleCount, 0, minTris, maxDepth, nodes);
+        sw.Stop();
+        if (Debug.DebugBVHBuildTime) Console.WriteLine($"BVH built in {sw.ElapsedMilliseconds} ms with {nodes.Count} nodes for {triangleCount} triangles.");
+        return nodes.ToArray();
     }
-    private static BVHNode BuildRecursive(ref Triangle[] triangles, int start, int end, int depth = 0)
+
+    private static int BuildRecursive(ref Triangle[] tris, int start, int end, int depth,
+        int minTris, int maxDepth, List<BVHNodeFlat> nodes)
     {
-        int triangleCount = end - start;
-        if (triangleCount <= minTrianglesPerNode || depth >= maxRecursionDepth)
+        int nodeIndex = nodes.Count;
+
+        var bbox = ComputeBoundingBox(tris, start, end);
+        BVHNodeFlat node = new BVHNodeFlat
         {
-            var leafBox = ComputeBoundingBox(triangles, start, end);
-            var leafNode = new BVHNode(new TriangleGeometry(triangles, start, end), null, leafBox);
-            return leafNode;
-        }
+            Bounds = bbox,
+            Start = start,
+            End = end,
+            LeftChild = -1,
+            RightChild = -1
+        };
+        nodes.Add(node);
 
-        var boundingBox = ComputeBoundingBox(triangles, start, end);
-        int axis = boundingBox.LargestAxis();
-        float splitPosition = boundingBox.Center[axis];
+        int triCount = end - start;
+        if (triCount <= minTris || depth >= maxDepth)
+            return nodeIndex;
 
-        int mid = PartitionTriangles(ref triangles, start, end, axis, splitPosition);
-
+        int axis = bbox.LargestAxis();
+        float split = bbox.Center[axis];
+        int mid = PartitionTriangles(ref tris, start, end, axis, split);
         if (mid == start || mid == end)
-        {
             mid = start + (end - start) / 2;
-        }
 
-        var leftNode = BuildRecursive(ref triangles, start, mid, depth + 1);
-        var rightNode = BuildRecursive(ref triangles, mid, end, depth + 1);
+        int left = BuildRecursive(ref tris, start, mid, depth + 1, minTris, maxDepth, nodes);
+        int right = BuildRecursive(ref tris, mid, end, depth + 1, minTris, maxDepth, nodes);
 
-        var nodeBox = ComputeBoundingBox(triangles, start, end);
-        return new BVHNode(leftNode, rightNode, nodeBox);
+        BVHNodeFlat updated = nodes[nodeIndex];
+        updated.LeftChild = left;
+        updated.RightChild = right;
+        nodes[nodeIndex] = updated;
+
+        return nodeIndex;
     }
-    
     private static BoundingBox ComputeBoundingBox(Triangle[] triangles, int start, int end)
     {
         Vector3 min = new Vector3(float.MaxValue);
@@ -58,7 +77,6 @@ public static class BVHBuilder
 
         return new BoundingBox(min, max);
     }
-    
     private static int PartitionTriangles(ref Triangle[] triangles, int start, int end, int axis, float splitPosition)
     {
         int i = start;
@@ -66,10 +84,8 @@ public static class BVHBuilder
 
         while (i <= j)
         {
-            while (i <= j && triangles[i].Centroid[axis] < splitPosition)
-                i++;
-            while (i <= j && triangles[j].Centroid[axis] >= splitPosition)
-                j--;
+            while (i <= j && triangles[i].Centroid[axis] < splitPosition) i++;
+            while (i <= j && triangles[j].Centroid[axis] >= splitPosition) j--;
 
             if (i >= j) continue;
             (triangles[i], triangles[j]) = (triangles[j], triangles[i]);
@@ -79,13 +95,12 @@ public static class BVHBuilder
 
         return i;
     }
+
     private static int LargestAxis(this BoundingBox box)
     {
         Vector3 size = box.Max - box.Min;
-        if (size.X > size.Y && size.X > size.Z)
-            return 0;
-        if (size.Y > size.Z)
-            return 1;
+        if (size.X > size.Y && size.X > size.Z) return 0;
+        if (size.Y > size.Z) return 1;
         return 2;
     }
 }

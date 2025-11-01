@@ -13,6 +13,7 @@ public struct MeshData
     [JsonPropertyName("_id")] public int Id;
     [JsonPropertyName("_shadingMode")] public ShadingMode ShadingMode;
     public int Material;
+    public string Transformations;
     public FacesData Faces;
     
 
@@ -22,6 +23,10 @@ public struct MeshData
             .Append(Id)
             .Append(", Material Id: ")
             .Append(Material)
+            .Append(", Shading Mode: ")
+            .Append(ShadingMode)
+            .Append(", Transformations: ")
+            .Append(Transformations)
             .Append(", Vertex Indices: [")
             .Append(Faces)
             .Append("])")

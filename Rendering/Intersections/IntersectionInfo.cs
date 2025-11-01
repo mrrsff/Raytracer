@@ -6,7 +6,8 @@ namespace Raytracer.Rendering.Intersections;
 
 public struct IntersectionInfo()
 {
-    public Ray HitRay = default;
+    public Vector3 RayOrigin;
+    public Vector3 RayDirection;
     public Material? material = null;
     public int PrimitiveIndex = -1;
     public bool Hit = false;
@@ -17,7 +18,8 @@ public struct IntersectionInfo()
 
     public void Reset()
     {
-        HitRay = default;
+        RayOrigin = default;
+        RayDirection = default;
         material = null;
         PrimitiveIndex = -1;
         Hit = false;

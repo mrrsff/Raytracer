@@ -25,14 +25,13 @@ public static class TriangleIntersection
         Vector3 e1 = v1 - v0;
         Vector3 e2 = v2 - v0;
         
-        if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f)
+        if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f) // Backface culling for primary rays
             return false;
         
         Vector3 pvec = Vector3.Cross(d, e2);
         float det = Vector3.Dot(e1, pvec);
 
-        // Console.WriteLine(RayTracerRenderer.IntersectionTestEpsilon + " " + info.IntersectionTestEpsilon);
-        if (MathF.Abs(det) < info.IntersectionTestEpsilon)
+        if (MathF.Abs(det) < info.IntersectionTestEpsilon) // Ray is parallel to triangle plane
             return false;
         
         float invDet = 1f / det;
@@ -48,10 +47,9 @@ public static class TriangleIntersection
             return false;
         
         float t = Vector3.Dot(e2, qvec) * invDet;
-        if (t <= info.IntersectionTestEpsilon)
+        if (t <= info.IntersectionTestEpsilon) // Intersection is behind the ray origin
             return false;
 
-        info.HitRay = ray;
         info.Hit = true;
         info.Distance = t;
         info.Point = o + d * t;

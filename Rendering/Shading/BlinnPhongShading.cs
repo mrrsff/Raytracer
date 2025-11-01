@@ -13,10 +13,10 @@ public static class BlinnPhongShading
         var point = intersection.Point;
         var normal = intersection.Normal;
         
-        Vector3 ambient = intersection.material.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
+        Vector3 ambient = intersection.material!.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
         Vector3 diffuse = Vector3.Zero;
         Vector3 specular = Vector3.Zero;
-        Vector3 viewDir = Vector3.Normalize(intersection.HitRay.Origin - point);
+        Vector3 viewDir = Vector3.Normalize(intersection.RayOrigin - point);
 
         foreach (var light in renderer.Scene.Content.Lights.PointLight)
         {

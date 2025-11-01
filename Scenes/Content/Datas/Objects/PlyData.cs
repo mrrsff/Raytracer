@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Raytracer.Core;
 using Raytracer.IO.Ply;
 using Raytracer.IO.SceneLoaders;
 using Raytracer.Scenes.Runtime;
@@ -14,7 +15,7 @@ public class PlyData
     {
         // NOT WORKING
         (vertices, faces) = PlyImporter.Parse(filePath);
-        Console.WriteLine($"Loaded PLY: {filePath} with {vertices.Length} vertices and {faces.Length} faces.");
+        if (Debug.DebugPLYLoading) Console.WriteLine($"Loaded PLY: {filePath} with {vertices.Length} vertices and {faces.Length} faces.");
         InitializeTriangles();
     }
     

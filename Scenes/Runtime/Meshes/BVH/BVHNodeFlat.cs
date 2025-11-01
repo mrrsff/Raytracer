@@ -1,0 +1,11 @@
+﻿namespace Raytracer.Scenes.Runtime.Meshes.BVH;
+
+public struct BVHNodeFlat
+{
+    public BoundingBox Bounds;
+    public int LeftChild;   // index in array, or -1 if leaf
+    public int RightChild;  // index in array, or -1 if leaf
+    public int Start;       // range start in triangle array
+    public int End;         // range end in triangle array
+    public bool IsLeaf => LeftChild == -1;
+}

@@ -7,8 +7,8 @@ FLAGS = --property WarningLevel=0 /p:Optimize=true
 
 MAKEFLAGS += --no-print-directory
 
-INPUTS_FOLDER = hw1\inputs
-OUTPUTS_FOLDER = hw1\outputs
+INPUTS_FOLDER = hw2\inputs
+OUTPUTS_FOLDER = hw2\outputs
 ARGS = spheres.json
 
 all: linux
@@ -26,8 +26,8 @@ single:
 compare: fastrun
 	@py imageCompare.py .\$(OUTPUTS_FOLDER)\$(ARGS:.json=.png) .\Outputs\$(ARGS:.json=.png)
 
-run-single:
-	@.\$(TARGET).exe $(ARGS) 
+run:
+	@$(PUBLISH_DIR)\$(TARGET).exe $(ARGS)
 
 linux:
 	@$(DOTNET) publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:AssemblyName=$(TARGET) $(FLAGS)
