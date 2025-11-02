@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
@@ -32,6 +33,7 @@ public class Triangle : Geometry
         E2 = v2 - v0;
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
         var hit = TriangleIntersection.Intersect(ray, V0, V1, V2, Normal, ref info);
@@ -39,6 +41,7 @@ public class Triangle : Geometry
         return hit;
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CalculateBarycentricCoordinates(in Vector3 point, out float alpha, out float beta, out float gamma)
     {
         Vector3 v0 = E1;               // edge1 = V1 - V0

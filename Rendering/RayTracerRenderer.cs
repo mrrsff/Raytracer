@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering.Intersections;
@@ -33,12 +35,84 @@ public class RayTracerRenderer
         Stopwatch sw = Stopwatch.StartNew();
         Console.WriteLine($"Rendering started for {Camera.ImageName}... TIME: {DateTime.Now:HH:mm:ss}");
         RenderResult result = new RenderResult(Camera.ImageResolution, Scene.Content.BackgroundColor);
-        result = Debug.UseMultiThreading ? MultithreadRender(Camera, result) : SingleThreadRender(Camera, result);
+        result = Debug.UseDynamicThreading
+            ? DynamicThreadPoolRender(Camera, result)
+            : (Debug.UseMultiThreading ? MultithreadRender(Camera, result) : SingleThreadRender(Camera, result));
+
         
         sw.Stop();
         Console.WriteLine($"\nRendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
         
         result.OutputName = Camera.ImageName;
+        return result;
+    }
+    private RenderResult DynamicThreadPoolRender(Camera renderCamera, RenderResult result)
+    {
+        int width = result.Width;
+        int height = result.Height;
+
+        int totalRows = height;
+        int completedRows = 0;
+        bool done = false;
+        const int timesPerSecond = 5;
+        const int interval = 1000 / timesPerSecond;
+
+        Task progressTask = Task.Run(() =>
+        {
+            int lastPercent = -1;
+            while (!done)
+            {
+                int percent = (int)(Volatile.Read(ref completedRows) * 100.0 / totalRows);
+                if (percent != lastPercent)
+                {
+                    lastPercent = percent;
+                    Console.Write($"\rProgress: {percent,3}%");
+                }
+                Thread.Sleep(interval);
+            }
+            Console.Write("\rProgress: 100%\n");
+        });
+
+        // Dynamic worker thread count
+        int maxThreads = Environment.ProcessorCount;
+        int minThreads = Math.Max(2, maxThreads / 2);
+        int activeThreads = minThreads;
+
+        var queue = new ConcurrentQueue<int>(Enumerable.Range(0, height));
+        var tasks = new List<Task>();
+
+        for (int t = 0; t < activeThreads; t++)
+        {
+            tasks.Add(Task.Run(() =>
+            {
+                while (queue.TryDequeue(out int j))
+                {
+                    Vector3[] rowBuffer = new Vector3[width];
+                    for (int i = 0; i < width; i++)
+                    {
+                        Ray primaryRay = renderCamera.GetPrimaryRay(i, j);
+                        Vector3 color = Debug.UseIterativeTracing ? TraceRayIterative(primaryRay) : TraceRay(primaryRay, 0, out _);
+                        rowBuffer[i] = ColorUtility.Normalize(color);
+                    }
+
+                    for (int i = 0; i < width; i++)
+                        result.SetPixel(i, j, rowBuffer[i]);
+
+                    Interlocked.Increment(ref completedRows);
+
+                    // Adaptive expansion logic
+                    if (completedRows % (height / 10) == 0 && activeThreads < maxThreads)
+                    {
+                        Interlocked.Increment(ref activeThreads);
+                        queue.Enqueue(j + 1);
+                    }
+                }
+            }));
+        }
+
+        Task.WaitAll(tasks.ToArray());
+        done = true;
+        progressTask.Wait();
         return result;
     }
     private RenderResult SingleThreadRender(Camera RenderCamera, RenderResult result)
@@ -94,7 +168,7 @@ public class RayTracerRenderer
             for (int i = 0; i < width; i++)
             {
                 Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
-                Vector3 color = TraceRay(primaryRay, 0, out _);
+                Vector3 color = Debug.UseIterativeTracing ? TraceRayIterative(primaryRay) : TraceRay(primaryRay, 0, out _);
                 rowBuffer[i] = ColorUtility.Normalize(color);
             }
 
@@ -188,12 +262,113 @@ public class RayTracerRenderer
 
         return finalColor;
     }
-    
+    private Vector3 TraceRayIterative(in Ray primaryRay)
+    {
+        Vector3 finalColor = Vector3.Zero;
+
+        // Stack for rays to process
+        Stack<(Ray ray, int depth, Vector3 weight)> rayStack = new();
+        rayStack.Push((primaryRay, 0, Vector3.One));
+
+        while (rayStack.Count > 0)
+        {
+            var (ray, depth, weight) = rayStack.Pop();
+            if (depth > Scene.Content.MaxRecursionDepth)
+                continue;
+
+            IntersectionInfo hit = Scene.Intersect(ray);
+            if (!hit.Hit)
+            {
+                // add background scaled by current weight
+                finalColor += Scene.Content.BackgroundColor * weight;
+                continue;
+            }
+
+            if (Debug.RenderNormals)
+            {
+                finalColor += hit.Normal * 255f * weight;
+                continue;
+            }
+            bool inFront = true;
+            if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor)
+            {
+                inFront = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
+                if (!inFront) hit.Normal = -hit.Normal;
+            }
+
+            // Local shading
+            Vector3 localColor = Shade(hit) * weight;
+
+            // Reflection ray
+            Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, hit.Normal));
+            Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true);
+
+            float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
+
+            switch (hit.material?.Type)
+            {
+                case MaterialType.Mirror:
+                {
+                    finalColor += localColor;
+                    Vector3 newWeight = hit.material.MirrorReflectance * weight;
+                    rayStack.Push((reflectedRay, depth + 1, newWeight));
+                    break;
+                }
+
+                case MaterialType.Conductor:
+                {
+                    var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
+                    finalColor += localColor;
+                    Vector3 newWeight = fresnel * hit.material.MirrorReflectance * weight;
+                    rayStack.Push((reflectedRay, depth + 1, newWeight));
+                    break;
+                }
+
+                case MaterialType.Dielectric:
+                {
+                    const float airRefIndex = 1f;
+                    float etai = inFront ? airRefIndex : hit.material.RefractionIndex;
+                    float etat = inFront ? hit.material.RefractionIndex : airRefIndex;
+                    float eta = etai / etat;
+
+                    if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
+                    {
+                        Ray refrRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
+                        float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
+
+                        // push refraction and reflection with weighted contributions
+                        Vector3 reflectedWeight = fresnel * weight;
+                        Vector3 refractedWeight = (1f - fresnel) * weight;
+
+                        rayStack.Push((reflectedRay, depth + 1, reflectedWeight));
+                        rayStack.Push((refrRay, depth + 1, refractedWeight));
+                    }
+                    else
+                    {
+                        // total internal reflection
+                        Vector3 tirWeight = weight * hit.material.MirrorReflectance;
+                        rayStack.Push((reflectedRay, depth + 1, tirWeight));
+                    }
+
+                    finalColor += localColor;
+                    break;
+                }
+
+                default:
+                    finalColor += localColor;
+                    break;
+            }
+        }
+
+        return finalColor;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Vector3 Shade(in IntersectionInfo intersection)
     {
         return BlinnPhongShading.Shade(intersection, this);
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool Refract(in Vector3 I, in Vector3 n, in float eta, out Vector3 refractedDir)
     {
         float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
@@ -207,6 +382,7 @@ public class RayTracerRenderer
         return true;
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector3 GetAbsorption(in Vector3 absorptionCoefficient, in float distance)
     {
         return new Vector3(
@@ -251,7 +427,7 @@ public class RayTracerRenderer
             for (int i = 0; i < lowResWidth; i++)
             {
                 Ray primaryRay = Camera.GetPrimaryRay(i * factor, j * factor);
-                Vector3 color = TraceRay(primaryRay, 0, out _);
+                Vector3 color = Debug.UseIterativeTracing ? TraceRayIterative(primaryRay) : TraceRay(primaryRay, 0, out _);
                 rowBuffer[i] = ColorUtility.Normalize(color);
             }
 

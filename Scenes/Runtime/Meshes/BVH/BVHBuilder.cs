@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Debug = Raytracer.Core.Debug;
 
 namespace Raytracer.Scenes.Runtime.Meshes.BVH;
@@ -96,6 +97,7 @@ public static class BVHBuilder
         return i;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int LargestAxis(this BoundingBox box)
     {
         Vector3 size = box.Max - box.Min;

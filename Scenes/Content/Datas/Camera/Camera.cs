@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
@@ -84,6 +85,8 @@ public class Camera
     private Vector3 q;
     private float sUMultiplier;
     private float sVMultiplier;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ray GetPrimaryRay(int i, int j)
     {
         float sU = (i + 0.5f) * sUMultiplier;
