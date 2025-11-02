@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Scenes.Content.Datas.Objects;
 
@@ -16,6 +17,7 @@ public struct IntersectionInfo()
     public Vector3 Normal = default;
     public float IntersectionTestEpsilon;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
         RayOrigin = default;

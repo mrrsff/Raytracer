@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
@@ -27,6 +28,7 @@ public partial class Scene
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsOccluded(in Vector3 point, in Vector3 lightPos, in Vector3 normal)
     {
         var dir = Vector3.Normalize(lightPos - point);

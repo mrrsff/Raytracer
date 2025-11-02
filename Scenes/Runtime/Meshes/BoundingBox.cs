@@ -47,6 +47,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
         return tMax >= MathF.Max(tMin, 0.0f);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
         return Intersects(ray, out _, out _);

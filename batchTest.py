@@ -18,6 +18,7 @@ def main():
 
     target = sys.argv[1]
 
+    os.system('make fast')  # Ensure the program is compiled
     # If single file instead of directory
     if not os.path.isdir(target):
         json_file = target
@@ -30,6 +31,7 @@ def main():
     if not json_files:
         print("No JSON files found in the specified directory.")
         sys.exit(0)
+        
 
     for json_file in json_files:
         full_path = os.path.join(target, json_file)
