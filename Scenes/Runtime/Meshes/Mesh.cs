@@ -9,9 +9,9 @@ namespace Raytracer.Scenes.Runtime.Meshes;
 
 public class Mesh : Geometry
 {
-    public Transform Transform { get; set; }
-    public MeshDefinition MeshDefinition { get; set; }
-    public ShadingMode ShadingMode { get; set; }
+    public Transform Transform { get; set; } = new Transform();
+    private MeshDefinition MeshDefinition { get; set; }
+    private ShadingMode ShadingMode { get; set; }
     public BoundingBox AABB { get; set; }
 
     public override int GetPrimitiveCount() => MeshDefinition.Triangles.Length;
@@ -22,7 +22,6 @@ public class Mesh : Geometry
         MaterialIndex = meshData.Material;
 
         MeshDefinition = new MeshDefinition(meshData, scene.Content.VertexData);
-        Transform = new Transform();
         Initialize();
     }
 
@@ -33,7 +32,6 @@ public class Mesh : Geometry
         
         var data = new PlyData(plyPath);
         MeshDefinition = new MeshDefinition(data);
-        Transform = new Transform();
         Initialize();
     }
 
@@ -66,7 +64,6 @@ public class Mesh : Geometry
             return false; // invalid hit
         
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
-        
         if (ShadingMode == ShadingMode.Flat || info.PrimitiveIndex < 0 || info.PrimitiveIndex >= MeshDefinition.Triangles.Length) return hit;
 
         var t = MeshDefinition.Triangles[info.PrimitiveIndex];

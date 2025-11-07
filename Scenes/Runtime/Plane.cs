@@ -43,6 +43,7 @@ public class Plane : Geometry
 
         var worldNormal = Transform.ToWorldDirection(normal);
         info.Normal = Vector3.Normalize(worldNormal);
+        info.HitGeometry = this;
         return true;
     }
 

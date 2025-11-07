@@ -58,6 +58,7 @@ public class Sphere : Geometry
         info.Point = worldHitPoint;
         info.Normal = worldNormal;
         info.Distance = worldDistance;
+        info.HitGeometry = this;
 
         return true;
     }

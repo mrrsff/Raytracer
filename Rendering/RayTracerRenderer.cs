@@ -8,6 +8,7 @@ using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Shading;
 using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
+using Raytracer.Scenes.Runtime;
 using Raytracer.Utility;
 using Debug = Raytracer.Core.Debug;
 
@@ -168,7 +169,7 @@ public class RayTracerRenderer
             for (int i = 0; i < width; i++)
             {
                 Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
-                Vector3 color = Debug.UseIterativeTracing ? TraceRayIterative(primaryRay) : TraceRay(primaryRay, 0, out _);
+                Vector3 color = TraceRayIterative(primaryRay);
                 rowBuffer[i] = ColorUtility.Normalize(color);
             }
 
@@ -197,13 +198,12 @@ public class RayTracerRenderer
         
         if (Debug.RenderNormals) return hit.Normal * 255f;
         
-        Vector3 finalColor;
+        Vector3 finalColor = Vector3.Zero;
         
         bool inFront = Vector3.Dot(ray.Direction, hit.Normal) < 0f; // Ray is entering the material (facing normal)
-        if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor)
+        if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor && !inFront)
         {
-            if (!inFront) hit.Normal = -hit.Normal;
-            finalColor = inFront ? Shade(hit) : ColorUtility.Magenta;
+            hit.Normal = -hit.Normal;
         }
         else finalColor = Shade(hit);
         
@@ -239,7 +239,7 @@ public class RayTracerRenderer
                 {
                     Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
                     Vector3 refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
-                    if (inFront) // apply absorption only when the ray is inside the material
+                    if (inFront) // apply absorption only when the ray is entering the material
                     {
                         refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
                     }
@@ -260,106 +260,147 @@ public class RayTracerRenderer
             }
         }
 
+        
         return finalColor;
     }
-    private Vector3 TraceRayIterative(in Ray primaryRay)
+    private struct RayState
+    {
+        public Ray Ray;
+        public int Depth;
+        public Vector3 Weight;
+        public float DistanceTraveled;
+        public bool InsideObject;
+    }
+    private Vector3 TraceRayIterative(in Ray initialRay)
     {
         Vector3 finalColor = Vector3.Zero;
-
-        // Stack for rays to process
-        Stack<(Ray ray, int depth, Vector3 weight)> rayStack = new();
-        rayStack.Push((primaryRay, 0, Vector3.One));
-
-        while (rayStack.Count > 0)
+        
+        Span<RayState> stack = stackalloc RayState[Scene.Content.MaxRecursionDepth * 2]; 
+        int stackPointer = 0;
+        stack[stackPointer++] = new RayState { Ray = initialRay, Depth = 0, Weight = Vector3.One, DistanceTraveled = 0f, InsideObject = false };
+        
+        while (stackPointer > 0)
         {
-            var (ray, depth, weight) = rayStack.Pop();
+            RayState currentState = stack[--stackPointer];
+            Ray ray = currentState.Ray;
+            int depth = currentState.Depth;
+            Vector3 weight = currentState.Weight;
+            bool InsideObject = currentState.InsideObject;
+
             if (depth > Scene.Content.MaxRecursionDepth)
                 continue;
 
             IntersectionInfo hit = Scene.Intersect(ray);
+
             if (!hit.Hit)
             {
-                // add background scaled by current weight
-                finalColor += Scene.Content.BackgroundColor * weight;
+                finalColor += weight * Scene.Content.BackgroundColor;
                 continue;
             }
-
-            if (Debug.RenderNormals)
+            float distanceTraveled = 0;
+            float cosThetaI = 0;
+            if (hit.material!.Type is MaterialType.Dielectric or MaterialType.Conductor)
             {
-                finalColor += hit.Normal * 255f * weight;
-                continue;
+                distanceTraveled = hit.Distance + currentState.DistanceTraveled;
+                cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
             }
-            bool inFront = true;
-            if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor)
-            {
-                inFront = Vector3.Dot(ray.Direction, hit.Normal) < 0f;
-                if (!inFront) hit.Normal = -hit.Normal;
-            }
-
-            // Local shading
-            Vector3 localColor = Shade(hit) * weight;
-
-            // Reflection ray
+            if (InsideObject) hit.Normal = -hit.Normal;
+            
+            AddToFinalColor(Shade(hit));
+            
             Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, hit.Normal));
             Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true);
-
-            float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
-
-            switch (hit.material?.Type)
+            switch (hit.material!.Type)
             {
                 case MaterialType.Mirror:
                 {
-                    finalColor += localColor;
-                    Vector3 newWeight = hit.material.MirrorReflectance * weight;
-                    rayStack.Push((reflectedRay, depth + 1, newWeight));
+                    stack[stackPointer++] = new RayState
+                    {
+                        Ray = reflectedRay,
+                        Depth = depth + 1,
+                        Weight = weight * hit.material.MirrorReflectance
+                    };
                     break;
                 }
-
                 case MaterialType.Conductor:
                 {
                     var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
-                    finalColor += localColor;
-                    Vector3 newWeight = fresnel * hit.material.MirrorReflectance * weight;
-                    rayStack.Push((reflectedRay, depth + 1, newWeight));
+                    stack[stackPointer++] = new RayState
+                    {
+                        Ray = reflectedRay,
+                        Depth = depth + 1,
+                        Weight = weight * fresnel * hit.material.MirrorReflectance
+                    };
                     break;
                 }
-
                 case MaterialType.Dielectric:
                 {
-                    const float airRefIndex = 1f;
-                    float etai = inFront ? airRefIndex : hit.material.RefractionIndex;
-                    float etat = inFront ? hit.material.RefractionIndex : airRefIndex;
-                    float eta = etai / etat;
-
+                    const float airRefractionIndex = 1f;
+                    float etai = InsideObject ? hit.material.RefractionIndex : airRefractionIndex;
+                    float etat = InsideObject ? airRefractionIndex : hit.material.RefractionIndex;
+                    float eta  = etai / etat;
+                    
                     if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
                     {
-                        Ray refrRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
                         float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
+                        
+                        Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
+                        
+                        Vector3 absorption = InsideObject
+                            ? GetAbsorption(hit.material!.AbsorptionCoefficient, hit.Distance)
+                            : Vector3.One;
+                        
+                        stack[stackPointer++] = new RayState // refracted ray
+                        {
+                            Ray = refractedRay,
+                            Depth = depth + 1,
+                            Weight = weight * (1f - fresnel) * absorption,
+                            InsideObject = !InsideObject,
+                            DistanceTraveled = distanceTraveled
+                        };
 
-                        // push refraction and reflection with weighted contributions
-                        Vector3 reflectedWeight = fresnel * weight;
-                        Vector3 refractedWeight = (1f - fresnel) * weight;
-
-                        rayStack.Push((reflectedRay, depth + 1, reflectedWeight));
-                        rayStack.Push((refrRay, depth + 1, refractedWeight));
+                        stack[stackPointer++] = new RayState // reflected ray
+                        {
+                            Ray = reflectedRay,
+                            Depth = depth + 1,
+                            Weight = weight * fresnel,
+                            InsideObject = InsideObject,
+                            DistanceTraveled = distanceTraveled
+                        };
                     }
-                    else
+                    else // total internal reflection
                     {
-                        // total internal reflection
-                        Vector3 tirWeight = weight * hit.material.MirrorReflectance;
-                        rayStack.Push((reflectedRay, depth + 1, tirWeight));
+                        Vector3 absorption = InsideObject
+                            ? GetAbsorption(hit.material!.AbsorptionCoefficient, hit.Distance)
+                            : Vector3.One;
+                        
+                        stack[stackPointer++] = new RayState
+                        {
+                            Ray = reflectedRay,
+                            Depth = depth + 1,
+                            Weight = weight * absorption,
+                            InsideObject = InsideObject,
+                            DistanceTraveled = distanceTraveled
+                        };
                     }
-
-                    finalColor += localColor;
                     break;
                 }
+            }
 
-                default:
-                    finalColor += localColor;
-                    break;
+            continue;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            void AddToFinalColor(Vector3 color)
+            {
+                var colorToAdd = color * weight;
+                if (InsideObject)
+                {
+                    colorToAdd *= GetAbsorption(hit.material!.AbsorptionCoefficient, distanceTraveled);
+                }
+                finalColor += colorToAdd;
             }
         }
-
+        
         return finalColor;
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -390,58 +431,5 @@ public class RayTracerRenderer
             MathF.Exp(-absorptionCoefficient.Y * distance),
             MathF.Exp(-absorptionCoefficient.Z * distance)
         );
-    }
-    
-    public RenderResult RenderLowRes(int factor)
-    {
-        Camera = Scene.GetCamera(0);
-        var lowResWidth = Camera.ImageResolution.Width / factor;
-        var lowResHeight = Camera.ImageResolution.Height / factor;
-        var result = new RenderResult(lowResWidth, lowResHeight, Scene.Content.BackgroundColor);
-
-        int totalRows = lowResHeight;
-        int completedRows = 0;
-        bool done = false;
-        const int timesPerSecond = 5;
-        const int interval = 1000 / timesPerSecond;
-
-        Task progressTask = Task.Run(() =>
-        {
-            int lastPercent = -1;
-            while (!done)
-            {
-                int percent = (int)(Volatile.Read(ref completedRows) * 100.0 / totalRows);
-                if (percent != lastPercent)
-                {
-                    lastPercent = percent;
-                    Console.Write($"\rProgress: {percent,3}%");
-                }
-                Thread.Sleep(interval); // check 4 times per second
-            }
-            Console.Write("\rProgress: 100%\n");
-        });
-
-        Parallel.For(0, lowResHeight, j =>
-        {
-            Vector3[] rowBuffer = new Vector3[lowResWidth];
-            for (int i = 0; i < lowResWidth; i++)
-            {
-                Ray primaryRay = Camera.GetPrimaryRay(i * factor, j * factor);
-                Vector3 color = Debug.UseIterativeTracing ? TraceRayIterative(primaryRay) : TraceRay(primaryRay, 0, out _);
-                rowBuffer[i] = ColorUtility.Normalize(color);
-            }
-
-            for (int i = 0; i < lowResWidth; i++)
-                result.SetPixel(i, j, rowBuffer[i]);
-
-            Interlocked.Increment(ref completedRows);
-        });
-
-        done = true;
-        progressTask.Wait();
-
-        var name = Camera.ImageName.Split('.').First();
-        result.OutputName = name + $"_lowres{factor}x.{Camera.ImageName.Split('.').Last()}";
-        return result;
     }
 }

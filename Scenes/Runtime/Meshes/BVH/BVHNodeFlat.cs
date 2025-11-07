@@ -8,4 +8,11 @@ public struct BVHNodeFlat
     public int Start;       // range start in triangle array
     public int End;         // range end in triangle array
     public bool IsLeaf => LeftChild == -1;
+
+    public override string ToString()
+    {
+        return IsLeaf
+            ? $"Leaf: Tris[{Start}, {End}) BBox{Bounds}"
+            : $"Node: Right={RightChild} BBox{Bounds}";
+    }
 }

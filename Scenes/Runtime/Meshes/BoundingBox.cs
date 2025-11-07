@@ -1,20 +1,29 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Raytracer.Core;
+using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
 public class BoundingBox(Vector3 min, Vector3 max) : Geometry
 {
+    public static BoundingBox Invalid => new(Vector3.PositiveInfinity, Vector3.NegativeInfinity);
     public Vector3 Min { get; private set; } = min;
     public Vector3 Max { get; private set; } = max;
+    public Vector3 Size { get; private set; } = max - min;
     public Vector3 Center { get; private set; } = (min + max) * 0.5f;
-
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Intersects(Ray ray, out float tMin, out float tMax)
     {
-        tMin = float.NegativeInfinity;
-        tMax = float.PositiveInfinity;
+        tMin = 0f;
+        tMax = float.MaxValue;
+        Vector3 invDir = new Vector3(
+            1f / ray.Direction.X,
+            1f / ray.Direction.Y,
+            1f / ray.Direction.Z
+        );
 
         for (int i = 0; i < 3; i++)
         {
@@ -23,7 +32,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
             float min = Min[i];
             float max = Max[i];
 
-            if (MathF.Abs(direction) < 1e-8f)
+            if (MathF.Abs(direction) < RayTracerRenderer.IntersectionTestEpsilon)
             {
                 // Ray is parallel to slab; if origin not within slab, no hit
                 if (origin < min || origin > max)
@@ -31,8 +40,8 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
                 continue;
             }
 
-            float t1 = (min - origin) / direction;
-            float t2 = (max - origin) / direction;
+            float t1 = (min - origin) * invDir[i];
+            float t2 = (max - origin) * invDir[i];
 
             if (t1 > t2)
                 (t1, t2) = (t2, t1);
@@ -97,5 +106,25 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
         }
 
         return false;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Encapsulate(Vector3 point)
+    {
+        Min = Vector3.Min(Min, point);
+        Max = Vector3.Max(Max, point);
+        Size = Max - Min;
+        Center = (Min + Max) * 0.5f;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Encapsulate(Triangle triangle)
+    {
+        Encapsulate(triangle.V0);
+        Encapsulate(triangle.V1);
+        Encapsulate(triangle.V2);
+    }
+
+    public override string ToString()
+    {
+        return $"BoundingBox(Min: {Min}, Max: {Max})";
     }
 }
