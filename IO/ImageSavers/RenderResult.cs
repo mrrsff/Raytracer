@@ -25,15 +25,13 @@ public class RenderResult
     
     public void SetPixel(int x, int y, Vector3 color)
     {
-        if (x < 0 || x >= Width || y < 0 || y >= Height)
-            throw new ArgumentOutOfRangeException("Pixel coordinates are out of bounds.");
+        if (x < 0 || x >= Width || y < 0 || y >= Height) return;
         Pixels[y * Width + x] = color;
     }
     
     public Vector3 GetPixel(int x, int y)
     {
-        if (x < 0 || x >= Width || y < 0 || y >= Height)
-            throw new ArgumentOutOfRangeException("Pixel coordinates are out of bounds.");
+        if (x < 0 || x >= Width || y < 0 || y >= Height) return default;
         return Pixels[y * Width + x];
     }
     

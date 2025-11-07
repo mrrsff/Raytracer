@@ -4,39 +4,59 @@ using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content.Datas.Objects;
+using Raytracer.Scenes.Runtime.Meshes;
 
 namespace Raytracer.Scenes.Runtime;
 
 public class Triangle : Geometry
 {
-    public int PrimitiveIndex;
-    public int I0, I1, I2;
-    public Vector3 V0, V1, V2;
-    public Vector3 Centroid { get; private set; }
-    
-    public Vector3 E1; // V1 - V0
-    public Vector3 E2; // V2 - V0
+    public readonly int PrimitiveIndex;
+    public readonly int I0, I1, I2;
+    public Vector3 V0 => MeshDefinition.Vertices[I0];
+    public Vector3 V1 => MeshDefinition.Vertices[I1];
+    public Vector3 V2 => MeshDefinition.Vertices[I2];
+    public Vector3 Centroid;
+
+    private Vector3 E1; // V1 - V0
+    private Vector3 E2; // V2 - V0
+    private MeshDefinition MeshDefinition;
 
     public Vector3 Normal;
     
-    public Triangle(int primitiveIndex, int i0, int i1, int i2, Vector3 v0, Vector3 v1, Vector3 v2)
+    public Triangle(int primitiveIndex, int i0, int i1, int i2, MeshDefinition meshDefinition)
+    {
+        MeshDefinition = meshDefinition;
+        PrimitiveIndex = primitiveIndex;
+        I0 = i0;
+        I1 = i1;
+        I2 = i2;
+        Normal = Vector3.Normalize(Vector3.Cross(V1 - V0, V2 - V0));
+        E1 = V1 - V0;
+        Centroid = (V0 + V1 + V2) / 3.0f;
+    }
+    public Triangle(int primitiveIndex, int i0, int i1, int i2)
     {
         PrimitiveIndex = primitiveIndex;
         I0 = i0;
         I1 = i1;
         I2 = i2;
-        V0 = v0;
-        V1 = v1;
-        V2 = v2;
-        Normal = Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
-        E1 = v1 - v0;
-        E2 = v2 - v0;
+        // Normal = Vector3.Normalize(Vector3.Cross(V1 - V0, V2 - V0));
+        // E1 = V1 - V0;
+        // Centroid = (V0 + V1 + V2) / 3.0f;
     }
-    
+    public void SetMeshDefinition(MeshDefinition meshDefinition)
+    {
+        MeshDefinition = meshDefinition;
+        Normal = Vector3.Normalize(Vector3.Cross(V1 - V0, V2 - V0));
+        E1 = V1 - V0;
+        E2 = V2 - V0;
+        Centroid = (V0 + V1 + V2) / 3.0f;
+    }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
         var hit = TriangleIntersection.Intersect(ray, V0, V1, V2, Normal, ref info);
+        info.HitGeometry = this;
         info.PrimitiveIndex = PrimitiveIndex;
         return hit;
     }
