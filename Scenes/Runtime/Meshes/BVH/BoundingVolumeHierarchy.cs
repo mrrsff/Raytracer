@@ -7,7 +7,7 @@ namespace Raytracer.Scenes.Runtime.Meshes.BVH;
 
 public class BoundingVolumeHierarchy(MeshDefinition meshDefinition) : Geometry
 {
-    private readonly BVHNodeFlat[] nodes = BVHBuilder.Build(meshDefinition);
+    private readonly BVHNode[] nodes = BVHBuilder.Build(meshDefinition);
     private readonly Triangle[] triangles = meshDefinition.Triangles;
 
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)

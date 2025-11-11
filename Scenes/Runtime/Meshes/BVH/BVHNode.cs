@@ -1,66 +1,18 @@
-﻿using System.Numerics;
-using Raytracer.Core;
-using Raytracer.Rendering.Intersections;
+﻿namespace Raytracer.Scenes.Runtime.Meshes.BVH;
 
-namespace Raytracer.Scenes.Runtime.Meshes.BVH;
-
-public class BVHNode : Geometry
+public struct BVHNode
 {
-    public Geometry left;
-    public Geometry right;
-    public BoundingBox boundingBox;
-    
-    public BVHNode(Geometry left, Geometry right, BoundingBox boundingBox)
+    public BoundingBox Bounds;
+    public int LeftChild;   // index in array, or -1 if leaf
+    public int RightChild;  // index in array, or -1 if leaf
+    public int Start;       // range start in triangle array
+    public int End;         // range end in triangle array
+    public bool IsLeaf => LeftChild == -1;
+
+    public override string ToString()
     {
-        this.left = left;
-        this.right = right;
-        this.boundingBox = boundingBox;
-    }
-
-    public override bool Intersect(in Ray ray, ref IntersectionInfo info)
-    {
-        if (!boundingBox.Intersects(ray, out float tmin, out float tmax))
-            return false;
-        
-        // visualize the bounding box itself
-        if (Debug.ShowBVHBoxes)
-        {
-            var isLeaf = left == null && right == null;
-            if (isLeaf || !Debug.ShowBVHBoxesLeafNodesOnly)
-            {
-                if (TryRenderBoxIntersection(ray, ref info))
-                    return true; // early return for visible boxes
-            }
-        }
-        
-        var leftInfo = IntersectionInfo.NoHit;
-        leftInfo.IntersectionTestEpsilon = info.IntersectionTestEpsilon;
-        var rightInfo = IntersectionInfo.NoHit;
-        rightInfo.IntersectionTestEpsilon = info.IntersectionTestEpsilon;
-
-        bool? hitLeft = left?.Intersect(ray, ref leftInfo);
-        bool? hitRight = right?.Intersect(ray, ref rightInfo);
-
-        if (hitLeft == true || hitRight == true)
-        {
-            info = leftInfo.Distance < rightInfo.Distance ? leftInfo : rightInfo;
-            return true;
-        }
-        return false;
-    }
-    private bool TryRenderBoxIntersection(in Ray ray, ref IntersectionInfo info)
-    {
-        if (!boundingBox.IntersectEdge(ray, out float t))
-            return false;
-        
-        if (t < 0) // intersection is behind the ray origin
-            return false;
-
-        info.Distance = t;
-        info.Point = ray.Origin + ray.Direction * t;
-        info.Normal = Vector3.Normalize(info.Point - boundingBox.Center);
-        info.Hit = true;
-        info.material = Debug.DebugMaterial;
-        return true;
+        return IsLeaf
+            ? $"Leaf: Tris[{Start}, {End}) BBox{Bounds}"
+            : $"Node: Right={RightChild} BBox{Bounds}";
     }
 }

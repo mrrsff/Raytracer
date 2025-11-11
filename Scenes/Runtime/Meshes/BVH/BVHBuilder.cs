@@ -10,7 +10,7 @@ public static class BVHBuilder
     private const float C_trav = 0.125f;
     private const float C_isect = 1f;
 
-    public static BVHNodeFlat[] Build(MeshDefinition meshDefinition)
+    public static BVHNode[] Build(MeshDefinition meshDefinition)
     {
         var triangles = meshDefinition.Triangles;
         int triangleCount = triangles.Length;
@@ -23,91 +23,99 @@ public static class BVHBuilder
             triangleCount < 100_000 ? 16 :
             triangleCount < 1000_000 ? 20 : 24;
 
-        var nodes = new List<BVHNodeFlat>(triangleCount * 2);
+        var nodes = new List<BVHNode>(triangleCount * 2);
         Stopwatch sw = Stopwatch.StartNew();
-        BuildParallel(triangles, 0, triangleCount, minTris, maxDepth, nodes);
-        sw.Stop();
-        if (Debug.DebugBVHBuildTime) Console.WriteLine($"BVH built in {sw.ElapsedMilliseconds} ms with {nodes.Count} nodes for {triangleCount} triangles.");
+        if (Debug.UseParallelBVHBuild)
+            BuildParallel(triangles, 0, triangleCount, minTris, maxDepth, nodes);
+        else
+            BuildIterative(ref triangles, 0, triangleCount, minTris, maxDepth, nodes);
         
+        sw.Stop();
+        if (Debug.DebugBVHBuildTime)
+        {
+            string mode = Debug.UseParallelBVHBuild ? "Parallel" : "Iterative";
+            Console.WriteLine(
+                $"{mode} BVH built in {sw.ElapsedMilliseconds} ms with {nodes.Count} nodes for {triangleCount} triangles.");
+        }
         return nodes.ToArray();
     }
     
-    // #region Iterative BVH Build
-    // struct BuildTask
-    // {
-    //     public int Start, End, Depth, ParentIndex;
-    //     public bool IsLeftChild;
-    // }
-    // private static int BuildIterative(ref Triangle[] tris, int start, int end, int minTris, int maxDepth, List<BVHNodeFlat> nodes)
-    // {
-    //     Stack<BuildTask> stack = new();
-    //     stack.Push(new BuildTask { Start = start, End = end, Depth = 0, ParentIndex = -1, IsLeftChild = false });
-    //
-    //     int rootIndex = -1;
-    //
-    //     while (stack.Count > 0)
-    //     {
-    //         var task = stack.Pop();
-    //
-    //         // Build node
-    //         int nodeIndex = nodes.Count;
-    //         var bbox = ComputeBoundingBox(ref tris, task.Start, task.End);
-    //
-    //         BVHNodeFlat node = new BVHNodeFlat
-    //         {
-    //             Bounds = bbox,
-    //             Start = task.Start,
-    //             End = task.End,
-    //             LeftChild = -1,
-    //             RightChild = -1
-    //         };
-    //         nodes.Add(node);
-    //
-    //         // Link to parent
-    //         if (task.ParentIndex != -1)
-    //         {
-    //             BVHNodeFlat parent = nodes[task.ParentIndex];
-    //             if (task.IsLeftChild) parent.LeftChild = nodeIndex;
-    //             else parent.RightChild = nodeIndex;
-    //             nodes[task.ParentIndex] = parent;
-    //         }
-    //         else
-    //         {
-    //             rootIndex = nodeIndex; // first node = root
-    //         }
-    //
-    //         int triCount = task.End - task.Start;
-    //         if (triCount <= minTris || task.Depth >= maxDepth)
-    //             continue;
-    //
-    //         float parentCost = triCount * C_isect;
-    //         var (axis, split, splitCost) = ChooseSplitAxis(ref tris, task.Start, task.End);
-    //
-    //         if (splitCost >= parentCost && triCount <= minTris)
-    //             continue;
-    //
-    //         int mid = PartitionTriangles(ref tris, task.Start, task.End, axis, split);
-    //         if (mid == task.Start || mid == task.End)
-    //         {
-    //             Console.WriteLine($"Warning: SAH split failed at depth {task.Depth}, falling back to median split.");
-    //             int axisFB = bbox.LargestAxis();
-    //             float posFB = 0.5f * (bbox.Min[axisFB] + bbox.Max[axisFB]);
-    //             mid = PartitionTriangles(ref tris, task.Start, task.End, axisFB, posFB);
-    //             if (mid == task.Start || mid == task.End)
-    //                 continue;
-    //         }
-    //
-    //         // Push children — push right first so left is processed first (depth-first)
-    //         stack.Push(new BuildTask { Start = mid, End = task.End, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = false });
-    //         stack.Push(new BuildTask { Start = task.Start, End = mid, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = true });
-    //     }
-    //
-    //     return rootIndex;
-    // }
-    // #endregion
+    #region Iterative BVH Build
+    struct BuildTask
+    {
+        public int Start, End, Depth, ParentIndex;
+        public bool IsLeftChild;
+    }
+    private static int BuildIterative(ref Triangle[] tris, int start, int end, int minTris, int maxDepth, List<BVHNode> nodes)
+    {
+        Stack<BuildTask> stack = new();
+        stack.Push(new BuildTask { Start = start, End = end, Depth = 0, ParentIndex = -1, IsLeftChild = false });
+    
+        int rootIndex = -1;
+    
+        while (stack.Count > 0)
+        {
+            var task = stack.Pop();
+    
+            // Build node
+            int nodeIndex = nodes.Count;
+            var bbox = ComputeBoundingBox(tris, task.Start, task.End);
+    
+            BVHNode node = new BVHNode
+            {
+                Bounds = bbox,
+                Start = task.Start,
+                End = task.End,
+                LeftChild = -1,
+                RightChild = -1
+            };
+            nodes.Add(node);
+    
+            // Link to parent
+            if (task.ParentIndex != -1)
+            {
+                BVHNode parent = nodes[task.ParentIndex];
+                if (task.IsLeftChild) parent.LeftChild = nodeIndex;
+                else parent.RightChild = nodeIndex;
+                nodes[task.ParentIndex] = parent;
+            }
+            else
+            {
+                rootIndex = nodeIndex; // first node = root
+            }
+    
+            int triCount = task.End - task.Start;
+            if (triCount <= minTris || task.Depth >= maxDepth)
+                continue;
+    
+            float parentCost = triCount * C_isect;
+            var (axis, split, splitCost) = ChooseSplitAxis(ref tris, task.Start, task.End);
+    
+            if (splitCost >= parentCost && triCount <= minTris)
+                continue;
+    
+            int mid = PartitionTriangles(tris, task.Start, task.End, axis, split);
+            if (mid == task.Start || mid == task.End)
+            {
+                Console.WriteLine($"Warning: SAH split failed at depth {task.Depth}, falling back to median split.");
+                int axisFB = bbox.LargestAxis();
+                float posFB = 0.5f * (bbox.Min[axisFB] + bbox.Max[axisFB]);
+                mid = PartitionTriangles(tris, task.Start, task.End, axisFB, posFB);
+                if (mid == task.Start || mid == task.End)
+                    continue;
+            }
+    
+            // Push children — push right first so left is processed first (depth-first)
+            stack.Push(new BuildTask { Start = mid, End = task.End, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = false });
+            stack.Push(new BuildTask { Start = task.Start, End = mid, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = true });
+        }
+    
+        return rootIndex;
+    }
+    #endregion
 
     #region Parallel BVH Build
-    private static void BuildParallel(Triangle[] tris, int start, int end, int minTris, int maxDepth, List<BVHNodeFlat> nodes)
+    private static void BuildParallel(Triangle[] tris, int start, int end, int minTris, int maxDepth, List<BVHNode> nodes)
     {
         object nodeLock = new();
 
@@ -124,7 +132,7 @@ public static class BVHBuilder
             lock (nodeLock)
             {
                 nodeIndex = nodes.Count;
-                nodes.Add(new BVHNodeFlat
+                nodes.Add(new BVHNode
                 {
                     Bounds = bbox,
                     Start = start_,
@@ -133,7 +141,6 @@ public static class BVHBuilder
                     RightChild = -1
                 });
 
-                // Link to parent
                 if (parentIdx != -1)
                 {
                     var p = nodes[parentIdx];
@@ -169,7 +176,6 @@ public static class BVHBuilder
                     return;
             }
 
-            // Decide whether to spawn tasks
             bool spawnParallel = triCount > 20000 && depth < maxDepth - 2;
 
             if (spawnParallel)
@@ -248,8 +254,7 @@ public static class BVHBuilder
         float SA_L = SurfaceArea(leftBox);
         float SA_R = SurfaceArea(rightBox);
         if (SA_P == 0f) return float.MaxValue; // degenerate parent
-
-        // Proper SAH
+        
         float cost = C_trav
                      + (SA_L / SA_P) * leftCount * C_isect
                      + (SA_R / SA_P) * rightCount * C_isect;
