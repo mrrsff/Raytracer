@@ -1,24 +1,47 @@
-﻿using System.Numerics;
+﻿using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using Raytracer.Core;
+using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 
 namespace Raytracer.Scenes.Runtime.Meshes.BVH;
 
-public class BoundingVolumeHierarchy(MeshDefinition meshDefinition) : Geometry
+public class BoundingVolumeHierarchy : Geometry
 {
-    private readonly BVHNode[] nodes = BVHBuilder.Build(meshDefinition);
-    private readonly Triangle[] triangles = meshDefinition.Triangles;
+    private readonly BVHNode[] nodes;
+    private readonly Geometry[] geometries;
+    public ref BVHNode GetNode(int i) => ref nodes[i];
+    public int NodeCount => nodes.Length;
 
+    public BoundingVolumeHierarchy(MeshDefinition meshDefinition)
+    {
+        nodes = BVHBuilder.Build(meshDefinition);
+        var tris = meshDefinition.Triangles;
+        geometries = new Geometry[tris.Length];
+        for (int i = 0; i < tris.Length; i++) geometries[i] = tris[i];
+        
+        if (Debug.ShowBVHBoxes) DrawDebugBVH();
+    }
+
+    public BoundingVolumeHierarchy(Scene scene)
+    {
+        nodes = BVHBuilder.Build(scene, out geometries);
+        
+        if (Debug.ShowTLASBoxes) DrawDebugBVH();
+    }
+
+    private void DrawDebugBVH()
+    {
+        DebugRenderer.CollectBVH(this, Debug.ShowBVHBoxesLeafNodesOnly);
+    }
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
-        // int TriangleIntersectionTests = 0;
-        // int BoundingBoxTests = 0;
-        
         bool hit = false;
         float closest = float.MaxValue;
         IntersectionInfo temp = IntersectionInfo.NoHit;
 
+        
         Stack<int> stack = new Stack<int>();
         stack.Push(0);
 
@@ -31,7 +54,6 @@ public class BoundingVolumeHierarchy(MeshDefinition meshDefinition) : Geometry
             {
                 bool hitL = nodes[node.LeftChild].Bounds.Intersects(ray, out var tMinL, out _);
                 bool hitR = nodes[node.RightChild].Bounds.Intersects(ray, out var tMinR, out _);
-                // BoundingBoxTests += 2;
                 if (hitL && hitR)
                 {
                     if (tMinL < tMinR)
@@ -53,22 +75,16 @@ public class BoundingVolumeHierarchy(MeshDefinition meshDefinition) : Geometry
                 for (int t = node.Start; t < node.End; t++)
                 {
                     temp.Reset();
-                    if (triangles[t].Intersect(ray, ref temp) && temp.Distance < closest)
+                    if (geometries[t].Intersect(ray, ref temp) && temp.Distance < closest)
                     {
                         closest = temp.Distance;
                         info = temp;
+                        info.HitGeometry = geometries[t];
                         hit = true;
                     }
                 }
-                // TriangleIntersectionTests += (node.End - node.Start);
             }
         }
-
-        // if (hit && TriangleIntersectionTests > 1000)
-        // {
-        //     // Debug stats
-        //     Console.WriteLine($"BVH Intersection: Triangle Tests = {TriangleIntersectionTests}, Bounding Box Tests = {BoundingBoxTests}" );
-        // }
         return hit;
     }
 }

@@ -16,9 +16,10 @@ public static class Debug
     public static bool UseIterativeTracing = true;
     public static bool UseDynamicThreading = true;
     
-    public static bool DebugBVHBuildTime = true;
+    public static bool DebugBVHBuildTime = false;
     public static bool ShowBVHBoxes = false;
     public static bool ShowBVHBoxesLeafNodesOnly = false;
+    public static bool ShowTLASBoxes = false;
     public static bool UseParallelBVHBuild = true;
     
     public static bool RenderNormals = false;

@@ -1,7 +1,12 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Raytracer.Core;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering.Intersections;
@@ -40,13 +45,17 @@ public class RayTracerRenderer
             ? DynamicThreadPoolRender(Camera, result)
             : (Debug.UseMultiThreading ? MultithreadRender(Camera, result) : SingleThreadRender(Camera, result));
 
-        
         sw.Stop();
         Console.WriteLine($"\nRendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
         
         result.OutputName = Camera.ImageName;
+        
+        DebugRenderer.Rasterize(Camera, result);
+        
         return result;
     }
+
+    #region Rendering
     private RenderResult DynamicThreadPoolRender(Camera renderCamera, RenderResult result)
     {
         int width = result.Width;
@@ -183,6 +192,8 @@ public class RayTracerRenderer
         progressTask.Wait();
         return result;
     }
+    #endregion
+    #region Ray Tracing
     private Vector3 TraceRay(in Ray ray, in int depth, out float distanceTraveled)
     {
         distanceTraveled = 0;
@@ -403,6 +414,8 @@ public class RayTracerRenderer
         
         return finalColor;
     }
+    #endregion
+    #region Utilities
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Vector3 Shade(in IntersectionInfo intersection)
     {
@@ -432,4 +445,5 @@ public class RayTracerRenderer
             MathF.Exp(-absorptionCoefficient.Z * distance)
         );
     }
+    #endregion
 }

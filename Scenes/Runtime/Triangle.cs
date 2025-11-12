@@ -1,9 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Raytracer.Core;
-using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
-using Raytracer.Scenes.Content.Datas.Objects;
 using Raytracer.Scenes.Runtime.Meshes;
 
 namespace Raytracer.Scenes.Runtime;
@@ -33,6 +31,10 @@ public class Triangle : Geometry
         Normal = Vector3.Normalize(Vector3.Cross(V1 - V0, V2 - V0));
         E1 = V1 - V0;
         Centroid = (V0 + V1 + V2) / 3.0f;
+        Bounds = new BoundingBox(
+            Vector3.Min(Vector3.Min(V0, V1), V2),
+            Vector3.Max(Vector3.Max(V0, V1), V2)
+        );
     }
     public Triangle(int primitiveIndex, int i0, int i1, int i2)
     {
@@ -40,9 +42,6 @@ public class Triangle : Geometry
         I0 = i0;
         I1 = i1;
         I2 = i2;
-        // Normal = Vector3.Normalize(Vector3.Cross(V1 - V0, V2 - V0));
-        // E1 = V1 - V0;
-        // Centroid = (V0 + V1 + V2) / 3.0f;
     }
     public void SetMeshDefinition(MeshDefinition meshDefinition)
     {

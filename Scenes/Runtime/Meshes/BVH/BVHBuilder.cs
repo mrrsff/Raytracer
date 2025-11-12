@@ -10,6 +10,7 @@ public static class BVHBuilder
     private const float C_trav = 0.125f;
     private const float C_isect = 1f;
 
+    #region Mesh BVH Build
     public static BVHNode[] Build(MeshDefinition meshDefinition)
     {
         var triangles = meshDefinition.Triangles;
@@ -260,21 +261,6 @@ public static class BVHBuilder
                      + (SA_R / SA_P) * rightCount * C_isect;
         return cost;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BoundingBox ComputeBoundingBox(Triangle[] triangles, int start, int end)
-    {
-        Vector3 min = new Vector3(float.MaxValue);
-        Vector3 max = new Vector3(float.MinValue);
-
-        for (int i = start; i < end; i++)
-        {
-            ref var tri = ref triangles[i];
-            min = Vector3.Min(min, Vector3.Min(tri.V0, Vector3.Min(tri.V1, tri.V2)));
-            max = Vector3.Max(max, Vector3.Max(tri.V0, Vector3.Max(tri.V1, tri.V2)));
-        }
-
-        return new BoundingBox(min, max);
-    }
     private static int PartitionTriangles(Triangle[] triangles, int start, int end, int axis, float split)
     {
         int i = start;
@@ -292,7 +278,156 @@ public static class BVHBuilder
         }
         return i;
     }
+    #endregion
 
+    #region Scene BVH Build
+    public static BVHNode[] Build(Scene scene, out Geometry[] geometries)
+    {
+        geometries = scene.Geometries.ToArray();
+        int geometryCount = geometries.Length;
+
+        const int minGeos = 2;
+        const int maxDepth = 20;
+
+        var nodes = new List<BVHNode>(geometryCount * 2);
+        Stopwatch sw = Stopwatch.StartNew();
+        
+        BuildScene(geometries, 0, geometryCount, minGeos, maxDepth, nodes);
+
+        sw.Stop();
+        if (Debug.DebugBVHBuildTime)
+        {
+            string mode = Debug.UseParallelBVHBuild ? "Parallel" : "Iterative";
+            Console.WriteLine(
+                $"{mode} TLAS built in {sw.ElapsedMilliseconds} ms with {nodes.Count} nodes for {geometryCount} geometries.");
+            
+            // Print tree
+            int depth = 0;
+
+            void PrintNode(int index, int currentDepth)
+            {
+                if (index == -1) return;
+                if (currentDepth > depth) depth = currentDepth;
+                var node = nodes[index];
+
+                if (node.IsLeaf)
+                {
+                    Console.WriteLine(
+                        $"{new string(' ', currentDepth * 2)} Leaf Node {index}: Geo [{node.Start}, {node.End}), " +
+                        $"Bounds Min{node.Bounds.Min}, Max{node.Bounds.Max}");
+                }
+                else
+                {
+                    Console.WriteLine(
+                        $"{new string(' ', currentDepth * 2)} Node {index}: Geos [{node.Start}, {node.End}), " +
+                        $"Bounds Min{node.Bounds.Min}, Max{node.Bounds.Max}");
+                }
+                
+                PrintNode(node.LeftChild, currentDepth + 1);
+                PrintNode(node.RightChild, currentDepth + 1);
+                
+            }
+            
+            PrintNode(0, 0);
+            Console.WriteLine($"TLAS Depth: {depth}");
+        }
+        return nodes.ToArray();
+    }
+
+    private static int BuildScene(Geometry[] geometries, int start, int end, int minGeos, int maxDepth,
+        List<BVHNode> nodes)
+    {
+        var bbox = ComputeBoundingBox(geometries, start, end);
+        int nodeIndex = nodes.Count;
+
+        BVHNode node = new BVHNode
+        {
+            Bounds = bbox,
+            Start = start,
+            End = end,
+            LeftChild = -1,
+            RightChild = -1
+        };
+        nodes.Add(node);
+
+        int geoCount = end - start;
+        if (geoCount <= minGeos || maxDepth <= 0)
+            return nodeIndex;
+
+        int axis = bbox.LargestAxis();
+        float split = 0.5f * (bbox.Min[axis] + bbox.Max[axis]);
+        int mid = PartitionGeometries(geometries, start, end, axis, split);
+
+        // Prevent empty partitions — fallback to median
+        if (mid == start || mid == end)
+            mid = start + (end - start) / 2;
+
+        // build children recursively
+        int leftChild = BuildScene(geometries, start, mid, minGeos, maxDepth - 1, nodes);
+        int rightChild = BuildScene(geometries, mid, end, minGeos, maxDepth - 1, nodes);
+
+        // link
+        BVHNode n = nodes[nodeIndex];
+        n.LeftChild = leftChild;
+        n.RightChild = rightChild;
+        nodes[nodeIndex] = n;
+
+        return nodeIndex;
+    }
+    private static int PartitionGeometries(Geometry[] geometries, int start, int end, int axis, float split)
+    {
+        int i = start;
+        int j = end - 1;
+
+        while (i <= j)
+        {
+            while (i <= j && geometries[i].Centroid[axis] <= split) i++;
+            while (i <= j && geometries[j].Centroid[axis] > split) j--;
+            if (i < j)
+            {
+                (geometries[i], geometries[j]) = (geometries[j], geometries[i]);
+                i++;
+                j--;
+            }
+        }
+
+        if (i == start || i == end)
+            i = start + (end - start) / 2;
+
+        return i;
+    }
+
+    private static BoundingBox ComputeBoundingBox(Geometry[] geometries, int start, int end)
+    {
+        Vector3 min = new Vector3(float.MaxValue);
+        Vector3 max = new Vector3(float.MinValue);
+
+        for (int i = start; i < end; i++)
+        {
+            ref var geo = ref geometries[i];
+            min = Vector3.Min(min, geo.Bounds.Min);
+            max = Vector3.Max(max, geo.Bounds.Max);
+        }
+
+        return new BoundingBox(min, max);
+    }
+
+    #endregion
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static BoundingBox ComputeBoundingBox(Triangle[] triangles, int start, int end)
+    {
+        Vector3 min = new Vector3(float.MaxValue);
+        Vector3 max = new Vector3(float.MinValue);
+
+        for (int i = start; i < end; i++)
+        {
+            ref var tri = ref triangles[i];
+            min = Vector3.Min(min, Vector3.Min(tri.V0, Vector3.Min(tri.V1, tri.V2)));
+            max = Vector3.Max(max, Vector3.Max(tri.V0, Vector3.Max(tri.V1, tri.V2)));
+        }
+
+        return new BoundingBox(min, max);
+    }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int LargestAxis(this BoundingBox box)
     {

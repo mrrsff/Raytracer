@@ -1,10 +1,14 @@
-﻿using System.Text.Json.Serialization;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime;
 using Raytracer.Scenes.Runtime.Meshes;
+using Raytracer.Scenes.Runtime.Meshes.BVH;
 using Plane = Raytracer.Scenes.Runtime.Plane;
 
 namespace Raytracer.Scenes;
@@ -15,6 +19,7 @@ public partial class Scene
     
     public List<Geometry> Geometries = [];
     public List<Plane> Planes = [];
+    public BoundingVolumeHierarchy TLAS;
     public Scene() { }
 
     public Scene(SceneContent content)
@@ -36,14 +41,18 @@ public partial class Scene
             if (camera.Transformations != null)
                 Content.Transformations.ApplyTransformations(camera.Transform, camera.Transformations);
         }
+        
         var originalMeshes = new Dictionary<int, Mesh>();
         foreach (var meshData in Content.Objects.Mesh)
         {
-            var mesh = !string.IsNullOrEmpty(meshData.Faces.PlyData)
-                ? new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material)
-                : new Mesh(meshData, this);
+            var transform = new Transform();
             if (meshData.Transformations != null)
-                Content.Transformations.ApplyTransformations(mesh.Transform, meshData.Transformations);
+                Content.Transformations.ApplyTransformations(transform, meshData.Transformations);
+            
+            var mesh = string.IsNullOrEmpty(meshData.Faces.PlyData)
+                ? new Mesh(meshData, this, transform)
+                : new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material, transform); // Mesh from PLY file
+            
             Geometries.Add(mesh);
             originalMeshes.Add(meshData.Id, mesh);
         }
@@ -52,8 +61,10 @@ public partial class Scene
             if (!originalMeshes.TryGetValue(meshInstance.BaseMeshId, out var mesh)) continue;
             
             var transform = meshInstance.ResetTransform ? new Transform() : mesh.Transform.Copy();
+            
             if (meshInstance.Transformations != null) 
                 Content.Transformations.ApplyTransformations(transform, meshInstance.Transformations);
+            
             var instancedMesh = new Mesh(mesh, transform);
             instancedMesh.MaterialIndex = meshInstance.Material != -1 ? meshInstance.Material : mesh.MaterialIndex;
             Geometries.Add(instancedMesh);
@@ -76,6 +87,10 @@ public partial class Scene
 
             Planes.Add(plane);
         }
+
+        // Build TLAS if there are enough geometries
+        if (Geometries.Count > 16)
+            TLAS = new BoundingVolumeHierarchy(this);
     }
     
     public Camera GetCamera(int index)
@@ -86,18 +101,32 @@ public partial class Scene
 
     public IntersectionInfo Intersect(Ray ray)
     {
-        IntersectionInfo closestIntersection = new IntersectionInfo();
+        IntersectionInfo closestIntersection = IntersectionInfo.NoHit;
         IntersectionInfo intersection = IntersectionInfo.NoHit;
-
-        foreach (var geometry in Geometries)
+        
+        if (TLAS != null && TLAS.Intersect(in ray, ref intersection))
         {
-            intersection.Reset();
-            if (geometry.Intersect(ray, ref intersection) && (intersection.Distance < closestIntersection.Distance))
+            if (intersection.Distance < closestIntersection.Distance)
             {
-                intersection.material ??= GetMaterial(geometry.MaterialIndex);
+                var index = intersection.HitGeometry?.MaterialIndex ?? 0;
+                intersection.material = GetMaterial(index);
+                
                 closestIntersection = intersection;
-            } 
+            }
         }
+        else
+        {
+            foreach (var geometry in Geometries)
+            {
+                intersection.Reset();
+                if (geometry.Intersect(ray, ref intersection) && (intersection.Distance < closestIntersection.Distance))
+                {
+                    intersection.material ??= GetMaterial(geometry.MaterialIndex);
+                    closestIntersection = intersection;
+                } 
+            }
+        }
+        
         
         foreach (var plane in Planes)
         {
@@ -127,6 +156,7 @@ public partial class Scene
         return closestIntersection;
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Material GetMaterial(int index)
     {
         var clamped = Math.Clamp(index - 1, 0, Content.Materials.Material.Count - 1);

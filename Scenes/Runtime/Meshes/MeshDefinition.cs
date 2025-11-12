@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using Raytracer.Rendering;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Objects;
 using Raytracer.Scenes.Runtime.Meshes.BVH;
@@ -66,5 +65,9 @@ public class MeshDefinition
         for (int i = 0; i < VertexNormals.Length; i++)
             VertexNormals[i] = Vector3.Normalize(VertexNormals[i]);
         BVH = new BoundingVolumeHierarchy(this);
+    }
+    public BoundingBox GetBounds()
+    {
+        return BVH.GetNode(0).Bounds;
     }
 }

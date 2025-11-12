@@ -79,8 +79,8 @@ public class Camera
         sVMultiplier = (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
     }
 
-    private Vector3 Forward;
-    private Vector3 Right;
+    public Vector3 Forward;
+    public Vector3 Right;
     private Vector3 m;
     private Vector3 q;
     private float sUMultiplier;

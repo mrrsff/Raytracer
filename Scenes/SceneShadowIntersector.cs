@@ -11,12 +11,19 @@ public partial class Scene
     public bool IntersectAny(Ray ray, float maxDistance)
     {
         var intersection = IntersectionInfo.NoHit;
-
-        foreach (var geometry in Geometries)
+        if (TLAS != null && TLAS.Intersect(ray, ref intersection))
         {
-            if (!geometry.Intersect(ray, ref intersection)) continue;
             if (intersection.Distance < maxDistance)
                 return true;
+        }
+        else
+        {
+            foreach (var geometry in Geometries)
+            {
+                if (!geometry.Intersect(ray, ref intersection)) continue;
+                if (intersection.Distance < maxDistance)
+                    return true;
+            }
         }
         
         foreach (var triangle in Content.Objects.Triangle)
@@ -25,6 +32,15 @@ public partial class Scene
             if (intersection.Distance < maxDistance)
                 return true;
         }
+        
+        // Disabled due to mirror room bug??
+        // foreach (var plane in Planes)
+        // {
+        //     if (!plane.Intersect(ray, ref intersection)) continue;
+        //     if (intersection.Distance < maxDistance)
+        //         return true;
+        // }
+        
         return false;
     }
 

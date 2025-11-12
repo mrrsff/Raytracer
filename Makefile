@@ -43,11 +43,12 @@ clean:
 	@if exist "$(TARGET).exe" del "$(TARGET).exe"
 	@echo "Clean complete."
 
-tar:
+tar: linux
 	@mkdir Tarfile || true
 	@rm -f Tarfile/raytracer.tar.gz
 	@tar -czf ./Tarfile/raytracer.tar.gz \
 		--exclude=hw1 \
+		--exclude=hw2 \
 		--exclude=Outputs \
 		--exclude=.git \
 		--exclude=.idea \

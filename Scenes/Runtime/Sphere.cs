@@ -1,9 +1,11 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Objects;
+using Raytracer.Scenes.Runtime.Meshes;
 
 namespace Raytracer.Scenes.Runtime;
 
@@ -21,6 +23,10 @@ public class Sphere : Geometry
         MaterialIndex = data.Material;
         radiusSquared = radius * radius;
         Transform = new Transform();
+        Bounds = new BoundingBox(
+            Transform.ToWorldPoint(center - new Vector3(radius)),
+            Transform.ToWorldPoint(center + new Vector3(radius))
+        );
     }
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {

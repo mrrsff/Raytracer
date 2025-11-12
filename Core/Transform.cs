@@ -1,6 +1,4 @@
 ﻿using System.Numerics;
-using Raytracer.Utility;
-
 namespace Raytracer.Core;
 
 public class Transform

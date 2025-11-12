@@ -1,4 +1,6 @@
-﻿namespace Raytracer.IO.Ply;
+﻿using System.Collections.Generic;
+
+namespace Raytracer.IO.Ply;
 
 public class PlyHeader
 {

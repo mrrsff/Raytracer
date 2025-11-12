@@ -1,8 +1,5 @@
 ﻿using System.Numerics;
-using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
-using Raytracer.Scenes.Content.Datas.Camera;
-using Raytracer.Utility;
 
 namespace Raytracer.Rendering.Shading;
 

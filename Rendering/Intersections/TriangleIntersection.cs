@@ -1,6 +1,4 @@
 ﻿using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
 using Raytracer.Core;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Objects;
