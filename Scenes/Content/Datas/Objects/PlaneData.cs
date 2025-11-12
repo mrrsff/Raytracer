@@ -14,6 +14,7 @@ public struct PlaneData
 
     public override string ToString()
     {
-        return $"Plane (ID: {Id}) - Point Vertex Index: {Point}, Normal: {Normal}, Material Index: {Material} Transformations: {Transformations}";
+        return
+            $"Plane (ID: {Id}) - Point Vertex Index: {Point}, Normal: {Normal}, Material Index: {Material} Transformations: {Transformations}";
     }
 }

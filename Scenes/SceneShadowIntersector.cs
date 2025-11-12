@@ -25,14 +25,14 @@ public partial class Scene
                     return true;
             }
         }
-        
+
         foreach (var triangle in Content.Objects.Triangle)
         {
             if (!triangle.Intersect(ray, Content.VertexData, ref intersection)) continue;
             if (intersection.Distance < maxDistance)
                 return true;
         }
-        
+
         // Disabled due to mirror room bug??
         // foreach (var plane in Planes)
         // {
@@ -40,7 +40,7 @@ public partial class Scene
         //     if (intersection.Distance < maxDistance)
         //         return true;
         // }
-        
+
         return false;
     }
 

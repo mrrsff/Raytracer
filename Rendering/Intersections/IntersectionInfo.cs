@@ -31,5 +31,6 @@ public struct IntersectionInfo()
         Point = default;
         Normal = default;
     }
-    public static IntersectionInfo NoHit => new IntersectionInfo() {};
+
+    public static IntersectionInfo NoHit => new IntersectionInfo() { };
 }

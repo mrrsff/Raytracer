@@ -16,17 +16,20 @@ namespace Raytracer.Scenes;
 public partial class Scene
 {
     [JsonPropertyName("Scene")] public SceneContent Content;
-    
+
     public List<Geometry> Geometries = [];
     public List<Plane> Planes = [];
     public BoundingVolumeHierarchy TLAS;
-    public Scene() { }
+
+    public Scene()
+    {
+    }
 
     public Scene(SceneContent content)
     {
         Content = content;
     }
-    
+
     public void Initialize()
     {
         foreach (var pLight in Content.Lights.PointLight)
@@ -36,41 +39,44 @@ public partial class Scene
                 Content.Transformations.ApplyTransformations(pLight.Transform, pLight.Transformations);
             }
         }
+
         foreach (var camera in Content.Cameras.Camera)
         {
             if (camera.Transformations != null)
                 Content.Transformations.ApplyTransformations(camera.Transform, camera.Transformations);
         }
-        
+
         var originalMeshes = new Dictionary<int, Mesh>();
         foreach (var meshData in Content.Objects.Mesh)
         {
             var transform = new Transform();
             if (meshData.Transformations != null)
                 Content.Transformations.ApplyTransformations(transform, meshData.Transformations);
-            
+
             var mesh = string.IsNullOrEmpty(meshData.Faces.PlyData)
                 ? new Mesh(meshData, this, transform)
-                : new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material, transform); // Mesh from PLY file
-            
+                : new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material,
+                    transform); // Mesh from PLY file
+
             Geometries.Add(mesh);
             originalMeshes.Add(meshData.Id, mesh);
         }
+
         foreach (var meshInstance in Content.Objects.MeshInstance)
         {
             if (!originalMeshes.TryGetValue(meshInstance.BaseMeshId, out var mesh)) continue;
-            
+
             var transform = meshInstance.ResetTransform ? new Transform() : mesh.Transform.Copy();
-            
-            if (meshInstance.Transformations != null) 
+
+            if (meshInstance.Transformations != null)
                 Content.Transformations.ApplyTransformations(transform, meshInstance.Transformations);
-            
+
             var instancedMesh = new Mesh(mesh, transform);
             instancedMesh.MaterialIndex = meshInstance.Material != -1 ? meshInstance.Material : mesh.MaterialIndex;
             Geometries.Add(instancedMesh);
             originalMeshes.Add(meshInstance.Id, instancedMesh);
         }
-        
+
         foreach (var sphereData in Content.Objects.Sphere)
         {
             var sphere = new Sphere(sphereData, Content.VertexData);
@@ -92,7 +98,7 @@ public partial class Scene
         if (Geometries.Count > 16)
             TLAS = new BoundingVolumeHierarchy(this);
     }
-    
+
     public Camera GetCamera(int index)
     {
         var clamped = Math.Clamp(index, 0, Content.Cameras.Camera.Count - 1);
@@ -103,14 +109,14 @@ public partial class Scene
     {
         IntersectionInfo closestIntersection = IntersectionInfo.NoHit;
         IntersectionInfo intersection = IntersectionInfo.NoHit;
-        
+
         if (TLAS != null && TLAS.Intersect(in ray, ref intersection))
         {
             if (intersection.Distance < closestIntersection.Distance)
             {
                 var index = intersection.HitGeometry?.MaterialIndex ?? 0;
                 intersection.material = GetMaterial(index);
-                
+
                 closestIntersection = intersection;
             }
         }
@@ -123,11 +129,11 @@ public partial class Scene
                 {
                     intersection.material ??= GetMaterial(geometry.MaterialIndex);
                     closestIntersection = intersection;
-                } 
+                }
             }
         }
-        
-        
+
+
         foreach (var plane in Planes)
         {
             intersection.Reset();
@@ -149,13 +155,13 @@ public partial class Scene
                 closestIntersection = intersection;
             }
         }
-        
+
         closestIntersection.RayOrigin = ray.Origin;
         closestIntersection.RayDirection = ray.Direction;
-        
+
         return closestIntersection;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Material GetMaterial(int index)
     {

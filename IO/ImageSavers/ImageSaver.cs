@@ -25,6 +25,7 @@ public class ImageSaver
                 );
             }
         }
+
         image.Save(path);
     }
 }

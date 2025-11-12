@@ -20,7 +20,7 @@ public class Triangle : Geometry
     private MeshDefinition MeshDefinition;
 
     public Vector3 Normal;
-    
+
     public Triangle(int primitiveIndex, int i0, int i1, int i2, MeshDefinition meshDefinition)
     {
         MeshDefinition = meshDefinition;
@@ -36,6 +36,7 @@ public class Triangle : Geometry
             Vector3.Max(Vector3.Max(V0, V1), V2)
         );
     }
+
     public Triangle(int primitiveIndex, int i0, int i1, int i2)
     {
         PrimitiveIndex = primitiveIndex;
@@ -43,6 +44,7 @@ public class Triangle : Geometry
         I1 = i1;
         I2 = i2;
     }
+
     public void SetMeshDefinition(MeshDefinition meshDefinition)
     {
         MeshDefinition = meshDefinition;
@@ -51,6 +53,7 @@ public class Triangle : Geometry
         E2 = V2 - V0;
         Centroid = (V0 + V1 + V2) / 3.0f;
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
@@ -59,13 +62,13 @@ public class Triangle : Geometry
         info.PrimitiveIndex = PrimitiveIndex;
         return hit;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CalculateBarycentricCoordinates(in Vector3 point, out float alpha, out float beta, out float gamma)
     {
-        Vector3 v0 = E1;               // edge1 = V1 - V0
-        Vector3 v1 = E2;               // edge2 = V2 - V0
-        Vector3 v2 = point - V0;       // vector from V0 to point
+        Vector3 v0 = E1; // edge1 = V1 - V0
+        Vector3 v1 = E2; // edge2 = V2 - V0
+        Vector3 v2 = point - V0; // vector from V0 to point
 
         float d00 = Vector3.Dot(v0, v0);
         float d01 = Vector3.Dot(v0, v1);
@@ -75,9 +78,8 @@ public class Triangle : Geometry
 
         float denom = d00 * d11 - d01 * d01;
 
-        beta  = (d11 * d20 - d01 * d21) / denom;
+        beta = (d11 * d20 - d01 * d21) / denom;
         gamma = (d00 * d21 - d01 * d20) / denom;
         alpha = 1.0f - beta - gamma;
     }
-
 }

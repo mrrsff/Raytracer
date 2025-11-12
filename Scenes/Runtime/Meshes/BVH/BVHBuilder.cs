@@ -11,6 +11,7 @@ public static class BVHBuilder
     private const float C_isect = 1f;
 
     #region Mesh BVH Build
+
     public static BVHNode[] Build(MeshDefinition meshDefinition)
     {
         var triangles = meshDefinition.Triangles;
@@ -18,7 +19,7 @@ public static class BVHBuilder
 
         // adaptive params
         int minTris = triangleCount < 10_000 ? 32 :
-            triangleCount < 100_000 ? 16 : 
+            triangleCount < 100_000 ? 16 :
             triangleCount < 1000_000 ? 8 : 4;
         int maxDepth = triangleCount < 10_000 ? 12 :
             triangleCount < 100_000 ? 16 :
@@ -30,7 +31,7 @@ public static class BVHBuilder
             BuildParallel(triangles, 0, triangleCount, minTris, maxDepth, nodes);
         else
             BuildIterative(ref triangles, 0, triangleCount, minTris, maxDepth, nodes);
-        
+
         sw.Stop();
         if (Debug.DebugBVHBuildTime)
         {
@@ -38,30 +39,34 @@ public static class BVHBuilder
             Console.WriteLine(
                 $"{mode} BVH built in {sw.ElapsedMilliseconds} ms with {nodes.Count} nodes for {triangleCount} triangles.");
         }
+
         return nodes.ToArray();
     }
-    
+
     #region Iterative BVH Build
+
     struct BuildTask
     {
         public int Start, End, Depth, ParentIndex;
         public bool IsLeftChild;
     }
-    private static int BuildIterative(ref Triangle[] tris, int start, int end, int minTris, int maxDepth, List<BVHNode> nodes)
+
+    private static int BuildIterative(ref Triangle[] tris, int start, int end, int minTris, int maxDepth,
+        List<BVHNode> nodes)
     {
         Stack<BuildTask> stack = new();
         stack.Push(new BuildTask { Start = start, End = end, Depth = 0, ParentIndex = -1, IsLeftChild = false });
-    
+
         int rootIndex = -1;
-    
+
         while (stack.Count > 0)
         {
             var task = stack.Pop();
-    
+
             // Build node
             int nodeIndex = nodes.Count;
             var bbox = ComputeBoundingBox(tris, task.Start, task.End);
-    
+
             BVHNode node = new BVHNode
             {
                 Bounds = bbox,
@@ -71,7 +76,7 @@ public static class BVHBuilder
                 RightChild = -1
             };
             nodes.Add(node);
-    
+
             // Link to parent
             if (task.ParentIndex != -1)
             {
@@ -84,17 +89,17 @@ public static class BVHBuilder
             {
                 rootIndex = nodeIndex; // first node = root
             }
-    
+
             int triCount = task.End - task.Start;
             if (triCount <= minTris || task.Depth >= maxDepth)
                 continue;
-    
+
             float parentCost = triCount * C_isect;
             var (axis, split, splitCost) = ChooseSplitAxis(ref tris, task.Start, task.End);
-    
+
             if (splitCost >= parentCost && triCount <= minTris)
                 continue;
-    
+
             int mid = PartitionTriangles(tris, task.Start, task.End, axis, split);
             if (mid == task.Start || mid == task.End)
             {
@@ -105,18 +110,23 @@ public static class BVHBuilder
                 if (mid == task.Start || mid == task.End)
                     continue;
             }
-    
+
             // Push children — push right first so left is processed first (depth-first)
-            stack.Push(new BuildTask { Start = mid, End = task.End, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = false });
-            stack.Push(new BuildTask { Start = task.Start, End = mid, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = true });
+            stack.Push(new BuildTask
+                { Start = mid, End = task.End, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = false });
+            stack.Push(new BuildTask
+                { Start = task.Start, End = mid, Depth = task.Depth + 1, ParentIndex = nodeIndex, IsLeftChild = true });
         }
-    
+
         return rootIndex;
     }
+
     #endregion
 
     #region Parallel BVH Build
-    private static void BuildParallel(Triangle[] tris, int start, int end, int minTris, int maxDepth, List<BVHNode> nodes)
+
+    private static void BuildParallel(Triangle[] tris, int start, int end, int minTris, int maxDepth,
+        List<BVHNode> nodes)
     {
         object nodeLock = new();
 
@@ -165,7 +175,7 @@ public static class BVHBuilder
             // int axisFB = bbox.LargestAxis();
             // float posFB = 0.5f * (bbox.Min[axisFB] + bbox.Max[axisFB]);
             // int mid = PartitionTriangles(tris, start_, end_, axisFB, posFB);
-            
+
             int mid = PartitionTriangles(tris, start_, end_, axis, split);
             if (mid == start_ || mid == end_)
             {
@@ -192,7 +202,9 @@ public static class BVHBuilder
             }
         }
     }
+
     #endregion
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float SurfaceArea(in BoundingBox b)
     {
@@ -200,20 +212,21 @@ public static class BVHBuilder
         if (d.X <= 0 || d.Y <= 0 || d.Z <= 0) return 0f;
         return (d.X * d.Y + d.X * d.Z + d.Y * d.Z);
     }
+
     private static (int, float, float) ChooseSplitAxis(ref Triangle[] triangles, int start, int end)
     {
         const int numTestsPerAxis = 2;
         float bestCost = float.MaxValue;
         float bestPosition = 0f;
         int bestAxis = 0;
-        
+
         BoundingBox nodeBox = ComputeBoundingBox(triangles, start, end);
         for (int axis = 0; axis < 3; axis++)
         {
             float boundsStart = nodeBox.Min[axis];
             float boundsEnd = nodeBox.Max[axis];
             for (int i = 1; i <= numTestsPerAxis; i++)
-            {   
+            {
                 float splitT = i / (numTestsPerAxis + 1f);
                 float pos = boundsStart + (boundsEnd - boundsStart) * splitT;
                 float cost = EvaluateSplitCost(triangles, start, end, axis, pos, nodeBox);
@@ -223,9 +236,10 @@ public static class BVHBuilder
                 bestAxis = axis;
             }
         }
-        
+
         return (bestAxis, bestPosition, bestCost);
     }
+
     private static float EvaluateSplitCost(
         Triangle[] triangles, int start, int end,
         int axis, float splitPosition, BoundingBox parentBox)
@@ -255,12 +269,13 @@ public static class BVHBuilder
         float SA_L = SurfaceArea(leftBox);
         float SA_R = SurfaceArea(rightBox);
         if (SA_P == 0f) return float.MaxValue; // degenerate parent
-        
+
         float cost = C_trav
                      + (SA_L / SA_P) * leftCount * C_isect
                      + (SA_R / SA_P) * rightCount * C_isect;
         return cost;
     }
+
     private static int PartitionTriangles(Triangle[] triangles, int start, int end, int axis, float split)
     {
         int i = start;
@@ -274,13 +289,17 @@ public static class BVHBuilder
             (triangles[i], triangles[j]) = (triangles[j], triangles[i]);
             triangles[i].PrimitiveIndex = i;
             triangles[j].PrimitiveIndex = j;
-            i++; j--;
+            i++;
+            j--;
         }
+
         return i;
     }
+
     #endregion
 
     #region Scene BVH Build
+
     public static BVHNode[] Build(Scene scene, out Geometry[] geometries)
     {
         geometries = scene.Geometries.ToArray();
@@ -291,7 +310,7 @@ public static class BVHBuilder
 
         var nodes = new List<BVHNode>(geometryCount * 2);
         Stopwatch sw = Stopwatch.StartNew();
-        
+
         BuildScene(geometries, 0, geometryCount, minGeos, maxDepth, nodes);
 
         sw.Stop();
@@ -300,7 +319,7 @@ public static class BVHBuilder
             string mode = Debug.UseParallelBVHBuild ? "Parallel" : "Iterative";
             Console.WriteLine(
                 $"{mode} TLAS built in {sw.ElapsedMilliseconds} ms with {nodes.Count} nodes for {geometryCount} geometries.");
-            
+
             // Print tree
             int depth = 0;
 
@@ -322,15 +341,15 @@ public static class BVHBuilder
                         $"{new string(' ', currentDepth * 2)} Node {index}: Geos [{node.Start}, {node.End}), " +
                         $"Bounds Min{node.Bounds.Min}, Max{node.Bounds.Max}");
                 }
-                
+
                 PrintNode(node.LeftChild, currentDepth + 1);
                 PrintNode(node.RightChild, currentDepth + 1);
-                
             }
-            
+
             PrintNode(0, 0);
             Console.WriteLine($"TLAS Depth: {depth}");
         }
+
         return nodes.ToArray();
     }
 
@@ -374,6 +393,7 @@ public static class BVHBuilder
 
         return nodeIndex;
     }
+
     private static int PartitionGeometries(Geometry[] geometries, int start, int end, int axis, float split)
     {
         int i = start;
@@ -413,6 +433,7 @@ public static class BVHBuilder
     }
 
     #endregion
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static BoundingBox ComputeBoundingBox(Triangle[] triangles, int start, int end)
     {
@@ -428,6 +449,7 @@ public static class BVHBuilder
 
         return new BoundingBox(min, max);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int LargestAxis(this BoundingBox box)
     {

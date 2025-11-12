@@ -20,14 +20,14 @@ public class BoundingVolumeHierarchy : Geometry
         var tris = meshDefinition.Triangles;
         geometries = new Geometry[tris.Length];
         for (int i = 0; i < tris.Length; i++) geometries[i] = tris[i];
-        
+
         if (Debug.ShowBVHBoxes) DrawDebugBVH();
     }
 
     public BoundingVolumeHierarchy(Scene scene)
     {
         nodes = BVHBuilder.Build(scene, out geometries);
-        
+
         if (Debug.ShowTLASBoxes) DrawDebugBVH();
     }
 
@@ -35,13 +35,14 @@ public class BoundingVolumeHierarchy : Geometry
     {
         DebugRenderer.CollectBVH(this, Debug.ShowBVHBoxesLeafNodesOnly);
     }
+
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
         bool hit = false;
         float closest = float.MaxValue;
         IntersectionInfo temp = IntersectionInfo.NoHit;
 
-        
+
         Stack<int> stack = new Stack<int>();
         stack.Push(0);
 
@@ -85,6 +86,7 @@ public class BoundingVolumeHierarchy : Geometry
                 }
             }
         }
+
         return hit;
     }
 }

@@ -13,7 +13,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
     public Vector3 Max { get; private set; } = max;
     public Vector3 Size { get; private set; } = max - min;
     public Vector3 Center { get; private set; } = (min + max) * 0.5f;
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Intersects(Ray ray, out float tMin, out float tMax)
     {
@@ -61,7 +61,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
     {
         return Intersects(ray, out _, out _);
     }
-    
+
     public bool IntersectEdge(in Ray ray, out float t)
     {
         t = 0f;
@@ -107,6 +107,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
 
         return false;
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Encapsulate(Vector3 point)
     {
@@ -115,6 +116,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
         Size = Max - Min;
         Center = (Min + Max) * 0.5f;
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Encapsulate(Triangle triangle)
     {

@@ -28,6 +28,7 @@ public class Sphere : Geometry
             Transform.ToWorldPoint(center + new Vector3(radius))
         );
     }
+
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
         var localRay = Transform.ToLocalRay(ray);
@@ -68,5 +69,4 @@ public class Sphere : Geometry
 
         return true;
     }
-
 }

@@ -9,7 +9,7 @@ public static class BlinnPhongShading
     {
         var point = intersection.Point;
         var normal = intersection.Normal;
-        
+
         Vector3 ambient = intersection.material!.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
         Vector3 diffuse = Vector3.Zero;
         Vector3 specular = Vector3.Zero;
@@ -23,7 +23,7 @@ public static class BlinnPhongShading
             var lightDelta = light.Position - point;
             Vector3 lightDir = Vector3.Normalize(lightDelta);
             Vector3 irradiance = light.Intensity / (lightDelta.LengthSquared());
-            
+
             // Diffuse
             float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);
             diffuse += diff * intersection.material.DiffuseReflectance * irradiance;

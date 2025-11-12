@@ -13,6 +13,7 @@ public static class DebugRenderer
     public static void Add(IDebugGeometry g) => geometries.Add(g);
     public static IEnumerable<IDebugGeometry> GetAll() => geometries;
     public static void Clear() => geometries.Clear();
+
     public static void CollectBVH(BoundingVolumeHierarchy bvh, bool leafOnly)
     {
         for (int i = 0; i < bvh.NodeCount; i++)
@@ -22,7 +23,7 @@ public static class DebugRenderer
             Add(new DebugBoundingBox(node.Bounds.Min, node.Bounds.Max, node.IsLeaf));
         }
     }
-    
+
     public static void Rasterize(Camera camera, RenderResult renderResult)
     {
         foreach (var g in geometries)
@@ -33,7 +34,7 @@ public static class DebugRenderer
             }
         }
     }
-    
+
     private static void DrawBoundingBoxWire(Camera camera, RenderResult img, Vector3 min, Vector3 max, bool leaf)
     {
         Vector3 color = leaf ? new(1, 0, 0) : new(0, 1, 0);
@@ -54,9 +55,9 @@ public static class DebugRenderer
         // define edges as pairs of indices
         ReadOnlySpan<(int, int)> edges =
         [
-            (0,1),(1,2),(2,3),(3,0), // front face
-            (4,5),(5,6),(6,7),(7,4), // back face
-            (0,4),(1,5),(2,6),(3,7)  // connecting edges
+            (0, 1), (1, 2), (2, 3), (3, 0), // front face
+            (4, 5), (5, 6), (6, 7), (7, 4), // back face
+            (0, 4), (1, 5), (2, 6), (3, 7) // connecting edges
         ];
 
         foreach (var (i0, i1) in edges)
@@ -76,7 +77,7 @@ public static class DebugRenderer
 
         // Coordinates on the near plane (world-space) by similar triangles
         float u = (Vector3.Dot(d, camera.Right) / z) * camera.NearDistance;
-        float v = (Vector3.Dot(d, camera.Up)     / z) * camera.NearDistance;
+        float v = (Vector3.Dot(d, camera.Up) / z) * camera.NearDistance;
 
         // Reject if outside the image plane extents
         float L = camera.NearPlane.Left;
@@ -87,8 +88,8 @@ public static class DebugRenderer
         if (u < L || u > R || v < B || v > T) return new Vector2(-1f, -1f);
 
         // Map to pixel coordinates
-        float sx = (u - L) / (R - L);           // [0,1]
-        float sy = (T - v) / (T - B);           // [0,1] (note Y down in image)
+        float sx = (u - L) / (R - L); // [0,1]
+        float sy = (T - v) / (T - B); // [0,1] (note Y down in image)
         float px = sx * camera.ImageResolution.Width;
         float py = sy * camera.ImageResolution.Height;
 
@@ -129,8 +130,17 @@ public static class DebugRenderer
             if (x0 == x1 && y0 == y1) break;
 
             int e2 = err << 1;
-            if (e2 > -dy) { err -= dy; x0 += sx; }
-            if (e2 <  dx) { err += dx; y0 += sy; }
+            if (e2 > -dy)
+            {
+                err -= dy;
+                x0 += sx;
+            }
+
+            if (e2 < dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
         }
     }
 }

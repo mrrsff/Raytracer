@@ -20,6 +20,7 @@ public class Plane : Geometry
         MaterialIndex = data.Material;
         Transform = new Transform();
     }
+
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
         var localRay = Transform.ToLocalRay(ray);
@@ -46,5 +47,4 @@ public class Plane : Geometry
         info.HitGeometry = this;
         return true;
     }
-
 }

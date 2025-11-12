@@ -8,13 +8,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Ply.Net" Version="5.5.10" />
-      <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+        <PackageReference Include="Ply.Net" Version="5.5.10"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Outputs\" />
-      <Folder Include="Tarfile\" />
+        <Folder Include="Outputs\"/>
+        <Folder Include="Tarfile\"/>
     </ItemGroup>
 
 </Project>

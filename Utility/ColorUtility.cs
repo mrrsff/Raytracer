@@ -14,7 +14,7 @@ public static class ColorUtility
     public static readonly Vector3 Cyan = new(0, 1, 1);
     public static readonly Vector3 Magenta = new(1, 0, 1);
     public static readonly Vector3 Gray = new(0.5f, 0.5f, 0.5f);
-    
+
     public static Vector3 Normalize(Vector3 color)
     {
         return Vector3.Clamp(color, Black, White * 255) / 255f;

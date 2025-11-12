@@ -13,6 +13,7 @@ public class MeshInstance
 
     public override string ToString()
     {
-        return $"MeshInstance(Id: {Id}, BaseMeshId: {BaseMeshId}, ResetTransform: {ResetTransform}, TransformationData: {Transformations})";
+        return
+            $"MeshInstance(Id: {Id}, BaseMeshId: {BaseMeshId}, ResetTransform: {ResetTransform}, TransformationData: {Transformations})";
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+
 namespace Raytracer.Core;
 
 public class Transform
@@ -7,21 +8,25 @@ public class Transform
     private Matrix4x4 inverseTransformMatrix;
     public Matrix4x4 Matrix => transformMatrix;
     public Matrix4x4 InverseMatrix => inverseTransformMatrix;
+
     public Transform()
     {
         transformMatrix = Matrix4x4.Identity;
         inverseTransformMatrix = Matrix4x4.Identity;
     }
+
     public Transform(Matrix4x4 matrix)
     {
         transformMatrix = matrix;
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
+
     public void SetMatrix(Matrix4x4 matrix)
     {
         transformMatrix = matrix;
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
+
     public void ApplyTranslation(Vector3 translation)
     {
         Matrix4x4 translationMat = Matrix4x4.CreateTranslation(translation);
@@ -35,6 +40,7 @@ public class Transform
         transformMatrix *= rotationMat;
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
+
     public void ApplyRotation(Vector4 axisAngle)
     {
         Vector3 axis = new Vector3(axisAngle.X, axisAngle.Y, axisAngle.Z);
@@ -55,39 +61,47 @@ public class Transform
         transformMatrix *= scaleMat;
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
+
     public Vector3 ToWorldPoint(Vector3 point)
     {
         return Vector3.Transform(point, transformMatrix);
     }
+
     public Vector3 ToLocalPoint(Vector3 point)
     {
         return Vector3.Transform(point, inverseTransformMatrix);
     }
+
     public Vector3 ToWorldDirection(Vector3 dir)
     {
         Matrix4x4 invT = Matrix4x4.Transpose(inverseTransformMatrix);
         return Vector3.Normalize(Vector3.TransformNormal(dir, invT));
     }
+
     public Vector3 ToLocalDirection(Vector3 dir)
     {
         return Vector3.Normalize(Vector3.TransformNormal(dir, inverseTransformMatrix));
     }
+
     public Ray ToLocalRay(Ray ray)
     {
         Vector3 o = ToLocalPoint(ray.Origin);
         Vector3 d = ToLocalDirection(ray.Direction);
         return new Ray(o, d, ray.IsSecondary);
     }
+
     public Ray ToWorldRay(Ray ray)
     {
         Vector3 o = ToWorldPoint(ray.Origin);
         Vector3 d = ToWorldDirection(ray.Direction);
         return new Ray(o, d, ray.IsSecondary);
     }
+
     public Transform Copy()
     {
         return new Transform(transformMatrix);
     }
+
     public override string ToString()
     {
         return transformMatrix.ToString();

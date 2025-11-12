@@ -9,7 +9,12 @@ namespace Raytracer.IO.Ply
 {
     public static class PlyImporter
     {
-        public enum PlyFormat { Ascii, BinaryLittleEndian, BinaryBigEndian }
+        public enum PlyFormat
+        {
+            Ascii,
+            BinaryLittleEndian,
+            BinaryBigEndian
+        }
 
         private sealed class PlyHeader
         {
@@ -18,8 +23,8 @@ namespace Raytracer.IO.Ply
             public int FaceCount;
             public readonly List<(string type, string name)> VertexProps = new();
             public string FaceCountType = "uchar"; // list count type
-            public string FaceIndexType = "int";   // list index type
-            public long HeaderEnd;                 // byte offset immediately after end_header line
+            public string FaceIndexType = "int"; // list index type
+            public long HeaderEnd; // byte offset immediately after end_header line
         }
 
         public static (Vector3[] vertices, int[][] faces) Parse(string path)
@@ -54,18 +59,22 @@ namespace Raytracer.IO.Ply
                 {
                     if (s.Contains("ascii")) h.Format = PlyFormat.Ascii;
                     else if (s.Contains("binary_little_endian")) h.Format = PlyFormat.BinaryLittleEndian;
-                    else if (s.Contains("binary_big_endian"))    h.Format = PlyFormat.BinaryBigEndian;
+                    else if (s.Contains("binary_big_endian")) h.Format = PlyFormat.BinaryBigEndian;
                     else throw new Exception($"Unsupported PLY format: {s}");
                 }
                 else if (s.StartsWith("element vertex"))
                 {
-                    h.VertexCount = int.Parse(s.Split(' ', StringSplitOptions.RemoveEmptyEntries)[2], CultureInfo.InvariantCulture);
-                    inVertex = true; inFace = false;
+                    h.VertexCount = int.Parse(s.Split(' ', StringSplitOptions.RemoveEmptyEntries)[2],
+                        CultureInfo.InvariantCulture);
+                    inVertex = true;
+                    inFace = false;
                 }
                 else if (s.StartsWith("element face"))
                 {
-                    h.FaceCount = int.Parse(s.Split(' ', StringSplitOptions.RemoveEmptyEntries)[2], CultureInfo.InvariantCulture);
-                    inVertex = false; inFace = true;
+                    h.FaceCount = int.Parse(s.Split(' ', StringSplitOptions.RemoveEmptyEntries)[2],
+                        CultureInfo.InvariantCulture);
+                    inVertex = false;
+                    inFace = true;
                 }
                 else if (s.StartsWith("property list") && inFace)
                 {
@@ -100,15 +109,17 @@ namespace Raytracer.IO.Ply
                 if (b == '\n') break;
                 bytes.Add((byte)b);
             }
+
             if (b == -1 && bytes.Count == 0) return null;
             return Encoding.ASCII.GetString(bytes.ToArray());
         }
+
         private static (Vector3[] vertices, int[][] faces) ParseAscii(Stream s, PlyHeader h)
         {
             using var r = new StreamReader(s, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
             var verts = new Vector3[h.VertexCount];
             var faces = new int[h.FaceCount][];
-            
+
             for (int i = 0; i < h.VertexCount; i++)
             {
                 var line = r.ReadLine() ?? throw new Exception("Unexpected EOF in ASCII vertex list.");
@@ -121,12 +132,16 @@ namespace Raytracer.IO.Ply
                     {
                         float val = float.Parse(parts[p], CultureInfo.InvariantCulture);
                         var name = h.VertexProps[p].name;
-                        if (name == "x") x = val; else if (name == "y") y = val; else if (name == "z") z = val;
+                        if (name == "x") x = val;
+                        else if (name == "y") y = val;
+                        else if (name == "z") z = val;
                         f++;
                     }
                 }
+
                 verts[i] = new Vector3(x, y, z);
             }
+
             for (int i = 0; i < h.FaceCount; i++)
             {
                 var line = r.ReadLine() ?? throw new Exception("Unexpected EOF in ASCII face list.");
@@ -136,8 +151,10 @@ namespace Raytracer.IO.Ply
                 for (int j = 0; j < n; j++) idx[j] = int.Parse(parts[j + 1], CultureInfo.InvariantCulture);
                 faces[i] = idx;
             }
+
             return (verts, faces);
         }
+
         private static (Vector3[] vertices, int[][] faces) ParseBinary(Stream s, PlyHeader h)
         {
             using var br = new BinaryReader(s, Encoding.ASCII, leaveOpen: true);
@@ -180,6 +197,7 @@ namespace Raytracer.IO.Ply
                                     nz = fv;
                                     break;
                             }
+
                             break;
                         case "double":
                         case "float64":
@@ -208,6 +226,7 @@ namespace Raytracer.IO.Ply
                             break;
                     }
                 }
+
                 vertices[i] = new Vector3(x, y, z);
             }
 
@@ -222,6 +241,7 @@ namespace Raytracer.IO.Ply
 
             return (vertices, faces);
         }
+
         private static int SizeOf(string t) => t switch
         {
             "char" or "uchar" or "int8" or "uint8" => 1,

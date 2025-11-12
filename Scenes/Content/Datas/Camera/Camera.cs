@@ -11,6 +11,7 @@ public enum CameraType
     None,
     LookAt
 }
+
 public class Camera
 {
     [JsonPropertyName("_id")] public int Id;
@@ -50,31 +51,31 @@ public class Camera
             .Append(ImageName)
             .Append(')').ToString();
     }
-    
+
     public void InitializeCamera()
     {
         if (Type == CameraType.LookAt)
-        { 
+        {
             Gaze = Vector3.Normalize(GazePoint - Position);
-        
+
             float aspect = (float)ImageResolution.Width / ImageResolution.Height;
             NearPlane.Top = NearDistance * MathF.Tan(FovY * MathF.PI / 360.0f);
             NearPlane.Bottom = -NearPlane.Top;
             NearPlane.Right = aspect * NearPlane.Top;
             NearPlane.Left = -NearPlane.Right;
         }
-        
+
         var w = Vector3.Normalize(-Gaze);
         var v = Vector3.Normalize(Up - Vector3.Dot(Up, w) * w);
         var u = Vector3.Cross(v, w);
 
-        Forward = -w;  // points into scene
+        Forward = -w; // points into scene
         Right = u;
         Up = v;
 
         m = Position + Forward * NearDistance;
         q = m + (NearPlane.Left * Right) + (NearPlane.Top * Up);
-        
+
         sUMultiplier = (NearPlane.Right - NearPlane.Left) / ImageResolution.Width;
         sVMultiplier = (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
     }
@@ -85,13 +86,13 @@ public class Camera
     private Vector3 q;
     private float sUMultiplier;
     private float sVMultiplier;
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ray GetPrimaryRay(int i, int j)
     {
         float sU = (i + 0.5f) * sUMultiplier;
         float sV = (j + 0.5f) * sVMultiplier;
-        
+
         Vector3 s = q + (sU * Right) - (sV * Up);
         Vector3 d = Vector3.Normalize(s - Position);
         return new Ray(Position, d);

@@ -11,13 +11,14 @@ public class MeshDefinition
     public Triangle[] Triangles { get; private set; }
     public Vector3[] VertexNormals { get; private set; }
     public BoundingVolumeHierarchy BVH { get; set; }
+
     public MeshDefinition(in MeshData meshData, in VertexData vertexData)
     {
         var faceIndices = meshData.Faces.Data;
 
         var uniqueIndices = faceIndices.Distinct().ToArray();
         Vertices = new Vector3[uniqueIndices.Length];
-        
+
         var vertexMap = new Dictionary<int, int>();
         for (int i = 0; i < uniqueIndices.Length; i++)
         {
@@ -25,7 +26,7 @@ public class MeshDefinition
             Vertices[i] = vertexData.At(globalId);
             vertexMap[globalId] = i;
         }
-        
+
         int triangleCount = faceIndices.Length / 3;
         Triangles = new Triangle[triangleCount];
 
@@ -37,6 +38,7 @@ public class MeshDefinition
 
             Triangles[i] = new Triangle(i, i0, i1, i2, this);
         }
+
         ComputeSmoothNormals();
     }
 
@@ -48,9 +50,10 @@ public class MeshDefinition
         {
             tri.SetMeshDefinition(this);
         }
-        
+
         ComputeSmoothNormals();
     }
+
     private void ComputeSmoothNormals()
     {
         VertexNormals = new Vector3[Vertices.Length];
@@ -66,6 +69,7 @@ public class MeshDefinition
             VertexNormals[i] = Vector3.Normalize(VertexNormals[i]);
         BVH = new BoundingVolumeHierarchy(this);
     }
+
     public BoundingBox GetBounds()
     {
         return BVH.GetNode(0).Bounds;

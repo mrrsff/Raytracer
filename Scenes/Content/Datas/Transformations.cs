@@ -13,13 +13,13 @@ public struct Transformations
 {
     [JsonConverter(typeof(SingleOrListConverter<TransformationEntry>))]
     public List<TransformationEntry> Scaling;
-    
+
     [JsonConverter(typeof(SingleOrListConverter<TransformationEntry>))]
     public List<TransformationEntry> Rotation;
-    
+
     [JsonConverter(typeof(SingleOrListConverter<TransformationEntry>))]
     public List<TransformationEntry> Translation;
-    
+
     public override string ToString()
     {
         // Check for null lists to avoid null reference exceptions
@@ -36,6 +36,7 @@ public struct Transformations
                 sb.AppendLine($"    {translation}");
             }
         }
+
         if (Rotation.Count > 0)
         {
             sb.AppendLine("  Rotation:");
@@ -44,6 +45,7 @@ public struct Transformations
                 sb.AppendLine($"    {rotation}");
             }
         }
+
         if (Scaling.Count > 0)
         {
             sb.AppendLine("  Scaling:");
@@ -52,6 +54,7 @@ public struct Transformations
                 sb.AppendLine($"    {scaling}");
             }
         }
+
         return sb.ToString();
     }
 
@@ -90,6 +93,7 @@ public struct Transformations
         }
     }
 }
+
 public struct TransformationEntry
 {
     [JsonPropertyName("_id")] public int Id;
@@ -99,20 +103,21 @@ public struct TransformationEntry
     {
         return $"TransformationEntry(Id: {Id}, Data: [{string.Join(", ", Data)}])";
     }
-    
+
     public Vector3 ToVector3()
     {
         if (Data.Length != 3)
             throw new InvalidOperationException("Data length is not 3 for Vector3 conversion.");
         return new Vector3(Data[0], Data[1], Data[2]);
     }
-    
+
     public Vector4 ToRotation()
     {
         if (Data.Length != 4)
             throw new InvalidOperationException("Data length is not 4 for Rotation conversion.");
         return new Vector4(Data[1], Data[2], Data[3], Data[0]);
     }
+
     public Matrix4x4 ToCompositeMatrix()
     {
         if (Data.Length != 16)

@@ -3,6 +3,7 @@ import numpy as np
 import sys
 import os
 
+
 def compare_images(image1_path, image2_path, tolerance=5):
     img1 = Image.open(image1_path).convert("RGB")
     img2 = Image.open(image2_path).convert("RGB")
@@ -26,7 +27,7 @@ def compare_images(image1_path, image2_path, tolerance=5):
     diff_visual = np.copy(arr1)
     diff_visual[diff_mask] = [255, 0, 0]
     diff_visual = np.uint8(np.clip(diff_visual, 0, 255))
-    
+
     if similarity_percent > 99.0:
         return similarity_percent, "No significant differences detected."
     # Save diff image next to original

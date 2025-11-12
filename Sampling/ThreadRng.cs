@@ -7,6 +7,7 @@ using System.Threading;
 public static class ThreadRng
 {
     [ThreadStatic] private static XorShift128Plus? _local;
+
     private static XorShift128Plus Instance =>
         _local ??= new XorShift128Plus(SeedBase + (ulong)Thread.CurrentThread.ManagedThreadId * 0x9E3779B97F4A7C15UL);
 

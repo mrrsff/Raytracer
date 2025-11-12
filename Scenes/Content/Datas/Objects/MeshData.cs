@@ -8,6 +8,7 @@ public enum ShadingMode
     Flat,
     Smooth
 }
+
 public struct MeshData
 {
     [JsonPropertyName("_id")] public int Id;
@@ -15,7 +16,7 @@ public struct MeshData
     public int Material;
     public string Transformations;
     public FacesData Faces;
-    
+
 
     public override string ToString()
     {
