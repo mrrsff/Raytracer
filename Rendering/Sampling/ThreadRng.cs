@@ -22,6 +22,9 @@ public static class ThreadRng
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int NextInt(int max) => Instance.NextInt(max);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int NextInt(int min, int max) => min + Instance.NextInt(max - min);
+
     private sealed class XorShift128Plus
     {
         private ulong _s0, _s1;

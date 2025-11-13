@@ -29,12 +29,12 @@ public static class Sampler
             }
 
             // Shuffle x coordinates within each row
-            Random rand = new Random();
             for (int i = 0; i < sqrtN; i++)
             {
                 for (int j = 0; j < sqrtN; j++)
                 {
-                    int k = rand.Next(j, sqrtN);
+                    // int k = rand.Next(j, sqrtN);
+                    int k = ThreadRng.NextInt(j, sqrtN);
                     int index1 = i * sqrtN + j;
                     int index2 = i * sqrtN + k;
 
@@ -47,7 +47,8 @@ public static class Sampler
             {
                 for (int i = 0; i < sqrtN; i++)
                 {
-                    int k = rand.Next(i, sqrtN);
+                    // int k = rand.Next(i, sqrtN);
+                    int k = ThreadRng.NextInt(i, sqrtN);
                     int index1 = i * sqrtN + j;
                     int index2 = k * sqrtN + j;
 

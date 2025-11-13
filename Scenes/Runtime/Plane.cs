@@ -9,7 +9,6 @@ namespace Raytracer.Scenes.Runtime;
 
 public class Plane : Geometry
 {
-    public Transform Transform;
     public Vector3 point;
     public Vector3 normal;
 

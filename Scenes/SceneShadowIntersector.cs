@@ -45,11 +45,11 @@ public partial class Scene
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsOccluded(in Vector3 point, in Vector3 lightPos, in Vector3 normal)
+    public bool IsOccluded(in Vector3 point, in Vector3 lightPos, in Vector3 normal, float time)
     {
         var dir = Vector3.Normalize(lightPos - point);
         float maxT = Vector3.Distance(lightPos, point);
-        var ray = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, dir, true);
+        var ray = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, dir, true, time);
         return IntersectAny(ray, maxT);
     }
 }

@@ -9,7 +9,6 @@ namespace Raytracer.Scenes.Runtime.Meshes;
 
 public class Mesh : Geometry
 {
-    public Transform Transform { get; set; }
     private MeshDefinition MeshDefinition { get; set; }
     private ShadingMode ShadingMode { get; set; }
 
@@ -58,7 +57,8 @@ public class Mesh : Geometry
 
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
     {
-        Ray localRay = Transform.ToLocalRay(ray);
+        var finalTransform = GetMotionBlurTransform(ray.Time);
+        Ray localRay = finalTransform.ToLocalRay(ray);
 
         info.IntersectionTestEpsilon = RayTracerRenderer.IntersectionTestEpsilon;
         var hit = MeshDefinition.BVH.Intersect(in localRay, ref info);
@@ -66,8 +66,8 @@ public class Mesh : Geometry
 
         var localHitPoint = info.Point;
 
-        info.Point = Transform.ToWorldPoint(localHitPoint);
-        info.Normal = Transform.ToWorldDirection(info.Normal);
+        info.Point = finalTransform.ToWorldPoint(localHitPoint);
+        info.Normal = finalTransform.ToWorldDirection(info.Normal);
         info.HitGeometry = this;
 
         if (info.Normal.LengthSquared() < 1e-12f)
@@ -85,7 +85,7 @@ public class Mesh : Geometry
         Vector3 n2 = MeshDefinition.VertexNormals[t.I2];
         Vector3 localNormal = Vector3.Normalize(alpha * n0 + beta * n1 + gamma * n2);
 
-        info.Normal = Vector3.Normalize(Transform.ToWorldDirection(localNormal));
+        info.Normal = Vector3.Normalize(finalTransform.ToWorldDirection(localNormal));
         return hit;
     }
 }

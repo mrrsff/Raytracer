@@ -11,7 +11,6 @@ namespace Raytracer.Scenes.Runtime;
 
 public class Sphere : Geometry
 {
-    public Transform Transform;
     public Vector3 center;
     public float radius;
     public float radiusSquared;

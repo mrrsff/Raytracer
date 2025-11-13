@@ -5,7 +5,7 @@ namespace Raytracer.Rendering.Shading;
 
 public static class BlinnPhongShading
 {
-    public static Vector3 Shade(in IntersectionInfo intersection, in RayTracerRenderer renderer)
+    public static Vector3 Shade(in IntersectionInfo intersection, in float time, in RayTracerRenderer renderer)
     {
         var point = intersection.Point;
         var normal = intersection.Normal;
@@ -17,7 +17,7 @@ public static class BlinnPhongShading
 
         foreach (var light in renderer.Scene.Content.Lights.PointLight)
         {
-            if (renderer.Scene.IsOccluded(point, light.Position, normal))
+            if (renderer.Scene.IsOccluded(point, light.Position, normal, time))
                 continue;
 
             var lightDelta = light.Position - point;

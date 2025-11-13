@@ -260,7 +260,7 @@ public class RayTracerRenderer
         {
             hit.Normal = -hit.Normal;
         }
-        else finalColor = Shade(hit);
+        else finalColor = Shade(hit, ray.Time);
 
         float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
 
@@ -367,10 +367,10 @@ public class RayTracerRenderer
 
             if (InsideObject) hit.Normal = -hit.Normal;
 
-            AddToFinalColor(Shade(hit));
+            AddToFinalColor(Shade(hit, ray.Time));
 
             Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, hit.Normal));
-            Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true);
+            Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true, ray.Time);
             switch (hit.material!.Type)
             {
                 case MaterialType.Mirror:
@@ -405,8 +405,7 @@ public class RayTracerRenderer
                     {
                         float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
 
-                        Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir,
-                            true);
+                        Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true, ray.Time);
 
                         Vector3 absorption = InsideObject
                             ? GetAbsorption(hit.material!.AbsorptionCoefficient, hit.Distance)
@@ -473,9 +472,9 @@ public class RayTracerRenderer
     #region Utilities
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Vector3 Shade(in IntersectionInfo intersection)
+    private Vector3 Shade(in IntersectionInfo intersection, in float time)
     {
-        return BlinnPhongShading.Shade(intersection, this);
+        return BlinnPhongShading.Shade(intersection, time, this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

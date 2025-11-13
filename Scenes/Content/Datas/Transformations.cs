@@ -70,19 +70,19 @@ public struct Transformations
             {
                 var entry = Translation.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
                 if (entry.Data != null)
-                    transform.ApplyTranslation(entry.ToVector3());
+                    transform.Translate(entry.ToVector3());
             }
             else if (idStr.StartsWith("r"))
             {
                 var entry = Rotation.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
                 if (entry.Data != null)
-                    transform.ApplyRotation(entry.ToRotation());
+                    transform.Rotate(entry.ToRotation());
             }
             else if (idStr.StartsWith("s"))
             {
                 var entry = Scaling.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
                 if (entry.Data != null)
-                    transform.ApplyScale(entry.ToVector3());
+                    transform.Scale(entry.ToVector3());
             }
             else if (idStr.StartsWith("c"))
             {

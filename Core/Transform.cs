@@ -27,35 +27,35 @@ public class Transform
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
 
-    public void ApplyTranslation(Vector3 translation)
+    public void Translate(Vector3 translation)
     {
         Matrix4x4 translationMat = Matrix4x4.CreateTranslation(translation);
         transformMatrix *= translationMat;
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
 
-    public void ApplyRotation(Quaternion rotation)
+    public void Rotate(Quaternion rotation)
     {
         Matrix4x4 rotationMat = Matrix4x4.CreateFromQuaternion(rotation);
         transformMatrix *= rotationMat;
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
 
-    public void ApplyRotation(Vector4 axisAngle)
+    public void Rotate(Vector4 axisAngle)
     {
         Vector3 axis = new Vector3(axisAngle.X, axisAngle.Y, axisAngle.Z);
         float degrees = axisAngle.W;
-        ApplyRotation(axis, degrees);
+        Rotate(axis, degrees);
     }
 
-    public void ApplyRotation(Vector3 axis, float degrees)
+    public void Rotate(Vector3 axis, float degrees)
     {
         float radians = degrees * (float)(Math.PI / 180.0);
         Quaternion q = Quaternion.CreateFromAxisAngle(Vector3.Normalize(axis), radians);
-        ApplyRotation(q);
+        Rotate(q);
     }
 
-    public void ApplyScale(Vector3 scale)
+    public void Scale(Vector3 scale)
     {
         Matrix4x4 scaleMat = Matrix4x4.CreateScale(scale);
         transformMatrix *= scaleMat;

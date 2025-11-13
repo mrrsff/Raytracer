@@ -30,8 +30,8 @@ public class Camera
     public string ImageName;
     public string Transformations;
     
-    public float ApertureRadius = 0.03f;
-    public float FocalDistance = 5.0f;
+    public float ApertureSize = 0.025f;
+    public float FocusDistance = 75.0f;
     public float ShutterOpen = 0.0f;
     public float ShutterClose = 1.0f;
     
@@ -126,16 +126,16 @@ public class Camera
 
         Vector3 dir = Vector3.Normalize(s - Position);
 
-        if (ApertureRadius <= 0.0f)
+        if (ApertureSize <= 0.0f)
         {
             var r = new Ray(Position, dir);
             r.Time = MathUtility.Lerp(ShutterOpen, ShutterClose, time);
             return r;
         }
 
-        Vector3 focalPoint = Position + dir * FocalDistance;
+        Vector3 focalPoint = Position + dir * FocusDistance;
 
-        Vector2 disk = MathUtility.ConcentricDiskSample(lensSample) * ApertureRadius;
+        Vector2 disk = MathUtility.ConcentricDiskSample(lensSample) * ApertureSize;
         Vector3 lensPos = Position + disk.X * Right + disk.Y * Up;
 
         Vector3 newDir = Vector3.Normalize(focalPoint - lensPos);
