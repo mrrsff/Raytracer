@@ -3,6 +3,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
+using Raytracer.Sampling;
+using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Content.Datas.Camera;
 
@@ -27,6 +29,12 @@ public class Camera
     public Resolution ImageResolution;
     public string ImageName;
     public string Transformations;
+    
+    public float ApertureRadius = 0.03f;
+    public float FocalDistance = 5.0f;
+    public float ShutterOpen = 0.0f;
+    public float ShutterClose = 1.0f;
+    
     public Transform Transform = new Transform();
 
     public override string ToString()
@@ -96,5 +104,44 @@ public class Camera
         Vector3 s = q + (sU * Right) - (sV * Up);
         Vector3 d = Vector3.Normalize(s - Position);
         return new Ray(Position, d);
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Ray GenerateRay(float i, float j)
+    {
+        float sU = i * sUMultiplier;
+        float sV = j * sVMultiplier;
+
+        Vector3 s = q + (sU * Right) - (sV * Up);
+        Vector3 d = Vector3.Normalize(s - Position);
+        return new Ray(Position, d);
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Ray GenerateRayDRT(float pixelX, float pixelY, Vector2 lensSample, float time = 0.0f)
+    {
+        float sU = pixelX * sUMultiplier;
+        float sV = pixelY * sVMultiplier;
+
+        Vector3 s = q + (sU * Right) - (sV * Up);
+
+        Vector3 dir = Vector3.Normalize(s - Position);
+
+        if (ApertureRadius <= 0.0f)
+        {
+            var r = new Ray(Position, dir);
+            r.Time = MathUtility.Lerp(ShutterOpen, ShutterClose, time);
+            return r;
+        }
+
+        Vector3 focalPoint = Position + dir * FocalDistance;
+
+        Vector2 disk = MathUtility.ConcentricDiskSample(lensSample) * ApertureRadius;
+        Vector3 lensPos = Position + disk.X * Right + disk.Y * Up;
+
+        Vector3 newDir = Vector3.Normalize(focalPoint - lensPos);
+
+        var ray = new Ray(lensPos, newDir);
+        ray.Time = MathUtility.Lerp(ShutterOpen, ShutterClose, time);
+        return ray;
     }
 }

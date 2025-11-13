@@ -9,8 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Raytracer.Core;
 using Raytracer.IO.ImageSavers;
+using Raytracer.Rendering.Filtering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Shading;
+using Raytracer.Sampling;
 using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime;
@@ -55,6 +57,43 @@ public class RayTracerRenderer
 
         return result;
     }
+    
+    private Vector3 GetPixelColor(int x, int y, Camera renderCamera)
+    {
+        Func<int, Vector2[]> sampler = Sampler.MultiJittered.Sample;
+        Func<int, float[]> timeSampler = Sampler.OneDimensionalUniform;
+        Func<float, float, float> filter = Filter.Gaussian.Evaluate;
+        
+        Vector2[] pixelSamples = sampler(Camera.NumSamples);
+        Vector2[] lensSamples = sampler(Camera.NumSamples);
+        float[] timeSamples = timeSampler(Camera.NumSamples);
+        
+        float totalWeight = 0f;
+        Vector3 finalColor = Vector3.Zero;
+        for (int s = 0; s < Camera.NumSamples; s++)
+        {
+            float px = x + pixelSamples[s].X;
+            float py = y + pixelSamples[s].Y;
+            Vector2 lens = lensSamples[s];
+            float time = timeSamples[s];
+
+            Ray ray = renderCamera.GenerateRayDRT(px, py, lens, time);
+            Vector3 sampleColor = TraceRayIterative(ray);
+            float weight = filter(pixelSamples[s].X, pixelSamples[s].Y);
+
+            finalColor += sampleColor * weight;
+            totalWeight += weight;
+            
+            // Vector2 sample = pixelSamples[s];
+            // Ray ray = renderCamera.GenerateRay(x + sample.X, y + sample.Y);
+            // Vector3 color = TraceRayIterative(ray);
+            // float weight = filter(sample.X, sample.Y);
+            // finalColor += color * weight;
+            // totalWeight += weight;
+        }
+
+        return ColorUtility.Normalize(finalColor / totalWeight);
+    }
 
     #region Rendering
 
@@ -84,7 +123,7 @@ public class RayTracerRenderer
                 Thread.Sleep(interval);
             }
 
-            Console.Write("\rProgress: 100%\n");
+            Console.Write("\rProgress: 100%");
         });
 
         // Dynamic worker thread count
@@ -104,11 +143,7 @@ public class RayTracerRenderer
                     Vector3[] rowBuffer = new Vector3[width];
                     for (int i = 0; i < width; i++)
                     {
-                        Ray primaryRay = renderCamera.GetPrimaryRay(i, j);
-                        Vector3 color = Debug.UseIterativeTracing
-                            ? TraceRayIterative(primaryRay)
-                            : TraceRay(primaryRay, 0, out _);
-                        rowBuffer[i] = ColorUtility.Normalize(color);
+                        rowBuffer[i] = GetPixelColor(i, j, renderCamera);
                     }
 
                     for (int i = 0; i < width; i++)
@@ -137,19 +172,15 @@ public class RayTracerRenderer
         int width = result.Width;
         int height = result.Height;
 
-
         for (int j = 0; j < height; j++)
         {
             for (int i = 0; i < width; i++)
             {
-                Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
-                Vector3 color = TraceRay(primaryRay, 0, out _);
+                Vector3 color = GetPixelColor(i, j, RenderCamera);
                 result.SetPixel(i, j, ColorUtility.Normalize(color));
             }
-
             Console.Write($"\rProgress: {(j + 1) * 100 / height,3}%");
         }
-
 
         return result;
     }
@@ -188,8 +219,7 @@ public class RayTracerRenderer
             Vector3[] rowBuffer = new Vector3[width];
             for (int i = 0; i < width; i++)
             {
-                Ray primaryRay = RenderCamera.GetPrimaryRay(i, j);
-                Vector3 color = TraceRayIterative(primaryRay);
+                Vector3 color = GetPixelColor(i, j, RenderCamera);
                 rowBuffer[i] = ColorUtility.Normalize(color);
             }
 

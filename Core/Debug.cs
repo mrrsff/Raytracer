@@ -22,6 +22,8 @@ public static class Debug
     public static bool ShowBVHBoxesLeafNodesOnly = false;
     public static bool ShowTLASBoxes = false;
     public static bool UseParallelBVHBuild = true;
+    
+    public static bool UseSAH = true;
 
     public static bool RenderNormals = false;
 }

@@ -41,8 +41,7 @@ public class BoundingVolumeHierarchy : Geometry
         bool hit = false;
         float closest = float.MaxValue;
         IntersectionInfo temp = IntersectionInfo.NoHit;
-
-
+        
         Stack<int> stack = new Stack<int>();
         stack.Push(0);
 

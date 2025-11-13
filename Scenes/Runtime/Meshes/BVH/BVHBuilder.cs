@@ -103,7 +103,6 @@ public static class BVHBuilder
             int mid = PartitionTriangles(tris, task.Start, task.End, axis, split);
             if (mid == task.Start || mid == task.End)
             {
-                Console.WriteLine($"Warning: SAH split failed at depth {task.Depth}, falling back to median split.");
                 int axisFB = bbox.LargestAxis();
                 float posFB = 0.5f * (bbox.Min[axisFB] + bbox.Max[axisFB]);
                 mid = PartitionTriangles(tris, task.Start, task.End, axisFB, posFB);
@@ -172,14 +171,9 @@ public static class BVHBuilder
             if (splitCost >= parentCost)
                 return;
 
-            // int axisFB = bbox.LargestAxis();
-            // float posFB = 0.5f * (bbox.Min[axisFB] + bbox.Max[axisFB]);
-            // int mid = PartitionTriangles(tris, start_, end_, axisFB, posFB);
-
             int mid = PartitionTriangles(tris, start_, end_, axis, split);
             if (mid == start_ || mid == end_)
             {
-                Console.WriteLine($"SAH split failed at depth {depth}, falling back to median split.");
                 int axisFB = bbox.LargestAxis();
                 float posFB = 0.5f * (bbox.Min[axisFB] + bbox.Max[axisFB]);
                 mid = PartitionTriangles(tris, start_, end_, axisFB, posFB);
@@ -220,24 +214,35 @@ public static class BVHBuilder
         float bestPosition = 0f;
         int bestAxis = 0;
 
-        BoundingBox nodeBox = ComputeBoundingBox(triangles, start, end);
-        for (int axis = 0; axis < 3; axis++)
+        if (Debug.UseSAH)
         {
-            float boundsStart = nodeBox.Min[axis];
-            float boundsEnd = nodeBox.Max[axis];
-            for (int i = 1; i <= numTestsPerAxis; i++)
+            BoundingBox nodeBox = ComputeBoundingBox(triangles, start, end);
+            for (int axis = 0; axis < 3; axis++)
             {
-                float splitT = i / (numTestsPerAxis + 1f);
-                float pos = boundsStart + (boundsEnd - boundsStart) * splitT;
-                float cost = EvaluateSplitCost(triangles, start, end, axis, pos, nodeBox);
-                if (cost >= bestCost) continue;
-                bestCost = cost;
-                bestPosition = pos;
-                bestAxis = axis;
+                float boundsStart = nodeBox.Min[axis];
+                float boundsEnd = nodeBox.Max[axis];
+                for (int i = 1; i <= numTestsPerAxis; i++)
+                {
+                    float splitT = i / (numTestsPerAxis + 1f);
+                    float pos = boundsStart + (boundsEnd - boundsStart) * splitT;
+                    float cost = EvaluateSplitCost(triangles, start, end, axis, pos, nodeBox);
+                    if (cost >= bestCost) continue;
+                    bestCost = cost;
+                    bestPosition = pos;
+                    bestAxis = axis;
+                }
             }
+
+            return (bestAxis, bestPosition, bestCost);
+        }
+        else
+        {
+            BoundingBox nodeBox = ComputeBoundingBox(triangles, start, end);
+            int axis = nodeBox.LargestAxis();
+            float split = 0.5f * (nodeBox.Min[axis] + nodeBox.Max[axis]);
+            return (axis, split, float.MinValue);
         }
 
-        return (bestAxis, bestPosition, bestCost);
     }
 
     private static float EvaluateSplitCost(
