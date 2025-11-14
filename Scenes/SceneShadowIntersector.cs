@@ -43,7 +43,7 @@ public partial class Scene
 
         return false;
     }
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsOccluded(in Vector3 point, in Vector3 lightPos, in Vector3 normal, float time)
     {

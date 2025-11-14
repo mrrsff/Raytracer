@@ -67,4 +67,35 @@ public static class MathUtility
 
         return angles;
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void BuildONB(Vector3 n, out Vector3 u, out Vector3 v)
+    {
+        // float x = n.X;
+        // float y = n.Y;
+        // float z = n.Z;
+        // int minIndex = 0;
+        // if (x < y) minIndex = x < z ? 0 : 2;
+        // else minIndex = y < z ? 1 : 2;
+        //
+        // u = minIndex switch
+        // {
+        //     0 => new Vector3(0, -n.Z, n.Y),
+        //     1 => new Vector3(-n.Z, 0, n.X),
+        //     2 => new Vector3(-n.Y, n.X, 0)
+        // };
+        //
+        // u = Vector3.Normalize(u);
+        // v = Vector3.Cross(n, u);
+        
+        if (MathF.Abs(n.Y) < 0.999999f)
+        {
+            u = Vector3.Normalize(Vector3.Cross(new Vector3(0, 1, 0), n));
+        }
+        else
+        {
+            u = Vector3.Normalize(Vector3.Cross(new Vector3(1, 0, 0), n));
+        }
+        v = Vector3.Cross(n, u);
+    }
 }

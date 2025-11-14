@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Numerics;
+using System.Text.Json.Serialization;
 
 namespace Raytracer.Scenes.Content.Datas.Objects;
 
@@ -10,6 +11,7 @@ public class MeshInstance
     public string _resetTransform;
     public bool ResetTransform => _resetTransform == "true";
     public string Transformations;
+    public Vector3 MotionBlur;
 
     public override string ToString()
     {

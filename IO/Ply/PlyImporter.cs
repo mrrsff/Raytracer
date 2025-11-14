@@ -33,7 +33,7 @@ namespace Raytracer.IO.Ply
             var header = ReadHeaderRaw(path);
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             fs.Position = header.HeaderEnd;
-
+            
             return header.Format == PlyFormat.Ascii
                 ? ParseAscii(fs, header)
                 : ParseBinary(fs, header);
@@ -150,6 +150,24 @@ namespace Raytracer.IO.Ply
                 var idx = new int[n];
                 for (int j = 0; j < n; j++) idx[j] = int.Parse(parts[j + 1], CultureInfo.InvariantCulture);
                 faces[i] = idx;
+            }
+            
+            if (faces[0].Length == 4) // Convert quads to tris for consistency
+            {
+                var triFaces = new List<int[]>();
+                foreach (var f in faces)
+                {
+                    if (f.Length == 3)
+                    {
+                        triFaces.Add(f);
+                    }
+                    else if (f.Length == 4)
+                    {
+                        triFaces.Add([f[0], f[1], f[2]]);
+                        triFaces.Add([f[0], f[2], f[3]]);
+                    }
+                }
+                faces = triFaces.ToArray();
             }
 
             return (verts, faces);

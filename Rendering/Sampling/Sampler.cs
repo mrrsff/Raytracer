@@ -59,14 +59,17 @@ public static class Sampler
             return samples;
         }
     }
-    public static Vector2[] Uniform(int n)
+    public static Vector2 UniformRandom()
+    {
+        return new Vector2(ThreadRng.NextFloat(), ThreadRng.NextFloat());
+    }
+    public static Vector2[] UniformRandom(int n)
     {
         Vector2[] samples = new Vector2[n];
-        float invN = 1.0f / n;
-
+        
         for (int i = 0; i < n; i++)
         {
-            samples[i] = new Vector2((i + 0.5f) * invN, (i + 0.5f) * invN);
+            samples[i] = new Vector2(ThreadRng.NextFloat(), ThreadRng.NextFloat());
         }
 
         return samples;

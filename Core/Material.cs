@@ -13,6 +13,7 @@ public class Material
     public Vector3 DiffuseReflectance;
     public Vector3 SpecularReflectance;
     public Vector3 MirrorReflectance;
+    public float Roughness;
 
     public float PhongExponent;
 

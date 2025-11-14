@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
@@ -32,11 +33,25 @@ public partial class Scene
 
     public void Initialize()
     {
-        foreach (var pLight in Content.Lights.PointLight)
+        if (Content.Lights.PointLight != null)
         {
-            if (pLight.Transformations != null)
+            foreach (var pLight in Content.Lights.PointLight)
             {
-                Content.Transformations.ApplyTransformations(pLight.Transform, pLight.Transformations);
+                if (pLight.Transformations != null)
+                {
+                    Content.Transformations.ApplyTransformations(pLight.Transform, pLight.Transformations);
+                }
+            }
+        }
+        if (Content.Lights.AreaLight != null)
+        {
+            foreach (var dLight in Content.Lights.AreaLight)
+            {
+                if (dLight.Transformations != null)
+                {
+                    Content.Transformations.ApplyTransformations(dLight.Transform, dLight.Transformations);
+                }
+                dLight.CalculateValues();
             }
         }
 
@@ -55,9 +70,8 @@ public partial class Scene
 
             var mesh = string.IsNullOrEmpty(meshData.Faces.PlyData)
                 ? new Mesh(meshData, this, transform)
-                : new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material,
-                    transform); // Mesh from PLY file
-
+                : new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material, transform, meshData.MotionBlur);
+            
             Geometries.Add(mesh);
             originalMeshes.Add(meshData.Id, mesh);
         }
@@ -72,6 +86,7 @@ public partial class Scene
                 Content.Transformations.ApplyTransformations(transform, meshInstance.Transformations);
 
             var instancedMesh = new Mesh(mesh, transform);
+            instancedMesh.MotionBlur = meshInstance.MotionBlur;
             instancedMesh.MaterialIndex = meshInstance.Material != -1 ? meshInstance.Material : mesh.MaterialIndex;
             Geometries.Add(instancedMesh);
             originalMeshes.Add(meshInstance.Id, instancedMesh);

@@ -30,8 +30,8 @@ public class Camera
     public string ImageName;
     public string Transformations;
     
-    public float ApertureSize = 0.025f;
-    public float FocusDistance = 75.0f;
+    public float ApertureSize = 0;
+    public float FocusDistance = 0f;
     public float ShutterOpen = 0.0f;
     public float ShutterClose = 1.0f;
     

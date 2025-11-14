@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Numerics;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Raytracer.Scenes.Content.Datas.Objects;
@@ -16,6 +17,7 @@ public struct MeshData
     public int Material;
     public string Transformations;
     public FacesData Faces;
+    public Vector3 MotionBlur;
 
 
     public override string ToString()

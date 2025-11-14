@@ -18,17 +18,17 @@ public class Mesh : Geometry
     {
         ShadingMode = meshData.ShadingMode;
         MaterialIndex = meshData.Material;
-
+        MotionBlur = meshData.MotionBlur;
         Transform = transform;
         MeshDefinition = new MeshDefinition(meshData, scene.Content.VertexData);
         Initialize();
     }
 
-    public Mesh(string plyPath, ShadingMode shadingMode, int material, Transform transform)
+    public Mesh(string plyPath, ShadingMode shadingMode, int material, Transform transform, Vector3 motionBlur)
     {
         ShadingMode = shadingMode;
         MaterialIndex = material;
-
+        MotionBlur = motionBlur;
         var data = new PlyData(plyPath);
         MeshDefinition = new MeshDefinition(data);
         Transform = transform;

@@ -15,7 +15,6 @@ public class PlyData
 
     public PlyData(string filePath)
     {
-        // NOT WORKING
         (vertices, faces) = PlyImporter.Parse(filePath);
         if (Debug.DebugPLYLoading)
             Console.WriteLine($"Loaded PLY: {filePath} with {vertices.Length} vertices and {faces.Length} faces.");

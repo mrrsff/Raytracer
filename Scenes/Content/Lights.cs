@@ -13,6 +13,9 @@ public struct Lights
 
     [JsonConverter(typeof(SingleOrListConverter<PointLight>))]
     public List<PointLight> PointLight;
+    
+    [JsonConverter(typeof(SingleOrListConverter<AreaLight>))]
+    public List<AreaLight> AreaLight;
 
     public override string ToString()
     {
@@ -20,6 +23,9 @@ public struct Lights
         sb.AppendLine($"Ambient Light: {AmbientLight}");
         sb.AppendLine("Point Lights:");
         foreach (var light in PointLight)
+            sb.AppendLine(light.ToString());
+        sb.AppendLine("Area Lights:");
+        foreach (var light in AreaLight)
             sb.AppendLine(light.ToString());
         return sb.ToString();
     }

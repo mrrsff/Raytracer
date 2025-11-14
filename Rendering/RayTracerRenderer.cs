@@ -316,7 +316,6 @@ public class RayTracerRenderer
             }
         }
 
-
         return finalColor;
     }
 
@@ -369,8 +368,10 @@ public class RayTracerRenderer
 
             AddToFinalColor(Shade(hit, ray.Time));
 
-            Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, hit.Normal));
-            Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true, ray.Time);
+            // Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(ray.Direction, hit.Normal));
+            // Ray reflectedRay = new Ray(hit.Point + hit.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, true, ray.Time);
+            
+            Ray reflectedRay = GetReflectedRay(hit, ray);
             switch (hit.material!.Type)
             {
                 case MaterialType.Mirror:
@@ -405,7 +406,7 @@ public class RayTracerRenderer
                     {
                         float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
 
-                        Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true, ray.Time);
+                        Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, false, ray.Time);
 
                         Vector3 absorption = InsideObject
                             ? GetAbsorption(hit.material!.AbsorptionCoefficient, hit.Distance)
@@ -471,6 +472,18 @@ public class RayTracerRenderer
 
     #region Utilities
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private Ray GetReflectedRay(in IntersectionInfo intersection, in Ray incomingRay)
+    {
+        Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(incomingRay.Direction, intersection.Normal));
+        if (intersection.material!.Roughness > 0f)
+        {
+            Vector3 perturbedDir = GlossyReflection.PerturbDirection(reflectedDir, intersection.material!.Roughness, Sampler.UniformRandom());
+            return new Ray(intersection.Point + intersection.Normal * Scene.Content.ShadowRayEpsilon, perturbedDir, true, incomingRay.Time);
+        }
+
+        return new Ray(intersection.Point + intersection.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, false, incomingRay.Time);
+    }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Vector3 Shade(in IntersectionInfo intersection, in float time)
     {
