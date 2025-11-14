@@ -4,6 +4,7 @@ using System.Linq;
 using Raytracer.IO.ImageSavers;
 using Raytracer.IO.SceneLoaders;
 using Raytracer.Rendering;
+using Raytracer.Rendering.SDL2;
 
 namespace Raytracer;
 
@@ -29,19 +30,34 @@ public static class Program
         AssureOutputDirectory();
         var scene = SceneLoader.Load(scenePath);
         WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";
+        scene.Initialize();
 
         var renderer = new RayTracerRenderer(scene);
-
-        scene.Initialize();
+        var buffer = renderer.CreateEmptyImageBuffer(0);
+        
+        var sdl = new SDLPreview(buffer.Width, buffer.Height);
+        
+        Task.Run(() =>
+        {
+            for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
+            {
+                buffer = renderer.CreateEmptyImageBuffer(i);
+                renderer.RenderIntoExistingBuffer(i, buffer);
+                ImageSaver.SaveImage($"{OutputDirectory}/{buffer.OutputName}", buffer);
+            }
+        });
+        
+        while (sdl.PollEvents())
+        {
+            var bytes = buffer.ToByteBuffer();
+            sdl.UpdateFrame(bytes);
+            Thread.Sleep(16);
+        }
+        
         Console.WriteLine("Scene loaded and initialized. Primitive count: " +
                           scene.Geometries.ConvertAll(m => m.GetPrimitiveCount()).Sum());
-
-        for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
-        {
-            var result = renderer.Render(i);
-            ImageSaver.SaveImage($"{OutputDirectory}/{result.OutputName}", result);
-        }
-
+        
+        
         Console.WriteLine("All renderings complete.");
     }
 

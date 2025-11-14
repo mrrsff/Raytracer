@@ -1,5 +1,8 @@
-﻿namespace Raytracer.Scenes.Runtime.Meshes.BVH;
+﻿using System.Runtime.InteropServices;
 
+namespace Raytracer.Scenes.Runtime.Meshes.BVH;
+
+[StructLayout(LayoutKind.Sequential)]
 public struct BVHNode
 {
     public BoundingBox Bounds;

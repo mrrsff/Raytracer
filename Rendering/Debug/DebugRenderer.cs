@@ -24,18 +24,18 @@ public static class DebugRenderer
         }
     }
 
-    public static void Rasterize(Camera camera, RenderResult renderResult)
+    public static void Rasterize(Camera camera, ImageBuffer imageBuffer)
     {
         foreach (var g in geometries)
         {
             if (g is DebugBoundingBox box)
             {
-                DrawBoundingBoxWire(camera, renderResult, box.Min, box.Max, box.IsLeaf);
+                DrawBoundingBoxWire(camera, imageBuffer, box.Min, box.Max, box.IsLeaf);
             }
         }
     }
 
-    private static void DrawBoundingBoxWire(Camera camera, RenderResult img, Vector3 min, Vector3 max, bool leaf)
+    private static void DrawBoundingBoxWire(Camera camera, ImageBuffer img, Vector3 min, Vector3 max, bool leaf)
     {
         Vector3 color = leaf ? new(1, 0, 0) : new(0, 1, 0);
 
@@ -96,7 +96,7 @@ public static class DebugRenderer
         return new Vector2(px, py);
     }
 
-    private static void DrawLine2D(Camera camera, RenderResult img, Vector3 a, Vector3 b, Vector3 color)
+    private static void DrawLine2D(Camera camera, ImageBuffer img, Vector3 a, Vector3 b, Vector3 color)
     {
         Vector2 p0 = ProjectToImagePlane(camera, a);
         Vector2 p1 = ProjectToImagePlane(camera, b);

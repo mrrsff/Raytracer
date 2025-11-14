@@ -5,10 +5,10 @@ namespace Raytracer.IO.ImageSavers;
 
 public class ImageSaver
 {
-    public static void SaveImage(string path, RenderResult renderResult)
+    public static void SaveImage(string path, ImageBuffer imageBuffer)
     {
-        var width = renderResult.Width;
-        var height = renderResult.Height;
+        var width = imageBuffer.Width;
+        var height = imageBuffer.Height;
         using var image = new Image<Rgba32>(width, height);
 
         for (int y = 0; y < height; y++)
@@ -16,7 +16,7 @@ public class ImageSaver
             for (int x = 0; x < width; x++)
             {
                 int i = y * width + x;
-                var c = renderResult.Pixels[i] * 255f;
+                var c = imageBuffer.Pixels[i] * 255f;
                 image[x, y] = new Rgba32(
                     (byte)Math.Clamp(c.X, 0, 255),
                     (byte)Math.Clamp(c.Y, 0, 255),

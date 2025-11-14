@@ -17,6 +17,7 @@ using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime;
 using Raytracer.Utility;
+using SixLabors.ImageSharp;
 using Debug = Raytracer.Core.Debug;
 
 namespace Raytracer.Rendering;
@@ -34,31 +35,34 @@ public class RayTracerRenderer
         IntersectionTestEpsilon = scene.Content.IntersectionTestEpsilon;
         ShadowRayEpsilon = scene.Content.ShadowRayEpsilon;
     }
-
-    public RenderResult Render(int cameraIndex)
+    public ImageBuffer CreateEmptyImageBuffer(int cameraIndex)
+    {
+        Camera = Scene.GetCamera(cameraIndex);
+        return new ImageBuffer(Camera.ImageResolution, Scene.Content.BackgroundColor);
+    }
+    
+    public void RenderIntoExistingBuffer(int cameraIndex, ImageBuffer buffer)
     {
         Camera = Scene.GetCamera(cameraIndex);
         Camera.InitializeCamera();
 
         Stopwatch sw = Stopwatch.StartNew();
         Console.WriteLine($"Rendering started for {Camera.ImageName}... TIME: {DateTime.Now:HH:mm:ss}");
-        RenderResult result = new RenderResult(Camera.ImageResolution, Scene.Content.BackgroundColor);
-        result = Debug.UseDynamicThreading
-            ? DynamicThreadPoolRender(Camera, result)
-            : (Debug.UseMultiThreading ? MultithreadRender(Camera, result) : SingleThreadRender(Camera, result));
+        if (Debug.UseDynamicThreading)
+            DynamicThreadPoolRender(Camera, buffer);
+        else if (Debug.UseMultiThreading)
+            MultithreadRender(Camera, buffer);
+        else
+            SingleThreadRender(Camera, buffer);
 
         sw.Stop();
         Console.WriteLine(
             $"\nRendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
 
-        result.OutputName = Camera.ImageName;
-
-        DebugRenderer.Rasterize(Camera, result);
-
-        return result;
+        DebugRenderer.Rasterize(Camera, buffer);
     }
     
-    private Vector3 GetPixelColor(int x, int y, Camera renderCamera)
+    private void ProgressiveRenderPixel(int x, int y, Camera renderCamera, ImageBuffer buffer)
     {
         Func<int, Vector2[]> sampler = Sampler.MultiJittered.Sample;
         Func<int, float[]> timeSampler = Sampler.OneDimensionalUniform;
@@ -84,90 +88,73 @@ public class RayTracerRenderer
             finalColor += sampleColor * weight;
             totalWeight += weight;
             
-            // Vector2 sample = pixelSamples[s];
-            // Ray ray = renderCamera.GenerateRay(x + sample.X, y + sample.Y);
-            // Vector3 color = TraceRayIterative(ray);
-            // float weight = filter(sample.X, sample.Y);
-            // finalColor += color * weight;
-            // totalWeight += weight;
+            buffer.AddSample(x, y, sampleColor, weight);
         }
-
-        return ColorUtility.Normalize(finalColor / totalWeight);
+        
+        finalColor /= totalWeight;
+        buffer.SetPixel(x, y, ColorUtility.Normalize(finalColor));
     }
-
+    
     #region Rendering
-
-    private RenderResult DynamicThreadPoolRender(Camera renderCamera, RenderResult result)
+    private void DynamicThreadPoolRender(Camera camera, ImageBuffer result)
     {
-        int width = result.Width;
+        int width  = result.Width;
         int height = result.Height;
 
-        int totalRows = height;
-        int completedRows = 0;
-        bool done = false;
-        const int timesPerSecond = 5;
-        const int interval = 1000 / timesPerSecond;
+        const int tileSize = 32;
 
-        Task progressTask = Task.Run(() =>
+        int tilesX = (width  + tileSize - 1) / tileSize;
+        int tilesY = (height + tileSize - 1) / tileSize;
+        int tileCount = tilesX * tilesY;
+
+        var tiles = new (int x, int y)[tileCount];
+
+        int idx = 0;
+        for (int ty = 0; ty < height; ty += tileSize)
+        for (int tx = 0; tx < width;  tx += tileSize)
+            tiles[idx++] = (tx, ty);
+
+        for (int i = tileCount - 1; i > 0; i--)
         {
-            int lastPercent = -1;
-            while (!done)
-            {
-                int percent = (int)(Volatile.Read(ref completedRows) * 100.0 / totalRows);
-                if (percent != lastPercent)
-                {
-                    lastPercent = percent;
-                    Console.Write($"\rProgress: {percent,3}%");
-                }
-
-                Thread.Sleep(interval);
-            }
-
-            Console.Write("\rProgress: 100%");
-        });
-
-        // Dynamic worker thread count
-        int maxThreads = Environment.ProcessorCount;
-        int minThreads = Math.Max(2, maxThreads / 2);
-        int activeThreads = minThreads;
-
-        var queue = new ConcurrentQueue<int>(Enumerable.Range(0, height));
-        var tasks = new List<Task>();
-
-        for (int t = 0; t < activeThreads; t++)
-        {
-            tasks.Add(Task.Run(() =>
-            {
-                while (queue.TryDequeue(out int j))
-                {
-                    Vector3[] rowBuffer = new Vector3[width];
-                    for (int i = 0; i < width; i++)
-                    {
-                        rowBuffer[i] = GetPixelColor(i, j, renderCamera);
-                    }
-
-                    for (int i = 0; i < width; i++)
-                        result.SetPixel(i, j, rowBuffer[i]);
-
-                    Interlocked.Increment(ref completedRows);
-
-                    // Adaptive expansion logic
-                    if (completedRows % (height / 10) == 0 && activeThreads < maxThreads)
-                    {
-                        Interlocked.Increment(ref activeThreads);
-                        queue.Enqueue(j + 1);
-                    }
-                }
-            }));
+            int j = ThreadRng.NextInt(i + 1);
+            (tiles[i], tiles[j]) = (tiles[j], tiles[i]);
         }
 
-        Task.WaitAll(tasks.ToArray());
-        done = true;
-        progressTask.Wait();
-        return result;
+        int nextTile = -1;  // will be incremented before use
+
+        int workerCount = Environment.ProcessorCount;  // usually fastest in practice
+        var tasks = new Task[workerCount];
+
+        for (int i = 0; i < workerCount; i++)
+            tasks[i] = Task.Run(Worker);
+
+        Task.WaitAll(tasks);
+        return;
+
+        void Worker()
+        {
+            while (true)
+            {
+                int myIndex = Interlocked.Increment(ref nextTile);
+                if (myIndex >= tileCount)
+                    break;
+
+                var (tileX, tileY) = tiles[myIndex];
+
+                int endX = Math.Min(tileX + tileSize, width);
+                int endY = Math.Min(tileY + tileSize, height);
+
+                for (int y = tileY; y < endY; y++)
+                for (int x = tileX; x < endX; x++)
+                {
+                    ProgressiveRenderPixel(x, y, camera, result);
+                }
+            }
+        }
     }
 
-    private RenderResult SingleThreadRender(Camera RenderCamera, RenderResult result)
+
+    private void SingleThreadRender(Camera RenderCamera, ImageBuffer result)
     {
         int width = result.Width;
         int height = result.Height;
@@ -176,51 +163,24 @@ public class RayTracerRenderer
         {
             for (int i = 0; i < width; i++)
             {
-                Vector3 color = GetPixelColor(i, j, RenderCamera);
-                result.SetPixel(i, j, ColorUtility.Normalize(color));
+                ProgressiveRenderPixel(i, j, RenderCamera, result);
             }
-            Console.Write($"\rProgress: {(j + 1) * 100 / height,3}%");
         }
-
-        return result;
     }
 
-    private RenderResult MultithreadRender(Camera RenderCamera, RenderResult result)
+    private void MultithreadRender(Camera RenderCamera, ImageBuffer result)
     {
         int width = result.Width;
         int height = result.Height;
 
-        int totalRows = height;
         int completedRows = 0;
-        bool done = false;
-        const int timesPerSecond = 5;
-        const int interval = 1000 / timesPerSecond;
-
-        Task progressTask = Task.Run(() =>
-        {
-            int lastPercent = -1;
-            while (!done)
-            {
-                int percent = (int)(Volatile.Read(ref completedRows) * 100.0 / totalRows);
-                if (percent != lastPercent)
-                {
-                    lastPercent = percent;
-                    Console.Write($"\rProgress: {percent,3}%");
-                }
-
-                Thread.Sleep(interval); // check 4 times per second
-            }
-
-            Console.Write("\rProgress: 100%\n");
-        });
 
         Parallel.For(0, height, j =>
         {
             Vector3[] rowBuffer = new Vector3[width];
             for (int i = 0; i < width; i++)
             {
-                Vector3 color = GetPixelColor(i, j, RenderCamera);
-                rowBuffer[i] = ColorUtility.Normalize(color);
+                ProgressiveRenderPixel(i, j, RenderCamera, result);
             }
 
             for (int i = 0; i < width; i++)
@@ -228,10 +188,6 @@ public class RayTracerRenderer
 
             Interlocked.Increment(ref completedRows);
         });
-
-        done = true;
-        progressTask.Wait();
-        return result;
     }
 
     #endregion
