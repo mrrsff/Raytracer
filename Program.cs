@@ -62,8 +62,8 @@ public static class Program
     
     private static void CreatePreview(Scene scene, RayTracerRenderer renderer)
     {
-        var sdl = new SDLPreview(800, 600);
         ImageBuffer buffer = renderer.CreateEmptyImageBuffer(0);
+        var sdl = new SDLPreview(buffer.Width, buffer.Height);
 
         var renderTask = Task.Run(() =>
         {
@@ -75,11 +75,13 @@ public static class Program
             }
         });
 
+        const int targetFps = 144;
+        const int frameDelay = 1000 / targetFps;
         while (sdl.PollEvents())
         {
             var bytes = buffer.ToByteBuffer();
             sdl.UpdateFrame(bytes);
-            Thread.Sleep(16);
+            Thread.Sleep(frameDelay);
         }
 
         renderTask.Wait();
