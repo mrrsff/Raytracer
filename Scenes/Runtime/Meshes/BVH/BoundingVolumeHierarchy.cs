@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering;
+using Raytracer.Rendering.Debug;
 using Raytracer.Rendering.Intersections;
 
 namespace Raytracer.Scenes.Runtime.Meshes.BVH;

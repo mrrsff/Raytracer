@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Raytracer.Rendering;
+namespace Raytracer.Rendering.Debug;
 
 public interface IDebugGeometry
 {
