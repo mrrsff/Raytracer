@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Numerics;
 using Raytracer.Core;
+using Raytracer.Utility;
 
 namespace Raytracer.IO.ImageSavers;
 
 public class ImageBuffer
 {
-    public Vector3[] Accum;
-    public int[] SampleCount;
-
     public int Width;
     public int Height;
     public Vector3[] Pixels;
@@ -24,26 +22,13 @@ public class ImageBuffer
         Width = width;
         Height = height;
 
-        Accum = new Vector3[width * height];
         Pixels = new Vector3[width * height];
-        SampleCount = new int[width * height];
         
         for (int i = 0; i < Pixels.Length; i++)
         {
             Pixels[i] = backgroundColor;
         }
     }
-    public void AddSample(int x, int y, Vector3 sample, float weight)
-    {
-        if (x < 0 || x >= Width || y < 0 || y >= Height) return;
-        int index = y * Width + x;
-
-        Accum[index] += sample * weight;
-        SampleCount[index] += 1;
-
-        Pixels[index] = Accum[index] / SampleCount[index];
-    }
-
     public void SetPixel(int x, int y, Vector3 color)
     {
         if (x < 0 || x >= Width || y < 0 || y >= Height) return;

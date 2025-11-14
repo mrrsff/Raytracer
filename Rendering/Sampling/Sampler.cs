@@ -1,8 +1,6 @@
 ﻿using System.Numerics;
-using Raytracer.Core;
-using Raytracer.Scenes.Content.Datas.Camera;
 
-namespace Raytracer.Sampling;
+namespace Raytracer.Rendering.Sampling;
 
 public static class Sampler
 {

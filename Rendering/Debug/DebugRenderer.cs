@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime.Meshes.BVH;
 
-namespace Raytracer.Rendering;
+namespace Raytracer.Rendering.Debug;
 
 public static class DebugRenderer
 {

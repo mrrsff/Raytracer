@@ -1,56 +1,36 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Raytracer.Core;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering.Filtering;
 using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.Sampling;
 using Raytracer.Rendering.Shading;
-using Raytracer.Sampling;
 using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
-using Raytracer.Scenes.Runtime;
 using Raytracer.Utility;
-using SixLabors.ImageSharp;
-using Debug = Raytracer.Core.Debug;
 
 namespace Raytracer.Rendering;
 
-public class RayTracerRenderer
+public class RayTracerRenderer : CPURenderer
 {
     public static float IntersectionTestEpsilon;
     public static float ShadowRayEpsilon;
-    public Scene Scene { get; }
-    private Camera Camera { get; set; } = null!;
 
-    public RayTracerRenderer(Scene scene)
+    public RayTracerRenderer(Scene scene) : base(scene)
     {
-        Scene = scene;
         IntersectionTestEpsilon = scene.Content.IntersectionTestEpsilon;
         ShadowRayEpsilon = scene.Content.ShadowRayEpsilon;
     }
-    public ImageBuffer CreateEmptyImageBuffer(int cameraIndex)
-    {
-        Camera = Scene.GetCamera(cameraIndex);
-        return new ImageBuffer(Camera.ImageResolution, Scene.Content.BackgroundColor);
-    }
-    
-    public void RenderIntoExistingBuffer(int cameraIndex, ImageBuffer buffer)
-    {
-        Camera = Scene.GetCamera(cameraIndex);
-        Camera.InitializeCamera();
 
+    protected override void OnRender(ImageBuffer buffer)
+    {
         Stopwatch sw = Stopwatch.StartNew();
         Console.WriteLine($"Rendering started for {Camera.ImageName}... TIME: {DateTime.Now:HH:mm:ss}");
-        if (Debug.UseDynamicThreading)
+        if (Core.Debug.UseDynamicThreading)
             DynamicThreadPoolRender(Camera, buffer);
-        else if (Debug.UseMultiThreading)
+        else if (Core.Debug.UseMultiThreading)
             MultithreadRender(Camera, buffer);
         else
             SingleThreadRender(Camera, buffer);
@@ -58,10 +38,8 @@ public class RayTracerRenderer
         sw.Stop();
         Console.WriteLine(
             $"\nRendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
-
-        DebugRenderer.Rasterize(Camera, buffer);
     }
-    
+
     private void ProgressiveRenderPixel(int x, int y, Camera renderCamera, ImageBuffer buffer)
     {
         Func<int, Vector2[]> sampler = Sampler.MultiJittered.Sample;
@@ -80,28 +58,26 @@ public class RayTracerRenderer
             float py = y + pixelSamples[s].Y;
             Vector2 lens = lensSamples[s];
             float time = timeSamples[s];
-
+    
             Ray ray = renderCamera.GenerateRayDRT(px, py, lens, time);
             Vector3 sampleColor = TraceRayIterative(ray);
             float weight = filter(pixelSamples[s].X, pixelSamples[s].Y);
-
+    
             finalColor += sampleColor * weight;
             totalWeight += weight;
-            
-            buffer.AddSample(x, y, sampleColor, weight);
         }
         
         finalColor /= totalWeight;
         buffer.SetPixel(x, y, ColorUtility.Normalize(finalColor));
     }
-    
+
     #region Rendering
     private void DynamicThreadPoolRender(Camera camera, ImageBuffer result)
     {
         int width  = result.Width;
         int height = result.Height;
 
-        const int tileSize = 32;
+        const int tileSize = 16;
 
         int tilesX = (width  + tileSize - 1) / tileSize;
         int tilesY = (height + tileSize - 1) / tileSize;
@@ -152,8 +128,7 @@ public class RayTracerRenderer
             }
         }
     }
-
-
+    
     private void SingleThreadRender(Camera RenderCamera, ImageBuffer result)
     {
         int width = result.Width;
@@ -172,28 +147,18 @@ public class RayTracerRenderer
     {
         int width = result.Width;
         int height = result.Height;
-
-        int completedRows = 0;
-
         Parallel.For(0, height, j =>
         {
-            Vector3[] rowBuffer = new Vector3[width];
             for (int i = 0; i < width; i++)
             {
                 ProgressiveRenderPixel(i, j, RenderCamera, result);
             }
-
-            for (int i = 0; i < width; i++)
-                result.SetPixel(i, j, rowBuffer[i]);
-
-            Interlocked.Increment(ref completedRows);
         });
     }
 
     #endregion
 
     #region Ray Tracing
-
     private Vector3 TraceRay(in Ray ray, in int depth, out float distanceTraveled)
     {
         distanceTraveled = 0;
@@ -206,8 +171,6 @@ public class RayTracerRenderer
             return Scene.Content.BackgroundColor;
 
         distanceTraveled = hit.Distance;
-
-        if (Debug.RenderNormals) return hit.Normal * 255f;
 
         Vector3 finalColor = Vector3.Zero;
 
@@ -422,53 +385,6 @@ public class RayTracerRenderer
         }
 
         return finalColor;
-    }
-
-    #endregion
-
-    #region Utilities
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Ray GetReflectedRay(in IntersectionInfo intersection, in Ray incomingRay)
-    {
-        Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(incomingRay.Direction, intersection.Normal));
-        if (intersection.material!.Roughness > 0f)
-        {
-            Vector3 perturbedDir = GlossyReflection.PerturbDirection(reflectedDir, intersection.material!.Roughness, Sampler.UniformRandom());
-            return new Ray(intersection.Point + intersection.Normal * Scene.Content.ShadowRayEpsilon, perturbedDir, true, incomingRay.Time);
-        }
-
-        return new Ray(intersection.Point + intersection.Normal * Scene.Content.ShadowRayEpsilon, reflectedDir, false, incomingRay.Time);
-    }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Vector3 Shade(in IntersectionInfo intersection, in float time)
-    {
-        return BlinnPhongShading.Shade(intersection, time, this);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Refract(in Vector3 I, in Vector3 n, in float eta, out Vector3 refractedDir)
-    {
-        float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
-        float k = 1f - eta * eta * (1f - cosi * cosi);
-        if (k < 0f) // Total Internal Reflection
-        {
-            refractedDir = Vector3.Zero;
-            return false;
-        }
-
-        refractedDir = Vector3.Normalize(eta * I - (eta * cosi + MathF.Sqrt(k)) * n);
-        return true;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector3 GetAbsorption(in Vector3 absorptionCoefficient, in float distance)
-    {
-        return new Vector3(
-            MathF.Exp(-absorptionCoefficient.X * distance),
-            MathF.Exp(-absorptionCoefficient.Y * distance),
-            MathF.Exp(-absorptionCoefficient.Z * distance)
-        );
     }
 
     #endregion

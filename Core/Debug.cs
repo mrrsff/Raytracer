@@ -24,6 +24,4 @@ public static class Debug
     public static bool UseParallelBVHBuild = true;
     
     public static bool UseSAH = true;
-
-    public static bool RenderNormals = false;
 }

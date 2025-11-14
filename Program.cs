@@ -5,6 +5,7 @@ using Raytracer.IO.ImageSavers;
 using Raytracer.IO.SceneLoaders;
 using Raytracer.Rendering;
 using Raytracer.Rendering.SDL2;
+using Raytracer.Scenes;
 
 namespace Raytracer;
 
@@ -20,45 +21,35 @@ public static class Program
             Console.WriteLine("Usage: ./raytracer scene.json");
             return;
         }
-
-        var scenePath = args[0];
-        if (!File.Exists(scenePath))
+        Params parameters = Params.FromArgs(args);
+        if (!File.Exists(parameters.ScenePath))
         {
-            throw new FileNotFoundException("Scene file not found: " + scenePath);
+            throw new FileNotFoundException("Scene file not found: " + parameters.ScenePath);
         }
 
         AssureOutputDirectory();
-        var scene = SceneLoader.Load(scenePath);
-        WorkingDirectory = Path.GetDirectoryName(scenePath) ?? "";
+        var scene = SceneLoader.Load(parameters.ScenePath);
+        WorkingDirectory = Path.GetDirectoryName(parameters.ScenePath) ?? "";
         scene.Initialize();
 
         var renderer = new RayTracerRenderer(scene);
-        var buffer = renderer.CreateEmptyImageBuffer(0);
-        
-        var sdl = new SDLPreview(buffer.Width, buffer.Height);
-        
-        Task.Run(() =>
-        {
-            for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
-            {
-                buffer = renderer.CreateEmptyImageBuffer(i);
-                renderer.RenderIntoExistingBuffer(i, buffer);
-                ImageSaver.SaveImage($"{OutputDirectory}/{buffer.OutputName}", buffer);
-            }
-        });
-        
-        while (sdl.PollEvents())
-        {
-            var bytes = buffer.ToByteBuffer();
-            sdl.UpdateFrame(bytes);
-            Thread.Sleep(16);
-        }
         
         Console.WriteLine("Scene loaded and initialized. Primitive count: " +
                           scene.Geometries.ConvertAll(m => m.GetPrimitiveCount()).Sum());
-        
-        
-        Console.WriteLine("All renderings complete.");
+
+        if (parameters.EnablePreview)
+        {
+            CreatePreview(scene, renderer);
+        }
+        else
+        {
+            for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
+            {
+                var buffer = renderer.CreateEmptyImageBuffer(i);
+                renderer.RenderIntoExistingBuffer(i, buffer);
+                ImageSaver.SaveImage($"{OutputDirectory}/{buffer.OutputName}", buffer);
+            }
+        }
     }
 
     private static void AssureOutputDirectory()
@@ -67,5 +58,30 @@ public static class Program
         {
             Directory.CreateDirectory(OutputDirectory);
         }
+    }
+    
+    private static void CreatePreview(Scene scene, RayTracerRenderer renderer)
+    {
+        var sdl = new SDLPreview(800, 600);
+        ImageBuffer buffer = renderer.CreateEmptyImageBuffer(0);
+
+        var renderTask = Task.Run(() =>
+        {
+            for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
+            {
+                buffer = renderer.CreateEmptyImageBuffer(i);
+                renderer.RenderIntoExistingBuffer(i, buffer);
+                ImageSaver.SaveImage($"{OutputDirectory}/{buffer.OutputName}", buffer);
+            }
+        });
+
+        while (sdl.PollEvents())
+        {
+            var bytes = buffer.ToByteBuffer();
+            sdl.UpdateFrame(bytes);
+            Thread.Sleep(16);
+        }
+
+        renderTask.Wait();
     }
 }

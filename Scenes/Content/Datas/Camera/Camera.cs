@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
-using Raytracer.Sampling;
 using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Content.Datas.Camera;

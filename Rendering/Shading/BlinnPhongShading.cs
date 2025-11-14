@@ -1,12 +1,12 @@
 ﻿using System.Numerics;
 using Raytracer.Rendering.Intersections;
-using Raytracer.Sampling;
+using Raytracer.Rendering.Sampling;
 
 namespace Raytracer.Rendering.Shading;
 
 public static class BlinnPhongShading
 {
-    public static Vector3 Shade(in IntersectionInfo intersection, in float time, in RayTracerRenderer renderer)
+    public static Vector3 Shade(in IntersectionInfo intersection, in float time, in Renderer renderer)
     {
         var point = intersection.Point;
         var normal = intersection.Normal;

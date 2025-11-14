@@ -1,8 +1,6 @@
-﻿namespace Raytracer.Sampling;
+﻿using System.Runtime.CompilerServices;
 
-using System;
-using System.Runtime.CompilerServices;
-using System.Threading;
+namespace Raytracer.Rendering.Sampling;
 
 public static class ThreadRng
 {
