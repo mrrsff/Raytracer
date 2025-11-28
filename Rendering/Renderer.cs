@@ -2,6 +2,7 @@
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering.Debug;
+using Raytracer.Utility;
 
 namespace Raytracer.Rendering
 {
@@ -13,7 +14,7 @@ namespace Raytracer.Rendering
         public ImageBuffer CreateEmptyImageBuffer(int cameraIndex)
         {
             Camera = Scene.GetCamera(cameraIndex);
-            return new ImageBuffer(Camera.ImageResolution, Scene.Content.BackgroundColor);
+            return new ImageBuffer(Camera.ImageResolution, ColorUtility.Black, Camera.ImageName);
         }
 
         public void RenderIntoExistingBuffer(int cameraIndex, ImageBuffer buffer)

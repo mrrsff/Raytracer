@@ -3,10 +3,8 @@ using static SDL2.SDL;
 
 namespace Raytracer.Rendering.SDL2;
 
-public class SDLPreview : SDLWindow
+public class SDLPreview(int width, int height) : SDLWindow(width, height, "Raytracer Preview")
 {
-    private IntPtr texture;
-
     private float zoom = 1.0f;
     private const float minZoom = 0.1f;
     private const float maxZoom = 15.0f;
@@ -15,77 +13,7 @@ public class SDLPreview : SDLWindow
     private bool isPanning = false;
     private Vector2 lastMousePos = Vector2.Zero;
 
-    public SDLPreview(int width, int height)
-        : base(width, height, "Raytracer Preview")
-    {
-        CreateTexture(width, height);
-    }
-
-    private void CreateTexture(int w, int h)
-    {
-        if (texture != IntPtr.Zero)
-            SDL_DestroyTexture(texture);
-
-        texture = SDL_CreateTexture(
-            renderer,
-            SDL_PIXELFORMAT_ABGR8888,
-            (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-            w, h
-        );
-    }
-
-    public void UpdateFrame(byte[] pixelData)
-    {
-        // *** VALIDATE BUFFER SIZE ***
-        int expected = contentWidth * contentHeight * 4;
-        if (pixelData.Length != expected)
-        {
-            throw new Exception(
-                $"Invalid pixel buffer size: expected {expected}, got {pixelData.Length}"
-            );
-        }
-
-        unsafe
-        {
-            IntPtr pixels;
-            int pitch;
-            SDL_LockTexture(texture, IntPtr.Zero, out pixels, out pitch);
-
-            fixed (byte* src = pixelData)
-            {
-                byte* dst = (byte*)pixels;
-
-                int srcRowBytes = contentWidth * 4;
-
-                if (pitch < srcRowBytes)
-                {
-                    SDL_UnlockTexture(texture);
-                    throw new Exception(
-                        $"SDL pitch smaller than row size ({pitch} < {srcRowBytes})."
-                    );
-                }
-
-                for (int y = 0; y < contentHeight; y++)
-                {
-                    byte* srcRow = src + y * srcRowBytes;
-                    byte* dstRow = dst + y * pitch;
-
-                    Buffer.MemoryCopy(srcRow, dstRow, pitch, srcRowBytes);
-                }
-            }
-
-            SDL_UnlockTexture(texture);
-        }
-
-        SDL_RenderClear(renderer);
-
-        SDL_Rect destinationRect = ComputeDestinationRect();
-
-        SDL_RenderCopy(renderer, texture, IntPtr.Zero, ref destinationRect);
-        SDL_RenderPresent(renderer);
-    }
-
-    private SDL_Rect ComputeDestinationRect()
+    protected override SDL_Rect ComputeDestinationRect()
     {
         float texAspect = (float)contentWidth / contentHeight;
         float winAspect = (float)winWidth / winHeight;

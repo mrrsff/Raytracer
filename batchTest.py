@@ -23,23 +23,11 @@ def main():
     preview = sys.argv[2] if len(sys.argv) == 3 and sys.argv[2] == '--preview' else ''
 
     os.system('make fast')  # Ensure the program is compiled
-    # If single file instead of directory
-    if not os.path.isdir(target):
-        json_file = target
-        full_path = os.path.abspath(json_file)
-        print(f"Processing {json_file}...")
-        run_raytracer(full_path, preview)
-        sys.exit(0)
-
-    json_files = get_json_files(target)
-    if not json_files:
-        print("No JSON files found in the specified directory.")
-        sys.exit(0)
-
-    for json_file in json_files:
-        full_path = os.path.join(target, json_file)
-        print(f"Processing {json_file}...")
-        run_raytracer(full_path, preview)
+    json_file = target
+    full_path = os.path.abspath(json_file)
+    print(f"Processing {json_file}...")
+    run_raytracer(full_path, preview)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

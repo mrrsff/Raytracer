@@ -26,18 +26,12 @@ public class RayTracerRenderer : CPURenderer
 
     protected override void OnRender(ImageBuffer buffer)
     {
-        Stopwatch sw = Stopwatch.StartNew();
-        Console.WriteLine($"Rendering started for {Camera.ImageName}... TIME: {DateTime.Now:HH:mm:ss}");
         if (Core.Debug.UseDynamicThreading)
             DynamicThreadPoolRender(Camera, buffer);
         else if (Core.Debug.UseMultiThreading)
             MultithreadRender(Camera, buffer);
         else
             SingleThreadRender(Camera, buffer);
-
-        sw.Stop();
-        Console.WriteLine(
-            $"\nRendering finished for {Camera.ImageName} in {sw.Elapsed.TotalSeconds:F2} seconds. TIME: {DateTime.Now:HH:mm:ss}");
     }
 
     private void ProgressiveRenderPixel(int x, int y, Camera renderCamera, ImageBuffer buffer)

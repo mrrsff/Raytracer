@@ -9,12 +9,13 @@ public class ImageBuffer
 {
     public int Width;
     public int Height;
-    public Vector3[] Pixels;
     public string OutputName = "output.png";
+    public Vector3[] Pixels;
 
-    public ImageBuffer(Resolution resolution, Vector3 backgroundColor)
+    public ImageBuffer(Resolution resolution, Vector3 backgroundColor, string outputName)
         : this(resolution.Width, resolution.Height, backgroundColor)
     {
+        OutputName = outputName;
     }
 
     public ImageBuffer(int width, int height, Vector3 backgroundColor)
@@ -48,10 +49,14 @@ public class ImageBuffer
         Pixels = data;
     }
     
+    private byte[] byteBuffer;
     public byte[] ToByteBuffer()
     {
         int n = Width * Height;
-        var result = new byte[n * 4];
+        if (byteBuffer == null || byteBuffer.Length != n * 4)
+        {
+            byteBuffer = new byte[n * 4];
+        }
 
         for (int i = 0; i < n; i++)
         {
@@ -62,12 +67,11 @@ public class ImageBuffer
             byte b = (byte)(Math.Clamp(c.Z, 0f, 1f) * 255);
 
             int o = i * 4;
-            result[o + 0] = r;
-            result[o + 1] = g;
-            result[o + 2] = b;
-            result[o + 3] = 255;
+            byteBuffer[o + 0] = r;
+            byteBuffer[o + 1] = g;
+            byteBuffer[o + 2] = b;
+            byteBuffer[o + 3] = 255;
         }
-
-        return result;
+        return byteBuffer;
     }
 }

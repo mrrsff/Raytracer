@@ -29,7 +29,7 @@ namespace Raytracer.IO.Ply
 
         public static (Vector3[] vertices, int[][] faces) Parse(string path)
         {
-            path = Path.Combine(Program.WorkingDirectory, path);
+            path = Path.Combine(Params.SceneDirectory, path);
             var header = ReadHeaderRaw(path);
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             fs.Position = header.HeaderEnd;

@@ -1,24 +1,34 @@
 ﻿namespace Raytracer;
 
-public struct Params
+public static class Params
 {
-    public string ScenePath;
-    public bool EnablePreview;
+    public static string ScenePath;
+    public static string SceneDirectory;
+    public static bool IsSingleFile => File.Exists(ScenePath);
+    public static bool IsDirectory => Directory.Exists(ScenePath);
+    public static bool EnablePreview;
     
-    public static Params FromArgs(string[] args)
+    public static void FromArgs(string[] args)
     {
         if (args.Length == 0)
         {
             throw new ArgumentException("Usage: ./raytracer scene.json [--preview]");
         }
 
-        var scenePath = args[0];
+        ScenePath = args[0];
+        bool isSingleFile = File.Exists(ScenePath);
+        bool isDirectory = Directory.Exists(ScenePath);
+        if (isSingleFile)
+        {
+            SceneDirectory = Path.GetDirectoryName(ScenePath) ?? "";
+        }
+        else if (isDirectory)
+        {
+            SceneDirectory = ScenePath;
+        }
+
         var enablePreview = !args.Contains("--no-preview");
 
-        return new Params
-        {
-            ScenePath = scenePath,
-            EnablePreview = enablePreview
-        };
+        EnablePreview = enablePreview;
     }
 }
