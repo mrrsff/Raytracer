@@ -9,7 +9,7 @@ namespace Raytracer.Rendering
     public abstract class Renderer(Scene scene)
     {
         public Scene Scene { get; } = scene;
-        protected Camera Camera { get; private set; } = null!;
+        public Camera Camera { get; private set; } = null!;
 
         public ImageBuffer CreateEmptyImageBuffer(int cameraIndex)
         {

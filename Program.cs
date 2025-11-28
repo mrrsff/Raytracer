@@ -43,9 +43,9 @@ public static class Program
             while (imagePaths.Count < totalCameras)
             {
                 Console.Write($"\rRendering progress: {imagePaths.Count}/{totalCameras} images rendered.");
-                Thread.Sleep(100);
+                Thread.Sleep(200);
             }
-            Console.WriteLine($"\rRendering progress: {imagePaths.Count}/{totalCameras} images rendered.");
+            Console.WriteLine($"\rRendering progress: {totalCameras}/{totalCameras} images rendered.");
         });
         
         foreach (var scene in scenes)
@@ -85,7 +85,7 @@ public static class Program
             if (preview != null)
             {
                 bool running = true;
-                while (!renderTask.IsCompleted && running)
+                while (running)
                 {
                     running = preview.PollEvents();
                     lock (bufferLock)

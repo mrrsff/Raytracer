@@ -46,18 +46,20 @@ public static class BlinnPhongShading
                 
                 Vector3 samplePosition =
                     light.Position +
-                    light.Extent * (sample.X - 0.5f) * light.U +
-                    light.Extent * (sample.Y - 0.5f) * light.V;
-            
+                    light.Size * (sample.X - 0.5f) * light.U +
+                    light.Size * (sample.Y - 0.5f) * light.V;
+
                 if (renderer.Scene.IsOccluded(point, samplePosition, normal, time))
+                {
                     continue;
+                }
         
                 var lightDelta = samplePosition - point;
                 Vector3 lightDir = Vector3.Normalize(lightDelta);
-            
-                float nl = MathF.Max(Vector3.Dot(light.Normal, -lightDir), 0.0f);
-        
-                Vector3 irradiance = light.Radiance * (light.Area * nl / lightDelta.LengthSquared());
+
+                float cosLight = Vector3.Dot(light.Normal, -lightDir);
+                cosLight = MathF.Abs(cosLight);
+                Vector3 irradiance = light.Radiance * (light.Area * cosLight / lightDelta.LengthSquared());
         
                 // Diffuse
                 float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);
@@ -69,7 +71,6 @@ public static class BlinnPhongShading
                 specular += spec * intersection.material.SpecularReflectance * irradiance;
             }
         }
-        
 
         Vector3 color = ambient + diffuse + specular;
         return color;

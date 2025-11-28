@@ -36,13 +36,9 @@ public class RayTracerRenderer : CPURenderer
 
     private void ProgressiveRenderPixel(int x, int y, Camera renderCamera, ImageBuffer buffer)
     {
-        Func<int, Vector2[]> sampler = Sampler.MultiJittered.Sample;
-        Func<int, float[]> timeSampler = Sampler.OneDimensionalUniform;
-        Func<float, float, float> filter = Filter.Gaussian.Evaluate;
-        
-        Vector2[] pixelSamples = sampler(Camera.NumSamples);
-        Vector2[] lensSamples = sampler(Camera.NumSamples);
-        float[] timeSamples = timeSampler(Camera.NumSamples);
+        Vector2[] pixelSamples = Sampler.MultiJittered.Sample(Camera.NumSamples);
+        Vector2[] lensSamples = Sampler.MultiJittered.Sample(Camera.NumSamples);
+        float[] timeSamples = Sampler.OneDimensionalUniform(Camera.NumSamples);
         
         float totalWeight = 0f;
         Vector3 finalColor = Vector3.Zero;
@@ -55,7 +51,7 @@ public class RayTracerRenderer : CPURenderer
     
             Ray ray = renderCamera.GenerateRayDRT(px, py, lens, time);
             Vector3 sampleColor = TraceRayIterative(ray);
-            float weight = filter(pixelSamples[s].X, pixelSamples[s].Y);
+            float weight = Filter.Gaussian.Evaluate(pixelSamples[s].X, pixelSamples[s].Y);
     
             finalColor += sampleColor * weight;
             totalWeight += weight;
@@ -314,11 +310,18 @@ public class RayTracerRenderer : CPURenderer
                     float etai = InsideObject ? hit.material.RefractionIndex : airRefractionIndex;
                     float etat = InsideObject ? airRefractionIndex : hit.material.RefractionIndex;
                     float eta = etai / etat;
-
                     if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
                     {
-                        float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
+                        float cosTheta = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
+                        float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosTheta);
 
+                        if (hit.material.Roughness > 0f)
+                        {
+                            refrDir = GlossyReflection.PerturbDirection(
+                                refrDir,
+                                hit.material.Roughness,
+                                Sampler.UniformRandom());
+                        }
                         Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, false, ray.Time);
 
                         Vector3 absorption = InsideObject

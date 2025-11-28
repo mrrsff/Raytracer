@@ -25,15 +25,15 @@ public static class FresnelComputation
 
     public static float ComputeFresnelDielectric(float etai, float etat, float cosThetaI)
     {
-        float cosi = Math.Clamp(cosThetaI, -1f, 1f);
-        float sint = (etai / etat) * MathF.Sqrt(MathF.Max(0f, 1f - cosi * cosi));
-        if (sint >= 1f) return 1f; // Total Internal Reflection
+        float cosI = Math.Clamp(cosThetaI, -1f, 1f);
+        float sint = (etai / etat) * MathF.Sqrt(MathF.Max(0f, 1f - cosI * cosI));
+        if (sint >= 1f) return 1f;
 
         float cost = MathF.Sqrt(MathF.Max(0f, 1f - sint * sint));
-        cosi = MathF.Abs(cosi);
+        cosI = MathF.Abs(cosI);
 
-        float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
-        float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
+        float Rs = ((etat * cosI) - (etai * cost)) / ((etat * cosI) + (etai * cost));
+        float Rp = ((etai * cosI) - (etat * cost)) / ((etai * cosI) + (etat * cost));
         float F = 0.5f * (Rs * Rs + Rp * Rp);
         return Math.Clamp(F, 0f, 1f);
     }

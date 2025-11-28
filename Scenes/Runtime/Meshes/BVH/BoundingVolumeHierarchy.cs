@@ -34,7 +34,7 @@ public class BoundingVolumeHierarchy : Geometry
 
     private void DrawDebugBVH()
     {
-        DebugRenderer.CollectBVH(this, Debug.ShowBVHBoxesLeafNodesOnly);
+        DebugRenderer.Add(new DrawWirebox(nodes[0].Bounds.Min, nodes[0].Bounds.Max, new Vector3(1f, 0f, 0f)));
     }
 
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)

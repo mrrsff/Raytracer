@@ -34,6 +34,8 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
             false,
             incomingRay.Time);
     }
+    
+    
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected Vector3 Shade(in IntersectionInfo intersection, float time)
@@ -45,7 +47,7 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
     protected static bool Refract(in Vector3 I, in Vector3 n, float eta, out Vector3 refractedDir)
     {
         float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
-        float k    = 1f - eta * eta * (1f - cosi * cosi);
+        float k  = 1f - eta * eta * (1f - cosi * cosi);
         if (k < 0f) // Total Internal Reflection
         {
             refractedDir = Vector3.Zero;
