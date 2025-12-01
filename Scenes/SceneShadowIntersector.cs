@@ -49,7 +49,7 @@ public partial class Scene
     {
         var dir = Vector3.Normalize(lightPos - point);
         float maxT = Vector3.Distance(lightPos, point);
-        var ray = new Ray(point + normal * RayTracerRenderer.IntersectionTestEpsilon, dir, true, time);
+        var ray = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, dir, true, time);
         return IntersectAny(ray, maxT);
     }
 }
