@@ -61,6 +61,11 @@ public class Camera
 
     public void InitializeCamera()
     {
+        // Transform position and orientation
+        Position = Transform.ToWorldPoint(Position);
+        Gaze = Transform.ToWorldDirection(Gaze);
+        Up = Transform.ToWorldDirection(Up);
+        
         if (Type == CameraType.LookAt)
         {
             Gaze = Vector3.Normalize(GazePoint - Position);

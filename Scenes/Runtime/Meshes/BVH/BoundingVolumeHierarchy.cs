@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
-using System.Runtime.CompilerServices;
+﻿using System.Numerics;
 using Raytracer.Core;
-using Raytracer.Rendering;
-using Raytracer.Rendering.Debug;
+using Raytracer.Rendering.DebugRendering;
 using Raytracer.Rendering.Intersections;
 
 namespace Raytracer.Scenes.Runtime.Meshes.BVH;

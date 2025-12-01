@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Raytracer.Core;
 
@@ -24,4 +25,12 @@ public static class Debug
     public static bool UseParallelBVHBuild = true;
     
     public static bool UseSAH = true;
+    
+    public static void Log(string msg,
+        [CallerMemberName] string memberName = "",
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        Console.WriteLine($"[{Path.GetFileNameWithoutExtension(filePath)}::{memberName}:{lineNumber}] {msg}");
+    }
 }

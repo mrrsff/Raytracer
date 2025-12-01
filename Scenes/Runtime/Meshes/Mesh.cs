@@ -3,7 +3,6 @@ using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content.Datas.Objects;
-using Raytracer.Scenes.Runtime.Meshes.BVH;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 

@@ -16,16 +16,10 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
         Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(incomingRay.Direction, intersection.Normal));
         if (intersection.material!.Roughness > 0f)
         {
-            Vector3 perturbedDir = GlossyReflection.PerturbDirection(
+            reflectedDir = GlossyReflection.PerturbDirection(
                 reflectedDir,
                 intersection.material.Roughness,
                 Sampler.UniformRandom());
-
-            return new Ray(
-                intersection.Point + intersection.Normal * Scene.Content.ShadowRayEpsilon,
-                perturbedDir,
-                true,
-                incomingRay.Time);
         }
 
         return new Ray(

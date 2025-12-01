@@ -2,7 +2,7 @@
 using Raytracer.IO.ImageSavers;
 using Raytracer.Scenes.Content.Datas.Camera;
 
-namespace Raytracer.Rendering.Debug;
+namespace Raytracer.Rendering.DebugRendering;
 
 public class DrawWirebox(Vector3 min, Vector3 max, Vector3 color) : IDebugDrawCommand
 {

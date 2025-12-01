@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
+﻿using System.Collections.Concurrent;
+using Raytracer.Core;
 using Raytracer.IO.ImageSavers;
-using Raytracer.IO.SceneLoaders;
 using Raytracer.Rendering;
 using Raytracer.Rendering.SDL2;
 using Raytracer.Scenes;
@@ -100,6 +97,7 @@ public static class Program
                 }
             }
             renderTask.Wait();
+            Debug.Log($"Finished rendering scene '{scene.GetCamera(0).ImageName}'");
         }
         
         if (Params.IsDirectory)

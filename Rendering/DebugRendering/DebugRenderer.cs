@@ -1,9 +1,8 @@
 ﻿using System.Numerics;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Scenes.Content.Datas.Camera;
-using Raytracer.Scenes.Runtime.Meshes.BVH;
 
-namespace Raytracer.Rendering.Debug;
+namespace Raytracer.Rendering.DebugRendering;
 
 public static class DebugRenderer
 {

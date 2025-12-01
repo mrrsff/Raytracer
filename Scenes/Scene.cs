@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
@@ -58,7 +55,9 @@ public partial class Scene
         foreach (var camera in Content.Cameras.Camera)
         {
             if (camera.Transformations != null)
+            {
                 Content.Transformations.ApplyTransformations(camera.Transform, camera.Transformations);
+            }
         }
 
         var originalMeshes = new Dictionary<int, Mesh>();
@@ -172,7 +171,6 @@ public partial class Scene
         }
 
         closestIntersection.RayOrigin = ray.Origin;
-        closestIntersection.RayDirection = ray.Direction;
 
         return closestIntersection;
     }

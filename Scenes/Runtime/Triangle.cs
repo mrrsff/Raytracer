@@ -20,23 +20,7 @@ public class Triangle : Geometry
     private MeshDefinition MeshDefinition;
 
     public Vector3 Normal;
-
-    public Triangle(int primitiveIndex, int i0, int i1, int i2, MeshDefinition meshDefinition)
-    {
-        MeshDefinition = meshDefinition;
-        PrimitiveIndex = primitiveIndex;
-        I0 = i0;
-        I1 = i1;
-        I2 = i2;
-        Normal = Vector3.Normalize(Vector3.Cross(V1 - V0, V2 - V0));
-        E1 = V1 - V0;
-        Centroid = (V0 + V1 + V2) / 3.0f;
-        Bounds = new BoundingBox(
-            Vector3.Min(Vector3.Min(V0, V1), V2),
-            Vector3.Max(Vector3.Max(V0, V1), V2)
-        );
-    }
-
+    
     public Triangle(int primitiveIndex, int i0, int i1, int i2)
     {
         PrimitiveIndex = primitiveIndex;
@@ -52,6 +36,10 @@ public class Triangle : Geometry
         E1 = V1 - V0;
         E2 = V2 - V0;
         Centroid = (V0 + V1 + V2) / 3.0f;
+        Bounds = new BoundingBox(
+            Vector3.Min(Vector3.Min(V0, V1), V2),
+            Vector3.Max(Vector3.Max(V0, V1), V2)
+        );
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

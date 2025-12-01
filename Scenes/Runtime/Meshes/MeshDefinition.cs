@@ -36,10 +36,11 @@ public class MeshDefinition
             int i1 = vertexMap[faceIndices[i * 3 + 1]];
             int i2 = vertexMap[faceIndices[i * 3 + 2]];
 
-            Triangles[i] = new Triangle(i, i0, i1, i2, this);
+            Triangles[i] = new Triangle(i, i0, i1, i2);
+            Triangles[i].SetMeshDefinition(this);
         }
 
-        ComputeSmoothNormals();
+        Initialize();
     }
 
     public MeshDefinition(in PlyData plyData)
@@ -51,10 +52,10 @@ public class MeshDefinition
             tri.SetMeshDefinition(this);
         }
 
-        ComputeSmoothNormals();
+        Initialize();
     }
 
-    private void ComputeSmoothNormals()
+    private void Initialize()
     {
         VertexNormals = new Vector3[Vertices.Length];
         foreach (var tri in Triangles)

@@ -1,9 +1,8 @@
 ﻿using System.Numerics;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Scenes.Content.Datas.Camera;
-using Raytracer.Utility;
 
-namespace Raytracer.Rendering.Debug;
+namespace Raytracer.Rendering.DebugRendering;
 
 public class DrawPoint(Vector3 position, float size, Vector3 color) : IDebugDrawCommand
 {
