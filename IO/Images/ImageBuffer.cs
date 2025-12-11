@@ -3,7 +3,7 @@ using System.Numerics;
 using Raytracer.Core;
 using Raytracer.Utility;
 
-namespace Raytracer.IO.ImageSavers;
+namespace Raytracer.IO.Images;
 
 public class ImageBuffer
 {
@@ -49,7 +49,7 @@ public class ImageBuffer
         Pixels = data;
     }
     
-    private byte[] byteBuffer;
+    private byte[] byteBuffer = null!;
     public byte[] ToByteBuffer()
     {
         int n = Width * Height;

@@ -1,5 +1,5 @@
 ﻿using System.Numerics;
-using Raytracer.IO.ImageSavers;
+using Raytracer.IO.Images;
 using Raytracer.Scenes.Content.Datas.Camera;
 
 namespace Raytracer.Rendering.DebugRendering;

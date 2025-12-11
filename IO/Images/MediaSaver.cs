@@ -3,7 +3,7 @@ using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
-namespace Raytracer.IO.ImageSavers;
+namespace Raytracer.IO.Images;
 
 public abstract class MediaSaver
 {

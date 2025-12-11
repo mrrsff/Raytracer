@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Raytracer.Core;
-using Raytracer.IO.ImageSavers;
+using Raytracer.IO.Images;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Rendering.SDL2;

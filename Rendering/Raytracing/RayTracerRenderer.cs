@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
-using Raytracer.IO.ImageSavers;
+using Raytracer.IO.Images;
 using Raytracer.Rendering.Filtering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Sampling;
