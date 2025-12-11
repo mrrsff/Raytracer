@@ -88,14 +88,16 @@ public static class MathUtility
         // u = Vector3.Normalize(u);
         // v = Vector3.Cross(n, u);
         
-        if (MathF.Abs(n.Y) < 0.999999f)
-        {
-            u = Vector3.Normalize(Vector3.Cross(new Vector3(0, 1, 0), n));
-        }
-        else
-        {
-            u = Vector3.Normalize(Vector3.Cross(new Vector3(1, 0, 0), n));
-        }
+        var up = MathF.Abs(n.Y) < 0.999f ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
+        u = Vector3.Normalize(Vector3.Cross(up, n));
+        // if (MathF.Abs(n.Y) < 0.999999f)
+        // {
+        //     u = Vector3.Normalize(Vector3.Cross(new Vector3(0, 1, 0), n));
+        // }
+        // else
+        // {
+        //     u = Vector3.Normalize(Vector3.Cross(new Vector3(1, 0, 0), n));
+        // }
         v = Vector3.Cross(n, u);
     }
 }

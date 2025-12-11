@@ -37,6 +37,7 @@ public partial class Scene
                 if (pLight.Transformations != null)
                 {
                     Content.Transformations.ApplyTransformations(pLight.Transform, pLight.Transformations);
+                    pLight.CalculatePosition();
                 }
             }
         }
@@ -111,6 +112,17 @@ public partial class Scene
         // Build TLAS if there are enough geometries
         if (Geometries.Count > 16)
             TLAS = new BoundingVolumeHierarchy(this);
+
+        if (Debug.PrintSceneInfo)
+        {
+            Debug.Log($"Scene initialized with {Content.Cameras.Camera.Count} cameras, " +
+                      $"{Content.Cameras.Camera.FirstOrDefault()!.NumSamples} samples per pixel, " +
+                      $"{Content.Lights.PointLight?.Count ?? 0} point lights, " +
+                      $"{Content.Lights.AreaLight?.Count ?? 0} area lights, " +
+                      $"{Geometries.Sum(g => g.GetPrimitiveCount())} geometric primitives, " +
+                      $"{Planes.Count} planes, " + 
+                      $"{Content.Objects.Triangle.Count} triangles.");
+        }
     }
 
     public Camera GetCamera(int index)

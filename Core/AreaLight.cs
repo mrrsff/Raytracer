@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
+using Raytracer.Rendering.DebugRendering;
 using Raytracer.Utility;
 
 namespace Raytracer.Core;
@@ -40,18 +41,21 @@ public class AreaLight
         // Generate orthonormal basis (U, V) for the area light's plane
         MathUtility.BuildONB(Normal, out U, out V);
         
-        // var positions = new Vector3[]
-        // {
-        //     Position + ( U + V) * ( Size * 0.5f),
-        //     Position + (-U + V) * ( Size * 0.5f),
-        //     Position + (-U - V) * ( Size * 0.5f),
-        //     Position + ( U - V) * ( Size * 0.5f),
-        // };
-        //
-        // // draw all lines
-        // for (int i = 0; i < 4; i++)
-        // {
-        //     DebugRenderer.Add(new DrawLine(positions[i], positions[(i + 1) % 4], ColorUtility.Yellow));
-        // }
+        var positions = new Vector3[]
+        {
+            Position + ( U + V) * ( Size * 0.5f),
+            Position + (-U + V) * ( Size * 0.5f),
+            Position + (-U - V) * ( Size * 0.5f),
+            Position + ( U - V) * ( Size * 0.5f),
+        };
+        
+        // draw all lines
+        for (int i = 0; i < 4; i++)
+        {
+            DebugRenderer.Add(new DrawLine(positions[i], positions[(i + 1) % 4], ColorUtility.Yellow));
+        }
+        
+        // draw normal as arrow
+        DebugRenderer.Add(new DrawArrow(Position, Position + Normal * 2, ColorUtility.Cyan));
     }
 }

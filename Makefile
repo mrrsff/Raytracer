@@ -49,7 +49,10 @@ tar:
 	@tar -czf ./Tarfile/raytracer.tar.gz \
 		--exclude=hw1 \
 		--exclude=hw2 \
+		--exclude=hw3 \
+		--exclude=hw4 \
 		--exclude=Outputs \
+		--exclude=Inputs \
 		--exclude=.git \
 		--exclude=.idea \
 		--exclude=bin \

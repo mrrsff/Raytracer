@@ -10,7 +10,7 @@ using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Utility;
 using Debug = Raytracer.Core.Debug;
 
-namespace Raytracer.Rendering;
+namespace Raytracer.Rendering.Raytracing;
 
 public class RayTracerRenderer : CPURenderer
 {
@@ -25,12 +25,7 @@ public class RayTracerRenderer : CPURenderer
 
     protected override void OnRender(ImageBuffer buffer)
     {
-        if (Debug.UseDynamicThreading)
-            DynamicThreadPoolRender(Camera, buffer);
-        else if (Debug.UseMultiThreading)
-            MultithreadRender(Camera, buffer);
-        else
-            SingleThreadRender(Camera, buffer);
+        DynamicThreadPoolRender(Camera, buffer);
     }
 
     private void ProgressiveRenderPixel(int x, int y, Camera renderCamera, ImageBuffer buffer)
@@ -113,10 +108,10 @@ public class RayTracerRenderer : CPURenderer
                 int endY = Math.Min(tileY + tileSize, height);
 
                 for (int y = tileY; y < endY; y++)
-                for (int x = tileX; x < endX; x++)
-                {
-                    ProgressiveRenderPixel(x, y, camera, result);
-                }
+                    for (int x = tileX; x < endX; x++)
+                    {
+                        ProgressiveRenderPixel(x, y, camera, result);
+                    }
             }
         }
     }
@@ -241,6 +236,7 @@ public class RayTracerRenderer : CPURenderer
         public int Depth;
         public Vector3 Weight;
         public float DistanceTraveled;
+        public bool IsInside;
     }
 
     private Vector3 TraceRayIterative(in Ray initialRay)
@@ -251,13 +247,14 @@ public class RayTracerRenderer : CPURenderer
         int stackPointer = 0;
         stack[stackPointer++] = new RayState
             { Ray = initialRay, Depth = 0, Weight = Vector3.One, DistanceTraveled = 0f};
-
+        RayStats.IncrementPrimary();
         while (stackPointer > 0)
         {
             RayState currentState = stack[--stackPointer];
             Ray ray = currentState.Ray;
             int depth = currentState.Depth;
             Vector3 weight = currentState.Weight;
+            bool IsInside = currentState.IsInside;
 
             if (depth > Scene.Content.MaxRecursionDepth)
                 continue;
@@ -270,12 +267,12 @@ public class RayTracerRenderer : CPURenderer
             }
             
             float currentDistanceTraveled = currentState.DistanceTraveled + hit.Distance;
-            float cosThetaI = Vector3.Dot(-ray.Direction, hit.Normal);
+            float cosThetaI = 0;
             
-            bool InsideObject = cosThetaI <= 0f;
             if (hit.material!.Type == MaterialType.Dielectric || hit.material.Type == MaterialType.Conductor)
             {
-                if (InsideObject)
+                cosThetaI = Vector3.Dot(-ray.Direction, hit.Normal);
+                if (IsInside)
                 {
                     hit.Normal = -hit.Normal;
                     weight *= GetAbsorption(hit.material!.AbsorptionCoefficient, currentDistanceTraveled);
@@ -289,6 +286,7 @@ public class RayTracerRenderer : CPURenderer
             {
                 case MaterialType.Mirror:
                 {
+                    RayStats.IncrementPrimary();
                     stack[stackPointer++] = new RayState
                     {
                         Ray = reflectedRay,
@@ -299,6 +297,7 @@ public class RayTracerRenderer : CPURenderer
                 }
                 case MaterialType.Conductor:
                 {
+                    RayStats.IncrementPrimary();
                     var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
                     stack[stackPointer++] = new RayState
                     {
@@ -311,8 +310,8 @@ public class RayTracerRenderer : CPURenderer
                 case MaterialType.Dielectric:
                 {
                     const float airRefractionIndex = 1f;
-                    float etai = InsideObject ? hit.material.RefractionIndex : airRefractionIndex;
-                    float etat = InsideObject ? airRefractionIndex : hit.material.RefractionIndex;
+                    float etai = IsInside ? hit.material.RefractionIndex : airRefractionIndex;
+                    float etat = IsInside ? airRefractionIndex : hit.material.RefractionIndex;
                     float eta = etai / etat;
                     
                     if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
@@ -326,22 +325,27 @@ public class RayTracerRenderer : CPURenderer
                         
                         float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
                         
+                        RayStats.IncrementPrimary();
                         stack[stackPointer++] = new RayState // refracted ray
                         {
                             Ray = refractedRay,
                             Depth = depth + 1,
                             Weight = weight * (1f - fresnel),
+                            DistanceTraveled = 0f,
+                            IsInside = !IsInside
                         };
                         
                         weight *= fresnel;
                     }
                     
+                    RayStats.IncrementPrimary();
                     stack[stackPointer++] = new RayState // reflected ray
                     {
                         Ray = reflectedRay,
                         Depth = depth + 1,
                         Weight = weight,
-                        DistanceTraveled = InsideObject ? currentDistanceTraveled : 0f, // pass distance only if total internal reflection
+                        DistanceTraveled = IsInside ? currentDistanceTraveled : 0f,
+                        IsInside = IsInside
                     };
                     break;
                 }

@@ -98,17 +98,6 @@ public class Camera
     private Vector3 q;
     private float sUMultiplier;
     private float sVMultiplier;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Ray GetPrimaryRay(int i, int j)
-    {
-        float sU = (i + 0.5f) * sUMultiplier;
-        float sV = (j + 0.5f) * sVMultiplier;
-
-        Vector3 s = q + (sU * Right) - (sV * Up);
-        Vector3 d = Vector3.Normalize(s - Position);
-        return new Ray(Position, d);
-    }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ray GenerateRay(float i, float j)
@@ -136,7 +125,7 @@ public class Camera
             r.Time = MathUtility.Lerp(ShutterOpen, ShutterClose, time);
             return r;
         }
-
+        
         Vector3 focalPoint = Position + dir * FocusDistance;
 
         Vector2 disk = MathUtility.ConcentricDiskSample(lensSample) * ApertureSize;

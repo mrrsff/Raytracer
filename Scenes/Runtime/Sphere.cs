@@ -3,6 +3,7 @@ using System.Numerics;
 using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.Raytracing;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Objects;
 using Raytracer.Scenes.Runtime.Meshes;

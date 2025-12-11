@@ -51,15 +51,16 @@ public abstract class MediaSaver
         var baseImage = Image.Load<Rgba32>(imagePaths[0]);
         using var gif = new Image<Rgba32>(baseImage.Width, baseImage.Height);
 
-        foreach (var imgPath in imagePaths)
+        for (var i = imagePaths.Count - 1; i >= 0; i--) // reverse order for correct playback
         {
+            var imgPath = imagePaths[i];
             using var frameImage = Image.Load<Rgba32>(imgPath);
 
             var frame = frameImage.Frames.RootFrame;
             var meta = frame.Metadata.GetGifMetadata();
             meta.FrameDelay = frameDelay;
             meta.DisposalMethod = GifDisposalMethod.RestoreToBackground;
-            
+
             gif.Frames.AddFrame(frameImage.Frames.RootFrame);
         }
 

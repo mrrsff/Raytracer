@@ -11,7 +11,7 @@ public class PointLight
     public Vector3 Position;
     public Vector3 Intensity;
 
-    public Transform Transform;
+    public Transform Transform = new();
 
     public override string ToString()
     {
@@ -22,5 +22,11 @@ public class PointLight
             .Append(", Intensity: ")
             .Append(Intensity)
             .Append(')').ToString();
+    }
+    
+    public void CalculatePosition()
+    {
+        var transformMatrix = Transform.Matrix;
+        Position = Vector3.Transform(Position, transformMatrix);
     }
 }

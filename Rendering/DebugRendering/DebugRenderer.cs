@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Raytracer.Core;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Scenes.Content.Datas.Camera;
 
@@ -11,6 +12,8 @@ public static class DebugRenderer
 
     public static void Rasterize(Camera camera, ImageBuffer imageBuffer)
     {
+        if (!Debug.EnableDebugRendering) return; 
+        
         foreach (var cmd in drawCommands)
         {
             cmd.Draw(camera, imageBuffer);

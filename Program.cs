@@ -2,6 +2,7 @@
 using Raytracer.Core;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering;
+using Raytracer.Rendering.Raytracing;
 using Raytracer.Rendering.SDL2;
 using Raytracer.Scenes;
 
@@ -25,26 +26,59 @@ public static class Program
 
         var scenes = SceneProvider.GetScenes(Params.ScenePath).ToList();
         
-        SDLPreview preview = null;
+        SDLPreview? preview = null;
         if (Params.EnablePreview)
         {
-            preview = new SDLPreview(800, 600);
+            try
+            {
+                preview = new SDLPreview(800, 600);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Warning: SDL2 preview window could not be initialized.");
+                Console.WriteLine("If you want to enable the preview window, please ensure that SDL2 is installed on your system.");
+
+                Console.WriteLine("For Debian/Ubuntu/WSL");
+                Console.WriteLine("  sudo apt-get update && sudo apt-get install libsdl2-dev libsdl2-gfx-dev libsdl2-image-dev");
+                
+                Console.WriteLine("For Windows, download the SDL2 runtime from https://www.libsdl.org/download-2.0.php and ensure the DLLs are in your PATH.");
+                
+                Console.WriteLine();
+                Console.WriteLine($"Error: {e.Message}");
+                Console.WriteLine("Continuing render without preview window.");
+            }
         }
         
         var imagePaths = new ConcurrentBag<string>();
 
-        // Write progress
-        Task.Run(() =>
-        {
-            var totalCameras = scenes.Sum(s => s.Content.Cameras.Camera.Count);
-            while (imagePaths.Count < totalCameras)
-            {
-                Console.Write($"\rRendering progress: {imagePaths.Count}/{totalCameras} images rendered.");
-                Thread.Sleep(200);
-            }
-            Console.WriteLine($"\rRendering progress: {totalCameras}/{totalCameras} images rendered.");
-        });
+        // Task.Run(() =>
+        // {
+        //     var totalCameras = scenes.Sum(s => s.Content.Cameras.Camera.Count);
+        //     while (imagePaths.Count < totalCameras)
+        //     {
+        //         Console.Write($"\rRendering progress: {imagePaths.Count}/{totalCameras} images rendered.");
+        //         Thread.Sleep(200);
+        //     }
+        //     Console.WriteLine($"\rRendering progress: {totalCameras}/{totalCameras} images rendered.");
+        // });
         
+        var firstScene = scenes.FirstOrDefault();
+        if (firstScene == null)
+        {
+            Console.WriteLine("No scenes found to render.");
+            return;
+        }
+        
+        bool isDirectory = Params.IsDirectory; 
+        string outputName = firstScene.GetCamera(0).ImageName;
+        string outputDir = isDirectory
+            ? Path.Combine(OutputDirectory, outputName.Split('_').FirstOrDefault() ?? "Unknown")
+            : OutputDirectory;
+        if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
+
+        var cts = new CancellationTokenSource();
+        var cancellationToken = cts.Token;
+        RayStats.ThroughputMonitor(TimeSpan.FromSeconds(10), cancellationToken);
         foreach (var scene in scenes)
         {
             scene.Initialize();
@@ -61,42 +95,64 @@ public static class Program
                         buffer = renderer.CreateEmptyImageBuffer(i);
                         preview?.SetContentDimensions(buffer.Width, buffer.Height);
                     }
+                    
+                    RayStats.Reset();
                     renderer.RenderIntoExistingBuffer(i, buffer);
-
-                    string path;
-                    if (Params.IsDirectory)
-                    {
-                        var strippedOutputName = buffer.OutputName.Split('_').FirstOrDefault() ?? "Unknown";
-                        var dirPath = Path.Combine(OutputDirectory, strippedOutputName);
-                        if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
-                        path = MediaSaver.SaveImage(dirPath, buffer);
-                    }
-                    else
-                    {
-                        path = MediaSaver.SaveImage(OutputDirectory, buffer);
-                    }
+                    var path = MediaSaver.SaveImage(outputDir, buffer);
                     imagePaths.Add(path);
                 }
             });
             
             if (preview != null)
             {
-                bool running = true;
-                while (running)
+                if (!isDirectory)
                 {
-                    running = preview.PollEvents();
-                    lock (bufferLock)
+                    bool running = true;
+                    bool finished = false;
+                    while (running)
                     {
-                        if (buffer != null)
+                        running = preview.PollEvents();
+                        lock (bufferLock)
                         {
-                            var bytes = buffer.ToByteBuffer();
-                            preview.UpdateFrame(bytes, buffer.Width, buffer.Height);
+                            if (buffer != null)
+                            {
+                                var bytes = buffer.ToByteBuffer();
+                                preview.UpdateFrame(bytes, buffer.Width, buffer.Height);
+                            }
                         }
+
+                        if (renderTask.IsCompleted && !finished)
+                        {
+                            finished = true;
+                            cts.Cancel();
+                        }
+
+                        Thread.Sleep(25);
                     }
-                    Thread.Sleep(25);
+                }
+                else
+                {
+                    bool running = true;
+                    while (!renderTask.IsCompleted && running)
+                    {
+                        running = preview.PollEvents();
+                        lock (bufferLock)
+                        {
+                            if (buffer != null)
+                            {
+                                var bytes = buffer.ToByteBuffer();
+                                preview.UpdateFrame(bytes, buffer.Width, buffer.Height);
+                            }
+                        }
+
+                        Thread.Sleep(25);
+                    }
                 }
             }
+            
             renderTask.Wait();
+            
+            cts.Cancel();
             Debug.Log($"Finished rendering scene '{scene.GetCamera(0).ImageName}'");
         }
         

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.Raytracing;
 
 namespace Raytracer.Scenes;
 
@@ -47,6 +48,7 @@ public partial class Scene
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsOccluded(in Vector3 point, in Vector3 lightPos, in Vector3 normal, float time)
     {
+        RayStats.IncrementShadow();
         var dir = Vector3.Normalize(lightPos - point);
         float maxT = Vector3.Distance(lightPos, point);
         var ray = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, dir, true, time);

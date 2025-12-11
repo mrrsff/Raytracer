@@ -1,4 +1,5 @@
-﻿using Raytracer.Scenes;
+﻿using Raytracer.Core;
+using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.IO.ImageSavers;
 using Raytracer.Rendering.DebugRendering;
@@ -19,10 +20,14 @@ namespace Raytracer.Rendering
 
         public void RenderIntoExistingBuffer(int cameraIndex, ImageBuffer buffer)
         {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            if (Debug.PrintRenderTime) Debug.Log($"Starting render for camera '{Scene.GetCamera(cameraIndex).ImageName}'...");
             Camera = Scene.GetCamera(cameraIndex);
             Camera.InitializeCamera();
             OnRender(buffer);
             DebugRenderer.Rasterize(Camera, buffer);
+            stopwatch.Stop();
+            if (Debug.PrintRenderTime) Debug.Log($"Render completed in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
         }
 
         protected abstract void OnRender(ImageBuffer buffer);

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.Raytracing;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
