@@ -1,7 +1,7 @@
 ﻿using Raytracer.Core;
 using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
-using Raytracer.IO.ImageSavers;
+using Raytracer.IO.Images;
 using Raytracer.Rendering.DebugRendering;
 using Raytracer.Utility;
 
