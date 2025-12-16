@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Outputs\"/>
+        <Folder Include="Outputs\HW3\" />
         <Folder Include="Tarfile\"/>
     </ItemGroup>
 

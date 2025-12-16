@@ -19,4 +19,28 @@ public static class ColorUtility
     {
         return Vector3.Clamp(color, Black, White * 255) / 255f;
     }
+    
+    public static float SRGBToLinear(float c) =>
+        c <= 0.04045f ? c / 12.92f : MathF.Pow((c + 0.055f) / 1.055f, 2.4f);
+    
+    public static Vector3 SRGBToLinear(Vector3 color)
+    {
+        return new Vector3(
+            SRGBToLinear(color.X),
+            SRGBToLinear(color.Y),
+            SRGBToLinear(color.Z)
+        );
+    }
+
+    public static float LinearToSRGB(float c) =>
+        c <= 0.0031308f ? 12.92f * c : 1.055f * MathF.Pow(c, 1f / 2.4f) - 0.055f;
+    
+    public static Vector3 LinearToSRGB(Vector3 color) 
+    {
+        return new Vector3(
+            LinearToSRGB(color.X),
+            LinearToSRGB(color.Y),
+            LinearToSRGB(color.Z)
+        );
+    }
 }

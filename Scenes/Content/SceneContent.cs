@@ -2,6 +2,7 @@
 using System.Text;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Camera;
+using Raytracer.Scenes.Content.Datas.Textures;
 using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Content;
@@ -19,7 +20,9 @@ public class SceneContent
     public float ShadowRayEpsilon = 1e-3f;
     public Transformations Transformations;
     public VertexData VertexData;
-
+    public Textures Textures;
+    public TexCoordData TexCoordData;
+    
     public override string ToString()
     {
         var sb = new StringBuilder();
@@ -33,6 +36,8 @@ public class SceneContent
         sb.AppendLine(Transformations.ToString());
         sb.AppendLine(VertexData.ToString());
         sb.AppendLine(Objects.ToString());
+        sb.AppendLine(Textures.ToString());
+        sb.AppendLine(TexCoordData.ToString());
         return sb.ToString();
     }
 }

@@ -63,6 +63,11 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
         return Intersects(ray, out _, out _);
     }
 
+    public override Vector2 GetUVCoordinates(in Vector3 point, in int primitiveIndex, float rayTime, bool tiling)
+    {
+        return Vector2.Zero;
+    }
+
     public bool IntersectEdge(in Ray ray, out float t)
     {
         t = 0f;

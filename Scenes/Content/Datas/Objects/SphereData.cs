@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using Raytracer.IO.SceneLoaders.Converters;
 
 namespace Raytracer.Scenes.Content.Datas.Objects;
 
@@ -9,6 +10,7 @@ public struct SphereData
     public float Radius;
     public int Material;
     public string Transformations;
+    public int[] Textures;
 
     public override string ToString()
     {

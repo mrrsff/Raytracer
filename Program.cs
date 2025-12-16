@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Raytracer.Core;
 using Raytracer.IO.Images;
-using Raytracer.Rendering;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Rendering.SDL2;
 using Raytracer.Scenes;
@@ -50,17 +49,6 @@ public static class Program
         }
         
         var imagePaths = new ConcurrentBag<string>();
-
-        // Task.Run(() =>
-        // {
-        //     var totalCameras = scenes.Sum(s => s.Content.Cameras.Camera.Count);
-        //     while (imagePaths.Count < totalCameras)
-        //     {
-        //         Console.Write($"\rRendering progress: {imagePaths.Count}/{totalCameras} images rendered.");
-        //         Thread.Sleep(200);
-        //     }
-        //     Console.WriteLine($"\rRendering progress: {totalCameras}/{totalCameras} images rendered.");
-        // });
         
         var firstScene = scenes.FirstOrDefault();
         if (firstScene == null)
@@ -75,6 +63,7 @@ public static class Program
             ? Path.Combine(OutputDirectory, outputName.Split('_').FirstOrDefault() ?? "Unknown")
             : OutputDirectory;
         if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
+        Params.OutputDirectory = outputDir;
 
         var cts = new CancellationTokenSource();
         var cancellationToken = cts.Token;
@@ -95,11 +84,19 @@ public static class Program
                         buffer = renderer.CreateEmptyImageBuffer(i);
                         preview?.SetContentDimensions(buffer.Width, buffer.Height);
                     }
-                    
-                    RayStats.Reset();
-                    renderer.RenderIntoExistingBuffer(i, buffer);
-                    var path = MediaSaver.SaveImage(outputDir, buffer);
-                    imagePaths.Add(path);
+
+                    try
+                    {
+                        RayStats.Reset();
+                        renderer.RenderIntoExistingBuffer(i, buffer);
+                        var path = MediaSaver.SaveImage(outputDir, buffer);
+                        imagePaths.Add(path);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        throw;
+                    }
                 }
             });
             

@@ -27,9 +27,8 @@ namespace Raytracer.IO.Ply
             public long HeaderEnd; // byte offset immediately after end_header line
         }
 
-        public static (Vector3[] vertices, int[][] faces) Parse(string path)
+        public static (Vector3[] vertices, Vector2[] uv, int[][] faces) Parse(string path)
         {
-            path = Path.Combine(Params.SceneDirectory, path);
             var header = ReadHeaderRaw(path);
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             fs.Position = header.HeaderEnd;
@@ -114,10 +113,11 @@ namespace Raytracer.IO.Ply
             return Encoding.ASCII.GetString(bytes.ToArray());
         }
 
-        private static (Vector3[] vertices, int[][] faces) ParseAscii(Stream s, PlyHeader h)
+        private static (Vector3[] vertices, Vector2[] uv, int[][] faces) ParseAscii(Stream s, PlyHeader h)
         {
             using var r = new StreamReader(s, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
             var verts = new Vector3[h.VertexCount];
+            var uvs = new Vector2[h.VertexCount];
             var faces = new int[h.FaceCount][];
 
             for (int i = 0; i < h.VertexCount; i++)
@@ -125,8 +125,8 @@ namespace Raytracer.IO.Ply
                 var line = r.ReadLine() ?? throw new Exception("Unexpected EOF in ASCII vertex list.");
                 var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 // Map by property names
-                float x = 0, y = 0, z = 0;
-                for (int p = 0, f = 0; p < h.VertexProps.Count && p < parts.Length; p++)
+                float x = 0, y = 0, z = 0, u = 0, v = 0;
+                for (int p = 0; p < h.VertexProps.Count && p < parts.Length; p++)
                 {
                     if (h.VertexProps[p].type.StartsWith("float"))
                     {
@@ -135,11 +135,13 @@ namespace Raytracer.IO.Ply
                         if (name == "x") x = val;
                         else if (name == "y") y = val;
                         else if (name == "z") z = val;
-                        f++;
+                        else if (name == "u") u = val;
+                        else if (name == "v") v = val;
                     }
                 }
 
                 verts[i] = new Vector3(x, y, z);
+                uvs[i] = new Vector2(u, v);
             }
 
             for (int i = 0; i < h.FaceCount; i++)
@@ -170,10 +172,10 @@ namespace Raytracer.IO.Ply
                 faces = triFaces.ToArray();
             }
 
-            return (verts, faces);
+            return (verts, uvs, faces);
         }
 
-        private static (Vector3[] vertices, int[][] faces) ParseBinary(Stream s, PlyHeader h)
+        private static (Vector3[] vertices, Vector2[] uv, int[][] faces) ParseBinary(Stream s, PlyHeader h)
         {
             using var br = new BinaryReader(s, Encoding.ASCII, leaveOpen: true);
 
@@ -182,10 +184,11 @@ namespace Raytracer.IO.Ply
             for (int i = 0; i < propCount; i++) propSizes[i] = SizeOf(h.VertexProps[i].type);
 
             var vertices = new Vector3[h.VertexCount];
+            var uvs = new Vector2[h.VertexCount];
 
             for (int i = 0; i < h.VertexCount; i++)
             {
-                float x = 0, y = 0, z = 0, nx = 0, ny = 0, nz = 0;
+                float x = 0, y = 0, z = 0, u = 0, v = 0;
                 for (int p = 0; p < propCount; p++)
                 {
                     var (type, name) = h.VertexProps[p];
@@ -205,14 +208,11 @@ namespace Raytracer.IO.Ply
                                 case "z":
                                     z = fv;
                                     break;
-                                case "nx":
-                                    nx = fv;
+                                case "u":
+                                    u = fv;
                                     break;
-                                case "ny":
-                                    ny = fv;
-                                    break;
-                                case "nz":
-                                    nz = fv;
+                                case "v":
+                                    v = fv;
                                     break;
                             }
 
@@ -246,6 +246,7 @@ namespace Raytracer.IO.Ply
                 }
 
                 vertices[i] = new Vector3(x, y, z);
+                uvs[i] = new Vector2(u, v);
             }
 
             var faces = new int[h.FaceCount][];
@@ -257,7 +258,7 @@ namespace Raytracer.IO.Ply
                 faces[i] = idx;
             }
 
-            return (vertices, faces);
+            return (vertices, uvs, faces);
         }
 
         private static int SizeOf(string t) => t switch

@@ -29,8 +29,6 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
             incomingRay.Time);
     }
     
-    
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected Vector3 Shade(in IntersectionInfo intersection, float time)
     {

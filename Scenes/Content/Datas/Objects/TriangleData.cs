@@ -8,6 +8,7 @@ public struct TriangleData
     [JsonPropertyName("_id")] public int Id;
     public int Material;
     public int[] indices;
+    public int[] Textures;
 
     public override string ToString()
     {

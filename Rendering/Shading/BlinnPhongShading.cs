@@ -1,6 +1,8 @@
 ﻿using System.Numerics;
+using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Sampling;
+using Raytracer.Scenes.Content.Datas.Textures;
 
 namespace Raytracer.Rendering.Shading;
 
@@ -16,6 +18,31 @@ public static class BlinnPhongShading
         Vector3 specular = Vector3.Zero;
         Vector3 viewDir = Vector3.Normalize(intersection.RayOrigin - point);
 
+        var kd = intersection.material.DiffuseReflectance;
+        var ks = intersection.material.SpecularReflectance;
+
+        if (intersection.Textures != null)
+        {
+            foreach (var texture in intersection.Textures)
+            {
+                var textureColor = texture.Sample(intersection);
+                switch (texture.DecalType)
+                {
+                    case DecalType.ReplaceKD:
+                        kd = textureColor;
+                        break;
+                    case DecalType.BlendKD:
+                        kd = textureColor * .5f + kd * .5f;
+                        break;
+                    case DecalType.ReplaceKS:
+                        ks = textureColor;
+                        break;
+                    case DecalType.ReplaceAll:
+                        return textureColor * 255;
+                }
+            }
+        }
+
         if (renderer.Scene.Content.Lights.PointLight != null)
         {
             foreach (var light in renderer.Scene.Content.Lights.PointLight)
@@ -29,12 +56,12 @@ public static class BlinnPhongShading
 
                 // Diffuse
                 float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);
-                diffuse += diff * intersection.material.DiffuseReflectance * irradiance;
+                diffuse += diff * kd * irradiance;
 
                 // Specular
                 Vector3 halfDir = Vector3.Normalize(lightDir + viewDir);
                 float spec = MathF.Pow(MathF.Max(Vector3.Dot(normal, halfDir), 0), intersection.material.PhongExponent);
-                specular += spec * intersection.material.SpecularReflectance * irradiance;
+                specular += spec * ks * irradiance;
             }
         }
 
@@ -63,15 +90,14 @@ public static class BlinnPhongShading
         
                 // Diffuse
                 float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);
-                diffuse += diff * intersection.material.DiffuseReflectance * irradiance;
+                diffuse += diff * kd * irradiance;
         
                 // Specular
                 Vector3 halfDir = Vector3.Normalize(lightDir + viewDir);
                 float spec = MathF.Pow(MathF.Max(Vector3.Dot(normal, halfDir), 0), intersection.material.PhongExponent);
-                specular += spec * intersection.material.SpecularReflectance * irradiance;
+                specular += spec * ks * irradiance;
             }
         }
-
         Vector3 color = ambient + diffuse + specular;
         return color;
     }

@@ -12,6 +12,7 @@ public class MeshInstance
     public bool ResetTransform => _resetTransform == "true";
     public string Transformations;
     public Vector3 MotionBlur;
+    public int[] Textures;
 
     public override string ToString()
     {

@@ -1,4 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Drawing;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
@@ -7,6 +9,8 @@ using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime;
 using Raytracer.Scenes.Runtime.Meshes;
 using Raytracer.Scenes.Runtime.Meshes.BVH;
+using Raytracer.Scenes.Runtime.Textures;
+using Raytracer.Utility;
 using Plane = Raytracer.Scenes.Runtime.Plane;
 
 namespace Raytracer.Scenes;
@@ -18,6 +22,8 @@ public partial class Scene
     public List<Geometry> Geometries = [];
     public List<Plane> Planes = [];
     public BoundingVolumeHierarchy TLAS;
+    public TextureManager TextureManager = new();
+    private Texture? backgroundTexture;
 
     public Scene()
     {
@@ -66,11 +72,12 @@ public partial class Scene
         {
             var transform = new Transform();
             if (meshData.Transformations != null)
+            {
                 Content.Transformations.ApplyTransformations(transform, meshData.Transformations);
+            }
 
-            var mesh = string.IsNullOrEmpty(meshData.Faces.PlyData)
-                ? new Mesh(meshData, this, transform)
-                : new Mesh(meshData.Faces.PlyData, meshData.ShadingMode, meshData.Material, transform, meshData.MotionBlur);
+            var mesh = new Mesh(meshData, this, transform);
+
             
             Geometries.Add(mesh);
             originalMeshes.Add(meshData.Id, mesh);
@@ -83,13 +90,13 @@ public partial class Scene
             var transform = meshInstance.ResetTransform ? new Transform() : mesh.Transform.Copy();
 
             if (meshInstance.Transformations != null)
+            {
                 Content.Transformations.ApplyTransformations(transform, meshInstance.Transformations);
-
-            var instancedMesh = new Mesh(mesh, transform);
-            instancedMesh.MotionBlur = meshInstance.MotionBlur;
-            instancedMesh.MaterialIndex = meshInstance.Material != -1 ? meshInstance.Material : mesh.MaterialIndex;
+            }
+            var instancedMesh = new Mesh(mesh, transform, meshInstance);
+            
             Geometries.Add(instancedMesh);
-            originalMeshes.Add(meshInstance.Id, instancedMesh);
+            originalMeshes.TryAdd(meshInstance.Id, instancedMesh);
         }
 
         foreach (var sphereData in Content.Objects.Sphere)
@@ -110,9 +117,16 @@ public partial class Scene
         }
 
         // Build TLAS if there are enough geometries
-        if (Geometries.Count > 16)
-            TLAS = new BoundingVolumeHierarchy(this);
+        // if (Geometries.Count > 16)
+        //     TLAS = new BoundingVolumeHierarchy(this);
 
+        // Load textures
+        TextureManager.LoadTextures(Content);
+        if (TextureManager.TryGetBackgroundTexture(out backgroundTexture))
+        {
+            Debug.Log("Background texture loaded.");
+        }
+        
         if (Debug.PrintSceneInfo)
         {
             Debug.Log($"Scene initialized with {Content.Cameras.Camera.Count} cameras, " +
@@ -142,7 +156,6 @@ public partial class Scene
             {
                 var index = intersection.HitGeometry?.MaterialIndex ?? 0;
                 intersection.material = GetMaterial(index);
-
                 closestIntersection = intersection;
             }
         }
@@ -183,6 +196,8 @@ public partial class Scene
         }
 
         closestIntersection.RayOrigin = ray.Origin;
+        closestIntersection.Textures = GetTextures(closestIntersection.HitGeometry?.TextureIndices ?? []);
+        closestIntersection.RayTime = ray.Time;
 
         return closestIntersection;
     }
@@ -192,5 +207,77 @@ public partial class Scene
     {
         var clamped = Math.Clamp(index - 1, 0, Content.Materials.Material.Count - 1);
         return Content.Materials.Material[clamped];
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Texture[] GetTextures(int[] textureIndices)
+    {
+        var textures = new Texture[textureIndices.Length];
+        for (int i = 0; i < textureIndices.Length; i++)
+        {
+            textures[i] = TextureManager.GetTexture(textureIndices[i]);
+        }
+        return textures;
+    }
+
+    // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    // public Vector3 GetBackgroundColor(Ray ray, Camera cam)
+    // {
+    //     if (backgroundTexture == null)
+    //     {
+    //         return Content.BackgroundColor;
+    //     }
+    //
+    //     // Basic ray-plane intersection with NearPlane to get UV coordinates
+    //     var planeCenter = cam.Forward * cam.NearDistance;
+    //     
+    //     var planeNormal = Vector3.Normalize(cam.Gaze);
+    //     var denom = Vector3.Dot(planeNormal, ray.Direction);
+    //     if (MathF.Abs(denom) < 1e-6f)
+    //         return Content.BackgroundColor;
+    //     
+    //     float t = Vector3.Dot(planeCenter - ray.Origin, planeNormal) / denom;
+    //     if (t <= 0)
+    //         return Content.BackgroundColor;
+    //     
+    //     Vector3 hit = ray.Origin + ray.Direction * t;
+    //     
+    //     MathUtility.BuildONB(cam.Forward, out var uDir, out var vDir);
+    //     
+    //     Vector3 local = hit - planeCenter;
+    //
+    //     float x = Vector3.Dot(local, uDir);
+    //     float y = Vector3.Dot(local, vDir);
+    //
+    //     // Normalize from rect → [0,1]
+    //     float u = (x - cam.NearPlane.Left) / (cam.NearPlane.Width);
+    //     float v = (y - cam.NearPlane.Bottom) / (cam.NearPlane.Height);
+    //
+    //     // Stretch (clamp), do NOT wrap
+    //     u = Math.Clamp(u, 0f, 1f);
+    //     v = Math.Clamp(v, 0f, 1f);
+    //
+    //     Vector3 sample = backgroundTexture.SampleUV(new Vector2(u, v)) * 255f;
+    //     // Debug.Log($"Background sample at UV({u}, {v}): {sample}");
+    //     return sample;
+    // }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Vector3 GetBackgroundColor(int x, int y, Camera cam)
+    {
+        if (backgroundTexture == null)
+        {
+            return Content.BackgroundColor;
+        }
+
+        // Get UV coordinates based on pixel position
+        float u = (x + 0.5f) / cam.ImageResolution.Width;
+        float v = (y + 0.5f) / cam.ImageResolution.Height;
+
+        // Stretch (clamp), do NOT wrap
+        u = Math.Clamp(u, 0f, 1f);
+        v = Math.Clamp(v, 0f, 1f);
+
+        Vector3 sample = backgroundTexture.SampleUV(new Vector2(u, v)) * 255f;
+        return sample;
     }
 }

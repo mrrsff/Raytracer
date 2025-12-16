@@ -46,8 +46,8 @@ public class RayTracerRenderer : CPURenderer
             Ray ray = renderCamera.GenerateRayDRT(px, py, lens, time);
             // Ray ray = renderCamera.GenerateRay(x, y);
             
-            Vector3 sampleColor = TraceRayIterative(ray);
-            // Vector3 sampleColor = TraceRay(ray, 0, out _);
+            Vector3 sampleColor = TraceRayIterative(x, y, ray);
+            // Vector3 sampleColor = TraceRay(x, y, ray, 0, out _);
             float weight = Filter.Gaussian.Evaluate(pixelSamples[s].X, pixelSamples[s].Y);
     
             finalColor += sampleColor * weight;
@@ -91,7 +91,18 @@ public class RayTracerRenderer : CPURenderer
         for (int i = 0; i < workerCount; i++)
             tasks[i] = Task.Run(Worker);
 
-        Task.WaitAll(tasks);
+        try
+        {
+            Task.WaitAll(tasks);
+        }
+        catch (AggregateException ae)
+        {
+            foreach (var ex in ae.Flatten().InnerExceptions)
+            {
+                Debug.Log(ex.ToString());
+            }
+            throw; // rethrow if you want the render to fail hard
+        }
         return;
 
         void Worker()
@@ -110,7 +121,15 @@ public class RayTracerRenderer : CPURenderer
                 for (int y = tileY; y < endY; y++)
                     for (int x = tileX; x < endX; x++)
                     {
-                        ProgressiveRenderPixel(x, y, camera, result);
+                        try
+                        {
+                            ProgressiveRenderPixel(x, y, camera, result);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.Log($"Exception at pixel ({x},{y}) in tile ({tileX},{tileY})\n{ex}");
+                            throw; // rethrow so Task becomes faulted
+                        }
                     }
             }
         }
@@ -146,89 +165,89 @@ public class RayTracerRenderer : CPURenderer
     #endregion
 
     #region Ray Tracing
-    private Vector3 TraceRay(in Ray ray, in int depth, out float distanceTraveled)
-    {
-        distanceTraveled = 0;
-        if (depth > Scene.Content.MaxRecursionDepth)
-            return ColorUtility.Black;
-
-        IntersectionInfo hit = Scene.Intersect(ray);
-
-        if (!hit.Hit)
-            return Scene.Content.BackgroundColor;
-
-        distanceTraveled = hit.Distance;
-
-        Vector3 finalColor = Vector3.Zero;
-
-        bool inFront = Vector3.Dot(ray.Direction, hit.Normal) < 0f; // Ray is entering the material (facing normal)
-        if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor && !inFront)
-        {
-            hit.Normal = -hit.Normal;
-        }
-        else finalColor = Shade(hit, ray.Time);
-
-        float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
-
-        Vector3 reflectedColor = ColorUtility.Black;
-        Ray reflectedRay = GetReflectedRay(hit, ray);
-        if (inFront)
-        {
-            reflectedColor = TraceRay(reflectedRay, depth + 1, out _);
-        }
-
-        switch (hit.material?.Type)
-        {
-            case MaterialType.Mirror:
-                finalColor += hit.material.MirrorReflectance * reflectedColor;
-                break;
-            case MaterialType.Conductor:
-            {
-                var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
-                finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
-                break;
-            }
-            case MaterialType.Dielectric:
-            {
-                const float airRefractionIndex = 1f;
-                float etai = inFront ? airRefractionIndex : hit.material.RefractionIndex;
-                float etat = inFront ? hit.material.RefractionIndex : airRefractionIndex;
-                float eta = etai / etat;
-
-                if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
-                {
-                    if (hit.material.Roughness > 0f)
-                    {
-                        refrDir = GlossyReflection.PerturbDirection(refrDir, hit.material.Roughness, Sampler.UniformRandom());
-                    }
-
-                    Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
-                    Vector3 refractedColor = TraceRay(refractedRay, depth + 1, out float insideDistance);
-                    if (inFront) // apply absorption only when the ray is entering the material
-                    {
-                        refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
-                    }
-
-                    float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
-
-                    finalColor += fresnel * reflectedColor + (1f - fresnel) * refractedColor;
-                }
-                else // total internal reflection
-                {
-                    Vector3 tirColor = TraceRay(reflectedRay, depth + 1, out float traveled);
-                    distanceTraveled += traveled;
-                    
-                    Vector3 absorption = GetAbsorption(hit.material.AbsorptionCoefficient, traveled);
-                    tirColor *= absorption;
-                    finalColor += tirColor;
-                }
-
-                break;
-            }
-        }
-
-        return finalColor;
-    }
+    // private Vector3 TraceRay(int x, int y, in Ray ray, in int depth, out float distanceTraveled)
+    // {
+    //     distanceTraveled = 0;
+    //     if (depth > Scene.Content.MaxRecursionDepth)
+    //         return ColorUtility.Black;
+    //
+    //     IntersectionInfo hit = Scene.Intersect(ray);
+    //
+    //     if (!hit.Hit)
+    //         return Scene.Content.BackgroundColor;
+    //
+    //     distanceTraveled = hit.Distance;
+    //
+    //     Vector3 finalColor = Vector3.Zero;
+    //
+    //     bool inFront = Vector3.Dot(ray.Direction, hit.Normal) < 0f; // Ray is entering the material (facing normal)
+    //     if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor && !inFront)
+    //     {
+    //         hit.Normal = -hit.Normal;
+    //     }
+    //     else finalColor = Shade(hit, ray.Time);
+    //
+    //     float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
+    //
+    //     Vector3 reflectedColor = ColorUtility.Black;
+    //     Ray reflectedRay = GetReflectedRay(hit, ray);
+    //     if (inFront)
+    //     {
+    //         reflectedColor = TraceRay(x, y, reflectedRay, depth + 1, out _);
+    //     }
+    //
+    //     switch (hit.material?.Type)
+    //     {
+    //         case MaterialType.Mirror:
+    //             finalColor += hit.material.MirrorReflectance * reflectedColor;
+    //             break;
+    //         case MaterialType.Conductor:
+    //         {
+    //             var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
+    //             finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
+    //             break;
+    //         }
+    //         case MaterialType.Dielectric:
+    //         {
+    //             const float airRefractionIndex = 1f;
+    //             float etai = inFront ? airRefractionIndex : hit.material.RefractionIndex;
+    //             float etat = inFront ? hit.material.RefractionIndex : airRefractionIndex;
+    //             float eta = etai / etat;
+    //
+    //             if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
+    //             {
+    //                 if (hit.material.Roughness > 0f)
+    //                 {
+    //                     refrDir = GlossyReflection.PerturbDirection(refrDir, hit.material.Roughness, Sampler.UniformRandom());
+    //                 }
+    //
+    //                 Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
+    //                 Vector3 refractedColor = TraceRay(x, y, refractedRay, depth + 1, out float insideDistance);
+    //                 if (inFront) // apply absorption only when the ray is entering the material
+    //                 {
+    //                     refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
+    //                 }
+    //
+    //                 float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
+    //
+    //                 finalColor += fresnel * reflectedColor + (1f - fresnel) * refractedColor;
+    //             }
+    //             else // total internal reflection
+    //             {
+    //                 Vector3 tirColor = TraceRay(x, y, reflectedRay, depth + 1, out float traveled);
+    //                 distanceTraveled += traveled;
+    //                 
+    //                 Vector3 absorption = GetAbsorption(hit.material.AbsorptionCoefficient, traveled);
+    //                 tirColor *= absorption;
+    //                 finalColor += tirColor;
+    //             }
+    //
+    //             break;
+    //         }
+    //     }
+    //
+    //     return finalColor;
+    // }
 
     private struct RayState
     {
@@ -239,7 +258,7 @@ public class RayTracerRenderer : CPURenderer
         public bool IsInside;
     }
 
-    private Vector3 TraceRayIterative(in Ray initialRay)
+    private Vector3 TraceRayIterative(int x, int y, in Ray initialRay)
     {
         Vector3 finalColor = Vector3.Zero;
 
@@ -262,9 +281,20 @@ public class RayTracerRenderer : CPURenderer
             IntersectionInfo hit = Scene.Intersect(ray);
             if (!hit.Hit)
             {
-                finalColor += weight * Scene.Content.BackgroundColor;
+                finalColor += weight * Scene.GetBackgroundColor(x, y, Camera);
                 continue;
             }
+
+            if (Debug.RenderUVs)
+            {
+                var uv = hit.GetUVCoordinates(true);
+                var color = new Vector3(uv.X, uv.Y, 0f) * 255f;
+                return color;
+            }
+            
+            hit.Camera = Camera;
+            hit.XPixel = x;
+            hit.YPixel = y;
             
             float currentDistanceTraveled = currentState.DistanceTraveled + hit.Distance;
             float cosThetaI = 0;

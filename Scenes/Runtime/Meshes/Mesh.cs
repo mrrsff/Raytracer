@@ -9,40 +9,44 @@ namespace Raytracer.Scenes.Runtime.Meshes;
 
 public class Mesh : Geometry
 {
+    public readonly int baseMeshId;
     private MeshDefinition MeshDefinition { get; set; }
     private ShadingMode ShadingMode { get; set; }
 
     public override int GetPrimitiveCount() => MeshDefinition.Triangles.Length;
-
     public Mesh(MeshData meshData, Scene scene, Transform transform)
     {
+        baseMeshId = meshData.Id;
         ShadingMode = meshData.ShadingMode;
         MaterialIndex = meshData.Material;
         MotionBlur = meshData.MotionBlur;
         Transform = transform;
-        MeshDefinition = new MeshDefinition(meshData, scene.Content.VertexData);
+        if (!string.IsNullOrEmpty(meshData.Faces.PlyData))
+        {
+            var plyData = new PlyData(Params.GetFilePathInSceneDir(meshData.Faces.PlyData));
+            MeshDefinition = new MeshDefinition(plyData);
+        }
+        else
+        {
+            MeshDefinition = new MeshDefinition(meshData, scene.Content.VertexData, scene.Content.TexCoordData);   
+        }
+        TextureIndices = meshData.Textures;
         Initialize();
     }
 
-    public Mesh(string plyPath, ShadingMode shadingMode, int material, Transform transform, Vector3 motionBlur)
+    public Mesh(Mesh originalMesh, Transform newTransform, MeshInstance instance)
     {
-        ShadingMode = shadingMode;
-        MaterialIndex = material;
-        MotionBlur = motionBlur;
-        var data = new PlyData(plyPath);
-        MeshDefinition = new MeshDefinition(data);
-        Transform = transform;
-        Initialize();
-    }
-
-    public Mesh(Mesh originalMesh, Transform newTransform)
-    {
+        baseMeshId = originalMesh.baseMeshId;
         ShadingMode = originalMesh.ShadingMode;
-        MaterialIndex = originalMesh.MaterialIndex;
-
         MeshDefinition = originalMesh.MeshDefinition;
+        MaterialIndex = instance.Material != -1 ? instance.Material : originalMesh.MaterialIndex;
+        MotionBlur = instance.MotionBlur.LengthSquared() > 0 ? instance.MotionBlur : originalMesh.MotionBlur;
+        
+        if (TextureIndices != null && TextureIndices.Length != 0) TextureIndices = instance.Textures;
+        else TextureIndices = originalMesh.TextureIndices;
+        
         Transform = newTransform;
-
+        
         Initialize();
     }
 
@@ -87,5 +91,14 @@ public class Mesh : Geometry
 
         info.Normal = Vector3.Normalize(finalTransform.ToWorldDirection(localNormal));
         return hit;
+    }
+    public override Vector2 GetUVCoordinates(in Vector3 point, in int primitiveIndex, float rayTime, bool tiling)
+    {
+        if (primitiveIndex < 0 || primitiveIndex >= MeshDefinition.Triangles.Length)
+            return Vector2.Zero;
+
+        var t = MeshDefinition.Triangles[primitiveIndex];
+        var localPoint = GetMotionBlurTransform(rayTime).ToLocalPoint(point);
+        return t.GetUVCoordinates(localPoint, primitiveIndex, rayTime, tiling);
     }
 }

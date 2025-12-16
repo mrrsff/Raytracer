@@ -10,12 +10,13 @@ namespace Raytracer.Scenes.Content.Datas.Objects;
 public class PlyData
 {
     public Vector3[] vertices { get; private set; }
+    public Vector2[] uv { get; private set; }
     public int[][] faces { get; private set; }
     public Triangle[] triangles { get; private set; }
 
     public PlyData(string filePath)
     {
-        (vertices, faces) = PlyImporter.Parse(filePath);
+        (vertices, uv, faces) = PlyImporter.Parse(filePath);
         if (Debug.DebugPLYLoading)
             Console.WriteLine($"Loaded PLY: {filePath} with {vertices.Length} vertices and {faces.Length} faces.");
         InitializeTriangles();

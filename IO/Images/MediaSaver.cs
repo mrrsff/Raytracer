@@ -1,4 +1,5 @@
-﻿using SixLabors.ImageSharp;
+﻿using Raytracer.Core;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -33,6 +34,13 @@ public abstract class MediaSaver
         image.Save(combinedPath);
 
         return combinedPath;
+    }
+    public static string SaveBitmap(byte[] imageData, int width, int height, string dirPath, string imageName)
+    {
+        using var image = Image.LoadPixelData<Rgb24>(imageData, width, height);
+        var path = Path.Combine(dirPath, imageName);
+        image.Save(path);
+        return path;
     }
     public static void SaveGIF(string outputDir, List<string> imagePaths, int fps)
     {

@@ -18,6 +18,7 @@ public struct MeshData
     public string Transformations;
     public FacesData Faces;
     public Vector3 MotionBlur;
+    public int[] Textures;
 
 
     public override string ToString()

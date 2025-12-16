@@ -86,4 +86,11 @@ public class BoundingVolumeHierarchy : Geometry
 
         return hit;
     }
+
+    public override Vector2 GetUVCoordinates(in Vector3 point, in int primitiveIndex, float rayTime, bool tiling)
+    { 
+        if (primitiveIndex < 0 || primitiveIndex >= geometries.Length)
+            return Vector2.Zero;
+        return geometries[primitiveIndex].GetUVCoordinates(point, primitiveIndex, rayTime, tiling);
+    }
 }

@@ -19,6 +19,9 @@ public struct Transformations
 
     [JsonConverter(typeof(SingleOrListConverter<TransformationEntry>))]
     public List<TransformationEntry> Translation;
+    
+    [JsonConverter(typeof(SingleOrListConverter<TransformationEntry>))]
+    public List<TransformationEntry> Composite;
 
     public override string ToString()
     {
@@ -66,29 +69,29 @@ public struct Transformations
         {
             string idStr = ids[i];
 
-            if (idStr.StartsWith("t"))
+            if (idStr.StartsWith('t'))
             {
                 var entry = Translation.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
                 if (entry.Data != null)
                     transform.Translate(entry.ToVector3());
             }
-            else if (idStr.StartsWith("r"))
+            else if (idStr.StartsWith('r'))
             {
                 var entry = Rotation.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
                 if (entry.Data != null)
                     transform.Rotate(entry.ToRotation());
             }
-            else if (idStr.StartsWith("s"))
+            else if (idStr.StartsWith('s'))
             {
                 var entry = Scaling.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
                 if (entry.Data != null)
                     transform.Scale(entry.ToVector3());
             }
-            else if (idStr.StartsWith("c"))
+            else if (idStr.StartsWith('c'))
             {
-                var entry = Translation.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
+                var entry = Composite.FirstOrDefault(e => e.Id.ToString() == idStr[1..]);
                 if (entry.Data != null)
-                    transform.SetMatrix(entry.ToCompositeMatrix());
+                    transform.Composite(entry.ToCompositeMatrix());
             }
         }
     }
@@ -122,6 +125,7 @@ public struct TransformationEntry
     {
         if (Data.Length != 16)
             throw new InvalidOperationException("Data length is not 16 for Matrix4x4 conversion.");
+        
         return new Matrix4x4(
             Data[0], Data[1], Data[2], Data[3],
             Data[4], Data[5], Data[6], Data[7],

@@ -27,6 +27,7 @@ public class Sphere : Geometry
             Transform.ToWorldPoint(center - new Vector3(radius)),
             Transform.ToWorldPoint(center + new Vector3(radius))
         );
+        TextureIndices = data.Textures;
     }
 
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
@@ -68,5 +69,22 @@ public class Sphere : Geometry
         info.HitGeometry = this;
 
         return true;
+    }
+    public override Vector2 GetUVCoordinates(in Vector3 point, in int _, float rayTime, bool tiling)
+    {
+        Vector3 localPoint = Transform.ToLocalPoint(point);
+        Vector3 p = Vector3.Normalize(localPoint - center);
+
+        float normalizedU = 0.5f - (MathF.Atan2(p.Z, p.X) / (2 * MathF.PI));
+        float normalizedV = 0.5f - (MathF.Asin(p.Y) / MathF.PI);
+        
+        if (!tiling) return new Vector2(normalizedU, normalizedV);
+        
+        float circumference = 2 * MathF.PI * radius;
+        
+        float u = normalizedU * circumference;
+        float v = normalizedV * (circumference / 2);
+        
+        return new Vector2(u, v);
     }
 }

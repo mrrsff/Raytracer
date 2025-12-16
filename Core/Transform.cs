@@ -21,9 +21,9 @@ public class Transform
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
 
-    public void SetMatrix(Matrix4x4 matrix)
+    public void Composite(Matrix4x4 matrix)
     {
-        transformMatrix = matrix;
+        transformMatrix *= Matrix4x4.Transpose(matrix);
         Matrix4x4.Invert(transformMatrix, out inverseTransformMatrix);
     }
 
@@ -74,8 +74,7 @@ public class Transform
 
     public Vector3 ToWorldDirection(Vector3 dir)
     {
-        Matrix4x4 invT = Matrix4x4.Transpose(inverseTransformMatrix);
-        return Vector3.Normalize(Vector3.TransformNormal(dir, invT));
+        return Vector3.Normalize(Vector3.TransformNormal(dir, transformMatrix));
     }
 
     public Vector3 ToLocalDirection(Vector3 dir)
@@ -96,7 +95,6 @@ public class Transform
         Vector3 d = ToWorldDirection(ray.Direction);
         return new Ray(o, d, ray.IsSecondary);
     }
-
     public Transform Copy()
     {
         return new Transform(transformMatrix);
@@ -104,6 +102,14 @@ public class Transform
 
     public override string ToString()
     {
-        return transformMatrix.ToString();
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Transform Matrix:");
+        sb.Append($"[{transformMatrix.M11:F2}, {transformMatrix.M21:F2}, {transformMatrix.M31:F2}, {transformMatrix.M41:F2}]\n");
+        sb.Append($"[{transformMatrix.M12:F2}, {transformMatrix.M22:F2}, {transformMatrix.M32:F2}, {transformMatrix.M42:F2}]\n");
+        sb.Append($"[{transformMatrix.M13:F2}, {transformMatrix.M23:F2}, {transformMatrix.M33:F2}, {transformMatrix.M43:F2}]\n");
+        sb.Append($"[{transformMatrix.M14:F2}, {transformMatrix.M24:F2}, {transformMatrix.M34:F2}, {transformMatrix.M44:F2}]\n");
+        return sb.ToString();
     }
+    
+    public static Transform Identity => new();
 }

@@ -51,6 +51,15 @@ public class Triangle : Geometry
         return hit;
     }
 
+    public override Vector2 GetUVCoordinates(in Vector3 point, in int primitiveIndex, float rayTime, bool tiling)
+    {
+        CalculateBarycentricCoordinates(point, out float alpha, out float beta, out float gamma);
+        Vector2 uv0 = MeshDefinition.TexCoords[I0];
+        Vector2 uv1 = MeshDefinition.TexCoords[I1];
+        Vector2 uv2 = MeshDefinition.TexCoords[I2];
+        return alpha * uv0 + beta * uv1 + gamma * uv2;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CalculateBarycentricCoordinates(in Vector3 point, out float alpha, out float beta, out float gamma)
     {

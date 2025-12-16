@@ -4,6 +4,7 @@ public static class Params
 {
     public static string ScenePath;
     public static string SceneDirectory;
+    public static string OutputDirectory = "Outputs";
     public static bool IsSingleFile => File.Exists(ScenePath);
     public static bool IsDirectory => Directory.Exists(ScenePath);
     public static bool EnablePreview;
@@ -30,5 +31,10 @@ public static class Params
         var enablePreview = !args.Contains("--no-preview");
 
         EnablePreview = enablePreview;
+    }
+    
+    public static string GetFilePathInSceneDir(string fileName)
+    {
+        return Path.Combine(SceneDirectory, fileName);
     }
 }

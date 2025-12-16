@@ -19,6 +19,7 @@ public class Plane : Geometry
         normal = Vector3.Normalize(data.Normal);
         MaterialIndex = data.Material;
         Transform = new Transform();
+        TextureIndices = data.Textures;
     }
 
     public override bool Intersect(in Ray ray, ref IntersectionInfo info)
@@ -46,5 +47,14 @@ public class Plane : Geometry
         info.Normal = Vector3.Normalize(worldNormal);
         info.HitGeometry = this;
         return true;
+    }
+
+    public override Vector2 GetUVCoordinates(in Vector3 point, in int primitiveIndex, float rayTime, bool tiling)
+    {
+        // Simple planar mapping
+        Vector3 localPoint = Transform.ToLocalPoint(point);
+        float u = localPoint.X - MathF.Floor(localPoint.X);
+        float v = localPoint.Z - MathF.Floor(localPoint.Z);
+        return new Vector2(u, v);
     }
 }

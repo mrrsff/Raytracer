@@ -11,6 +11,7 @@ public struct PlaneData
     public int Point;
     public Vector3 Normal;
     public string Transformations;
+    public int[] Textures;
 
     public override string ToString()
     {
