@@ -1,10 +1,10 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
-using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.Objects;
+using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Runtime;
 
@@ -42,9 +42,6 @@ public class Plane : Geometry
         info.Hit = true;
         info.Point = Transform.ToWorldPoint(localHitPoint);
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
-
-        var worldNormal = Transform.ToWorldDirection(normal);
-        info.Normal = Vector3.Normalize(worldNormal);
         info.HitGeometry = this;
         return true;
     }
@@ -56,5 +53,22 @@ public class Plane : Geometry
         float u = localPoint.X - MathF.Floor(localPoint.X);
         float v = localPoint.Z - MathF.Floor(localPoint.Z);
         return new Vector2(u, v);
+    }
+
+    public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
+    {
+        var worldNormal = Transform.ToWorldDirection(normal);
+        return Vector3.Normalize(worldNormal);
+    }
+
+    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent,
+        out Vector3 normal)
+    {
+        normal = GetNormal(point, primitiveIndex, rayTime);
+
+        // Create arbitrary tangent and bitangent
+        Vector3 up = MathF.Abs(normal.Y) < 0.999f ? Vector3.UnitY : Vector3.UnitZ;
+        tangent = Vector3.Normalize(Vector3.Cross(up, normal));
+        bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent));
     }
 }

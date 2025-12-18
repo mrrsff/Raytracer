@@ -291,7 +291,14 @@ public class RayTracerRenderer : CPURenderer
                 var color = new Vector3(uv.X, uv.Y, 0f) * 255f;
                 return color;
             }
-            
+
+            if (Debug.RenderNormals)
+            {
+                var color = (hit.Normal + Vector3.One) * 0.5f * 255f;
+                // Debug.Log("Rendering normals : " + hit.Normal + " -> " + color);
+                return color;
+            }
+
             hit.Camera = Camera;
             hit.XPixel = x;
             hit.YPixel = y;

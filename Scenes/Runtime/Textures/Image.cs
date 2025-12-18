@@ -18,9 +18,11 @@ public class Image : Texture
     
     public Image(TextureInfo textureInfo, ImageDatas imageDatas) : base(textureInfo)
     {
+        // if (BumpFactor >= 1f) BumpFactor *= 0.0045f; // bump_mapping_transformed
+        if (BumpFactor >= 1f) BumpFactor *= 0.1f;
+        
         var image = imageDatas.GetImageData(textureInfo.ImageId);
-        // var normalizer = textureInfo.Normalizer != 0 ? textureInfo.Normalizer : 255f;
-        const float normalizer = 1f; // ???????????
+        var normalizer = textureInfo.Normalizer != 0 ? textureInfo.Normalizer : 255f;
 
         Width = image.Width;
         Height = image.Height;
@@ -31,15 +33,15 @@ public class Image : Texture
             {
                 var pixel = image[x, y];
                 Vector3 color = new Vector3(pixel.R, pixel.G, pixel.B) / normalizer;
-                pixels[y * Width + x] = color;
+                pixels[y * Width + x] = color; // [0, 1]
             }
         }
 
         int maxLevels = 1;
         if (InterpolationType == InterpolationType.Trilinear)
         {
-            // 128x128 minimum mipmap size
-            maxLevels = (int)MathF.Floor(MathF.Log2(MathF.Max(Width, Height) / 128f)) + 1;
+            const int minimumSize = 32; // Minimum size for the smallest mipmap level (32x32)
+            maxLevels = (int)MathF.Floor(MathF.Log2(MathF.Max(Width, Height) / minimumSize)) + 1;
             maxLevels = Math.Max(1, maxLevels);
         }
         
@@ -48,17 +50,24 @@ public class Image : Texture
             var mipmapLevel = Mipmap.Create(level, Width, Height, pixels);
             _mipmaps.Add(mipmapLevel);
         }
+        
+        du = new Vector2(1f / Width, 0f);
+        dv = new Vector2(0f, 1f / Height);
+        // SaveMipmaps();
     }
 
     private float mipLevel;
     public override Vector3 Sample(IntersectionInfo info)
     {
         Vector2 uv = info.GetUVCoordinates(false);
-        if (InterpolationType == InterpolationType.Trilinear) mipLevel = ComputeMipLevel(info, Width, Height);
-        return SampleUV(uv);
+        if (InterpolationType == InterpolationType.Trilinear)
+        {
+            mipLevel = ComputeMipLevel(info, Width, Height);
+        }
+        return SampleFromUV(uv);
     }
 
-    public override Vector3 SampleUV(Vector2 uv)
+    public override Vector3 SampleFromUV(Vector2 uv)
     {
         uv.X -= MathF.Floor(uv.X);
         uv.Y -= MathF.Floor(uv.Y);
@@ -82,7 +91,25 @@ public class Image : Texture
                 throw new NotImplementedException($"Interpolation type {InterpolationType} not implemented.");
         }
 
-        return ColorUtility.Normalize(sample);
+        return sample;
+    }
+
+    private readonly Vector2 du;
+    private readonly Vector2 dv;
+    public void SampleHeightDerivatives(Vector2 uv, out float dhdu, out float dhdv)
+    {
+        float h = SampleHeight(uv);
+        float hu = SampleHeight(uv + du);
+        float hv = SampleHeight(uv + dv);
+
+        dhdu = (hu - h) * Width;
+        dhdv = (hv - h) * Height;
+    }
+
+    private float SampleHeight(Vector2 uv) // [0, 1]
+    {
+        Vector3 sample = SampleFromUV(uv); 
+        return (sample.X + sample.Y + sample.Z) / 3f;
     }
 
     private Vector3 NearestNeighborSample(Vector2 uv)
@@ -93,6 +120,9 @@ public class Image : Texture
     }
     private static Vector3 BilinearSample(Mipmap mip, Vector2 uv)
     {
+        uv.X -= MathF.Floor(uv.X);
+        uv.Y -= MathF.Floor(uv.Y);
+        
         float x = uv.X * (mip.Width  - 1);
         float y = uv.Y * (mip.Height - 1);
 
@@ -117,16 +147,20 @@ public class Image : Texture
     
     private Vector3 TrilinearSample(Vector2 uv)
     {
-        int level0 = (int)Math.Floor(mipLevel);
+        if (mipLevel >= _mipmaps.Count - 1)
+        {
+            return BilinearSample(_mipmaps[^1], uv);
+        }
+
+        int level0 = Math.Min((int)Math.Floor(mipLevel), _mipmaps.Count - 1);
         int level1 = Math.Min(level0 + 1, _mipmaps.Count - 1);
         float t = mipLevel - level0;
-
         Mipmap mip0 = _mipmaps[level0];
         Mipmap mip1 = _mipmaps[level1];
 
         Vector3 c0 = BilinearSample(mip0, uv);
         Vector3 c1 = BilinearSample(mip1, uv);
-        
+    
         return Vector3.Lerp(c0, c1, t);
     }
     

@@ -9,6 +9,7 @@ def get_json_files(directory):
 
 def run_raytracer(json_file, preview):
     """Run the raytracer program with the specified JSON file using normal CMD."""
+
     cmd = f'make run ARGS="{json_file} {preview}"'
     exit_code = os.system(cmd)
     return exit_code

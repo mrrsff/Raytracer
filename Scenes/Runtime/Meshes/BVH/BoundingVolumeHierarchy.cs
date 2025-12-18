@@ -9,6 +9,7 @@ public class BoundingVolumeHierarchy : Geometry
 {
     private readonly BVHNode[] nodes;
     private readonly Geometry[] geometries;
+    private readonly MeshDefinition? meshDefinition;
     public ref BVHNode GetNode(int i) => ref nodes[i];
     public int NodeCount => nodes.Length;
 
@@ -92,5 +93,25 @@ public class BoundingVolumeHierarchy : Geometry
         if (primitiveIndex < 0 || primitiveIndex >= geometries.Length)
             return Vector2.Zero;
         return geometries[primitiveIndex].GetUVCoordinates(point, primitiveIndex, rayTime, tiling);
+    }
+    public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
+    {
+        if (primitiveIndex < 0 || primitiveIndex >= geometries.Length)
+            return Vector3.Zero;
+        
+        return geometries[primitiveIndex].GetNormal(point, primitiveIndex, rayTime);
+    }
+    
+    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent,
+        out Vector3 normal)
+    {
+        if (primitiveIndex < 0 || primitiveIndex >= geometries.Length)
+        {
+            tangent = Vector3.Zero;
+            bitangent = Vector3.Zero;
+            normal = Vector3.Zero;
+            return;
+        }
+        geometries[primitiveIndex].GetTBN(point, primitiveIndex, rayTime, out tangent, out bitangent, out normal);
     }
 }

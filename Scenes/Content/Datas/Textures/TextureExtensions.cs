@@ -30,7 +30,7 @@ public static class TextureExtensions
     
     public static InterpolationType ToInterpolationType(this string interpolationType)
     {
-        if (string.IsNullOrWhiteSpace(interpolationType)) return InterpolationType.Nearest;
+        if (string.IsNullOrWhiteSpace(interpolationType)) return InterpolationType.Bilinear;
         return interpolationType.ToLower() switch
         {
             "nearest" => InterpolationType.Nearest,

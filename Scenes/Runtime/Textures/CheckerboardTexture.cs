@@ -31,7 +31,7 @@ public class CheckerboardTexture : Texture
         return xorXY != z ? WhiteColor : BlackColor;
     }
 
-    public override Vector3 SampleUV(Vector2 uv)
+    public override Vector3 SampleFromUV(Vector2 uv)
     {
         bool u = ((int)MathF.Floor((uv.X + Offset) * Scale)) % 2 == 0;
         bool v = ((int)MathF.Floor((uv.Y + Offset) * Scale)) % 2 == 0;

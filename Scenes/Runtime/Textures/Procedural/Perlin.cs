@@ -56,6 +56,49 @@ public static class Perlin
         return result;
     }
 
+    public static float Noise(float x, float y, float z)
+    {
+        int X = (int)MathF.Floor(x) & 255;
+        int Y = (int)MathF.Floor(y) & 255;
+        int Z = (int)MathF.Floor(z) & 255;
+    
+        x -= MathF.Floor(x);
+        y -= MathF.Floor(y);
+        z -= MathF.Floor(z);
+    
+        float u = Fade(x);
+        float v = Fade(y);
+        float w = Fade(z);
+    
+        int A = perm[X] + Y;
+        int AA = perm[A] + Z;
+        int AB = perm[A + 1] + Z;
+        int B = perm[X + 1] + Y;
+        int BA = perm[B] + Z;
+        int BB = perm[B + 1] + Z;
+
+        float valAAA = Gradient(perm[AA], x, y, z);
+        float valBAA = Gradient(perm[BA], x - 1, y, z);
+        float valABA = Gradient(perm[AB], x, y - 1, z);
+        float valBBA = Gradient(perm[BB], x - 1, y - 1, z);
+        float valAAB = Gradient(perm[AA + 1], x, y, z - 1);
+        float valBAB = Gradient(perm[BA + 1], x - 1, y, z - 1);
+        float valABB = Gradient(perm[AB + 1], x, y - 1, z - 1);
+        float valBBB = Gradient(perm[BB + 1], x - 1, y - 1, z - 1);
+
+        float lerpX1 = MathUtility.Lerp(valAAA, valBAA, u);
+        float lerpX2 = MathUtility.Lerp(valABA, valBBA, u);
+        float lerpY1 = MathUtility.Lerp(lerpX1, lerpX2, v);
+
+        float lerpX3 = MathUtility.Lerp(valAAB, valBAB, u);
+        float lerpX4 = MathUtility.Lerp(valABB, valBBB, u);
+        float lerpY2 = MathUtility.Lerp(lerpX3, lerpX4, v);
+
+        float result = MathUtility.Lerp(lerpY1, lerpY2, w);
+
+        return result;
+    }
+
     private static float Fade(float t)
     {
         return t * t * t * (t * (t * 6 - 15) + 10);
@@ -66,6 +109,14 @@ public static class Perlin
         int h = hash & 15;
         float u = h < 8 ? x : y;
         float v = h < 4 ? y : h == 12 || h == 14 ? x : 0;
+        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+    }
+    
+    private static float Gradient(int hash, float x, float y, float z)
+    {
+        int h = hash & 15;
+        float u = h < 8 ? x : y;
+        float v = h < 4 ? y : h == 12 || h == 14 ? x : z;
         return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
     }
 }

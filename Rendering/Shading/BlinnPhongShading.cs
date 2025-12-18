@@ -10,22 +10,14 @@ public static class BlinnPhongShading
 {
     public static Vector3 Shade(in IntersectionInfo intersection, in float time, in Renderer renderer)
     {
-        var point = intersection.Point;
-        var normal = intersection.Normal;
-
-        Vector3 ambient = intersection.material!.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
-        Vector3 diffuse = Vector3.Zero;
-        Vector3 specular = Vector3.Zero;
-        Vector3 viewDir = Vector3.Normalize(intersection.RayOrigin - point);
-
-        var kd = intersection.material.DiffuseReflectance;
+        var kd = intersection.material!.DiffuseReflectance;
         var ks = intersection.material.SpecularReflectance;
 
         if (intersection.Textures != null)
         {
             foreach (var texture in intersection.Textures)
             {
-                var textureColor = texture.Sample(intersection);
+                var textureColor = texture.Sample(intersection); // [0,1]
                 switch (texture.DecalType)
                 {
                     case DecalType.ReplaceKD:
@@ -38,10 +30,18 @@ public static class BlinnPhongShading
                         ks = textureColor;
                         break;
                     case DecalType.ReplaceAll:
-                        return textureColor * 255;
+                        return textureColor;
                 }
             }
         }
+
+        var point = intersection.Point;
+        var normal = intersection.Normal;
+
+        Vector3 ambient = intersection.material.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
+        Vector3 diffuse = Vector3.Zero;
+        Vector3 specular = Vector3.Zero;
+        Vector3 viewDir = Vector3.Normalize(intersection.RayOrigin - point);
 
         if (renderer.Scene.Content.Lights.PointLight != null)
         {

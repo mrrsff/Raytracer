@@ -15,6 +15,7 @@ public class Triangle : Geometry
     public Vector3 V2 => MeshDefinition.Vertices[I2];
     public Vector3 Centroid;
 
+    private Vector3 tangent;
     private Vector3 E1; // V1 - V0
     private Vector3 E2; // V2 - V0
     private MeshDefinition MeshDefinition;
@@ -40,6 +41,14 @@ public class Triangle : Geometry
             Vector3.Min(Vector3.Min(V0, V1), V2),
             Vector3.Max(Vector3.Max(V0, V1), V2)
         );
+        
+        Vector2 duv1 = MeshDefinition.TexCoords[I1] - MeshDefinition.TexCoords[I0];
+        Vector2 duv2 = MeshDefinition.TexCoords[I2] - MeshDefinition.TexCoords[I0];
+        
+        float det = duv1.X * duv2.Y - duv1.Y * duv2.X;
+        float invDet = 1.0f / det;
+        tangent = (E1 * duv2.Y - E2 * duv1.Y) * invDet;
+        tangent = Vector3.Normalize(tangent);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,6 +67,26 @@ public class Triangle : Geometry
         Vector2 uv1 = MeshDefinition.TexCoords[I1];
         Vector2 uv2 = MeshDefinition.TexCoords[I2];
         return alpha * uv0 + beta * uv1 + gamma * uv2;
+    }
+
+    public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
+    {
+        CalculateBarycentricCoordinates(point, out float alpha, out float beta, out float gamma);
+        Vector3 n0 = MeshDefinition.VertexNormals[I0];
+        Vector3 n1 = MeshDefinition.VertexNormals[I1];
+        Vector3 n2 = MeshDefinition.VertexNormals[I2];
+        return Vector3.Normalize(alpha * n0 + beta * n1 + gamma * n2); // Smooth normal
+    }
+
+    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent,
+        out Vector3 normal)
+    {
+        normal = GetNormal(point, primitiveIndex, rayTime);
+        tangent = this.tangent;
+        bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent));
+        
+        bool handedness = Vector3.Dot(Vector3.Cross(tangent, bitangent), normal) >= 0.0f;
+        if (handedness) bitangent = -bitangent;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -4,6 +4,8 @@ using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Scenes.Content.Datas.Objects;
+using Raytracer.Scenes.Runtime.Textures;
+using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
@@ -82,14 +84,8 @@ public class Mesh : Geometry
             info.PrimitiveIndex >= MeshDefinition.Triangles.Length) return hit;
 
         var t = MeshDefinition.Triangles[info.PrimitiveIndex];
-        t.CalculateBarycentricCoordinates(localHitPoint, out var alpha, out var beta, out var gamma);
-
-        Vector3 n0 = MeshDefinition.VertexNormals[t.I0];
-        Vector3 n1 = MeshDefinition.VertexNormals[t.I1];
-        Vector3 n2 = MeshDefinition.VertexNormals[t.I2];
-        Vector3 localNormal = Vector3.Normalize(alpha * n0 + beta * n1 + gamma * n2);
-
-        info.Normal = Vector3.Normalize(finalTransform.ToWorldDirection(localNormal));
+        info.Normal = t.GetNormal(localHitPoint, info.PrimitiveIndex, ray.Time);
+        
         return hit;
     }
     public override Vector2 GetUVCoordinates(in Vector3 point, in int primitiveIndex, float rayTime, bool tiling)
@@ -100,5 +96,38 @@ public class Mesh : Geometry
         var t = MeshDefinition.Triangles[primitiveIndex];
         var localPoint = GetMotionBlurTransform(rayTime).ToLocalPoint(point);
         return t.GetUVCoordinates(localPoint, primitiveIndex, rayTime, tiling);
+    }
+    public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
+    {
+        var t = MeshDefinition.Triangles[primitiveIndex];
+
+        if (ShadingMode == ShadingMode.Flat)
+            return t.Normal;
+
+        var finalTransform = GetMotionBlurTransform(rayTime);
+        var localPoint = finalTransform.ToLocalPoint(point);
+        var localNormal = t.GetNormal(localPoint, primitiveIndex, rayTime);
+        return finalTransform.ToWorldNormal(localNormal);
+    }
+
+    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal)
+    {
+        if (primitiveIndex < 0 || primitiveIndex >= MeshDefinition.Triangles.Length)
+        {
+            tangent = Vector3.Zero;
+            bitangent = Vector3.Zero;
+            normal = Vector3.Zero;
+            return;
+        }
+        
+        var t = MeshDefinition.Triangles[primitiveIndex];
+        var motionTransform = GetMotionBlurTransform(rayTime);
+        var localPoint = motionTransform.ToLocalPoint(point);
+        t.GetTBN(localPoint, primitiveIndex, rayTime, out tangent, out bitangent, out normal);
+        
+        // Transform to world space
+        tangent = motionTransform.ToWorldDirection(tangent);
+        bitangent = motionTransform.ToWorldDirection(bitangent);
+        normal = motionTransform.ToWorldDirection(normal);
     }
 }

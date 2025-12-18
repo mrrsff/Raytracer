@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content.Datas.Camera;
@@ -18,13 +19,18 @@ public abstract class Texture
     {
         DecalType = textureInfo.DecalMode.ToDecalType();
         InterpolationType = textureInfo.Interpolation.ToInterpolationType();
-        BumpFactor = textureInfo.BumpFactor;
+        BumpFactor = textureInfo.BumpFactor == 0f ? 1f : textureInfo.BumpFactor;
         Id = textureInfo.Id;
     }
     public abstract Vector3 Sample(IntersectionInfo info);
+    public abstract Vector3 SampleFromUV(Vector2 uv);
+    public Vector3 SampleNormalFromUV(Vector2 uv) => ColorToNormal(SampleFromUV(uv)); // [-1, 1]
 
-    public abstract Vector3 SampleUV(Vector2 uv);
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector3 ColorToNormal(Vector3 color)
+    {
+        return Vector3.Normalize((color * 2f) - Vector3.One);
+    }
     protected static float ComputeMipLevel(IntersectionInfo hit, int width, int height)
     {
         Camera cam = hit.Camera;

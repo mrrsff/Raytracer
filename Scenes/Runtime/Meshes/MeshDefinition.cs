@@ -73,16 +73,29 @@ public class MeshDefinition
     private void Initialize()
     {
         VertexNormals = new Vector3[Vertices.Length];
+
         foreach (var tri in Triangles)
         {
-            Vector3 n = Vector3.Cross(tri.V1 - tri.V0, tri.V2 - tri.V0);
-            VertexNormals[tri.I0] += n;
-            VertexNormals[tri.I1] += n;
-            VertexNormals[tri.I2] += n;
+            Vector3 p0 = Vertices[tri.I0];
+            Vector3 p1 = Vertices[tri.I1];
+            Vector3 p2 = Vertices[tri.I2];
+
+            Vector3 e1 = p1 - p0;
+            Vector3 e2 = p2 - p0;
+
+            Vector3 N = Vector3.Cross(e1, e2);
+
+            VertexNormals[tri.I0] += N;
+            VertexNormals[tri.I1] += N;
+            VertexNormals[tri.I2] += N;
         }
 
-        for (int i = 0; i < VertexNormals.Length; i++)
-            VertexNormals[i] = Vector3.Normalize(VertexNormals[i]);
+        for (int i = 0; i < Vertices.Length; i++)
+        {
+            Vector3 N = Vector3.Normalize(VertexNormals[i]);
+            VertexNormals[i] = N;
+        }
+        
         BVH = new BoundingVolumeHierarchy(this);
     }
 

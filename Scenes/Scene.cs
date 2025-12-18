@@ -36,6 +36,13 @@ public partial class Scene
 
     public void Initialize()
     {
+        // Load textures
+        TextureManager.LoadTextures(Content);
+        if (TextureManager.TryGetBackgroundTexture(out backgroundTexture))
+        {
+            
+        }
+        
         if (Content.Lights.PointLight != null)
         {
             foreach (var pLight in Content.Lights.PointLight)
@@ -120,12 +127,6 @@ public partial class Scene
         // if (Geometries.Count > 16)
         //     TLAS = new BoundingVolumeHierarchy(this);
 
-        // Load textures
-        TextureManager.LoadTextures(Content);
-        if (TextureManager.TryGetBackgroundTexture(out backgroundTexture))
-        {
-            Debug.Log("Background texture loaded.");
-        }
         
         if (Debug.PrintSceneInfo)
         {
@@ -196,8 +197,9 @@ public partial class Scene
         }
 
         closestIntersection.RayOrigin = ray.Origin;
-        closestIntersection.Textures = GetTextures(closestIntersection.HitGeometry?.TextureIndices ?? []);
         closestIntersection.RayTime = ray.Time;
+        closestIntersection.Textures = GetTextures(closestIntersection.HitGeometry?.TextureIndices ?? []);
+        closestIntersection.CalculateNormal();
 
         return closestIntersection;
     }
@@ -219,48 +221,7 @@ public partial class Scene
         }
         return textures;
     }
-
-    // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    // public Vector3 GetBackgroundColor(Ray ray, Camera cam)
-    // {
-    //     if (backgroundTexture == null)
-    //     {
-    //         return Content.BackgroundColor;
-    //     }
-    //
-    //     // Basic ray-plane intersection with NearPlane to get UV coordinates
-    //     var planeCenter = cam.Forward * cam.NearDistance;
-    //     
-    //     var planeNormal = Vector3.Normalize(cam.Gaze);
-    //     var denom = Vector3.Dot(planeNormal, ray.Direction);
-    //     if (MathF.Abs(denom) < 1e-6f)
-    //         return Content.BackgroundColor;
-    //     
-    //     float t = Vector3.Dot(planeCenter - ray.Origin, planeNormal) / denom;
-    //     if (t <= 0)
-    //         return Content.BackgroundColor;
-    //     
-    //     Vector3 hit = ray.Origin + ray.Direction * t;
-    //     
-    //     MathUtility.BuildONB(cam.Forward, out var uDir, out var vDir);
-    //     
-    //     Vector3 local = hit - planeCenter;
-    //
-    //     float x = Vector3.Dot(local, uDir);
-    //     float y = Vector3.Dot(local, vDir);
-    //
-    //     // Normalize from rect → [0,1]
-    //     float u = (x - cam.NearPlane.Left) / (cam.NearPlane.Width);
-    //     float v = (y - cam.NearPlane.Bottom) / (cam.NearPlane.Height);
-    //
-    //     // Stretch (clamp), do NOT wrap
-    //     u = Math.Clamp(u, 0f, 1f);
-    //     v = Math.Clamp(v, 0f, 1f);
-    //
-    //     Vector3 sample = backgroundTexture.SampleUV(new Vector2(u, v)) * 255f;
-    //     // Debug.Log($"Background sample at UV({u}, {v}): {sample}");
-    //     return sample;
-    // }
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Vector3 GetBackgroundColor(int x, int y, Camera cam)
     {
@@ -277,7 +238,7 @@ public partial class Scene
         u = Math.Clamp(u, 0f, 1f);
         v = Math.Clamp(v, 0f, 1f);
 
-        Vector3 sample = backgroundTexture.SampleUV(new Vector2(u, v)) * 255f;
+        Vector3 sample = backgroundTexture.SampleFromUV(new Vector2(u, v)) * 255f;
         return sample;
     }
 }

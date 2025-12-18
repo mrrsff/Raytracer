@@ -1,7 +1,5 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 using Raytracer.Core;
-using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Scenes.Content.Datas;
@@ -55,36 +53,74 @@ public class Sphere : Geometry
         }
 
         Vector3 localHitPoint = o + t * d;
-        Vector3 localNormal = Vector3.Normalize(localHitPoint - center);
-
         Vector3 worldHitPoint = Transform.ToWorldPoint(localHitPoint);
-        Vector3 worldNormal = Vector3.Normalize(Transform.ToWorldDirection(localNormal));
-
         float worldDistance = (worldHitPoint - ray.Origin).Length();
 
         info.Hit = true;
         info.Point = worldHitPoint;
-        info.Normal = worldNormal;
         info.Distance = worldDistance;
         info.HitGeometry = this;
 
         return true;
     }
+    public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
+    {
+        Transform tr = GetMotionBlurTransform(rayTime);
+        Vector3 localPoint = tr.ToLocalPoint(point);
+        Vector3 localNormal = Vector3.Normalize(localPoint - center);
+        Vector3 worldNormal = tr.ToWorldDirection(localNormal);
+        return Vector3.Normalize(worldNormal);
+    }
+
+    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal)
+    {
+        Transform tr = GetMotionBlurTransform(rayTime);
+        Vector3 localPoint = tr.ToLocalPoint(point);
+        Vector3 P = localPoint - center;
+
+        float r = radius;
+
+        float theta = MathF.Acos(P.Y / r);
+        float phi = MathF.Atan2(P.Z, P.X);
+
+        tangent = new Vector3(
+            2.0f * MathF.PI * P.Z,
+            0.0f,
+            -2.0f * MathF.PI * P.X
+        );
+
+        bitangent = new Vector3(
+            MathF.PI * P.Y * MathF.Cos(phi),
+            -MathF.PI * r * MathF.Sin(theta),
+            MathF.PI * P.Y * MathF.Sin(phi)
+        );
+
+        normal = Vector3.Normalize(P);
+        
+        tangent = tr.ToWorldDirection(tangent);
+        bitangent = tr.ToWorldDirection(bitangent);
+        normal = tr.ToWorldDirection(normal);
+    }
+
     public override Vector2 GetUVCoordinates(in Vector3 point, in int _, float rayTime, bool tiling)
     {
-        Vector3 localPoint = Transform.ToLocalPoint(point);
-        Vector3 p = Vector3.Normalize(localPoint - center);
-
-        float normalizedU = 0.5f - (MathF.Atan2(p.Z, p.X) / (2 * MathF.PI));
-        float normalizedV = 0.5f - (MathF.Asin(p.Y) / MathF.PI);
-        
-        if (!tiling) return new Vector2(normalizedU, normalizedV);
-        
-        float circumference = 2 * MathF.PI * radius;
-        
-        float u = normalizedU * circumference;
-        float v = normalizedV * (circumference / 2);
-        
-        return new Vector2(u, v);
+        Transform tr = GetMotionBlurTransform(rayTime);
+        Vector3 localPoint = tr.ToLocalPoint(point);
+        Vector3 P = localPoint - center;
+    
+        float r = radius;
+    
+        float theta = MathF.Acos(P.Y / r);
+        float phi = MathF.Atan2(P.Z, P.X);
+    
+        float u = (-phi + MathF.PI) / (2.0f * MathF.PI);
+        float v = theta / MathF.PI;
+    
+        if (!tiling)
+            return new Vector2(u, v);
+    
+        float halfCircumference = MathF.PI * r;
+        return new Vector2(u * halfCircumference * 2f, v * halfCircumference);
     }
+    
 }

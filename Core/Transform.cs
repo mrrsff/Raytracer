@@ -76,6 +76,13 @@ public class Transform
     {
         return Vector3.Normalize(Vector3.TransformNormal(dir, transformMatrix));
     }
+    
+    public Vector3 ToWorldNormal(Vector3 normal)
+    {
+        Matrix4x4.Invert(transformMatrix, out Matrix4x4 inv);
+        Matrix4x4 invTrans = Matrix4x4.Transpose(inv);
+        return Vector3.Normalize(Vector3.TransformNormal(normal, invTrans));
+    }
 
     public Vector3 ToLocalDirection(Vector3 dir)
     {

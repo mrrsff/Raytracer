@@ -68,52 +68,18 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
         return Vector2.Zero;
     }
 
-    public bool IntersectEdge(in Ray ray, out float t)
+    public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
     {
-        t = 0f;
-        if (!Intersects(ray, out float tMin, out float tMax))
-            return false;
-
-        if (tMin < 0f) tMin = tMax >= 0 ? tMax : 0f;
-
-        Vector3 hit = ray.Origin + tMin * ray.Direction;
-        const float edgeThickness = 0.01f;
-
-        int nearCount = 0;
-        for (int i = 0; i < 3; i++)
-        {
-            float v = hit[i];
-            if (MathF.Abs(v - Min[i]) < edgeThickness ||
-                MathF.Abs(v - Max[i]) < edgeThickness)
-                nearCount++;
-        }
-
-        if (nearCount >= 2)
-        {
-            t = tMin;
-            return true;
-        }
-
-        // Optional: also check exit point for rays starting inside the box
-        Vector3 exit = ray.Origin + tMax * ray.Direction;
-        nearCount = 0;
-        for (int i = 0; i < 3; i++)
-        {
-            float v = exit[i];
-            if (MathF.Abs(v - Min[i]) < edgeThickness ||
-                MathF.Abs(v - Max[i]) < edgeThickness)
-                nearCount++;
-        }
-
-        if (nearCount >= 2)
-        {
-            t = tMax;
-            return true;
-        }
-
-        return false;
+        return Vector3.Zero;
     }
-
+    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent,
+        out Vector3 normal)
+    {
+        tangent = Vector3.Zero;
+        bitangent = Vector3.Zero;
+        normal = Vector3.Zero;
+    }
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Encapsulate(Vector3 point)
     {
