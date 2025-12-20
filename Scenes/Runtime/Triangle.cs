@@ -48,7 +48,6 @@ public class Triangle : Geometry
         float det = duv1.X * duv2.Y - duv1.Y * duv2.X;
         float invDet = 1.0f / det;
         tangent = (E1 * duv2.Y - E2 * duv1.Y) * invDet;
-        tangent = Vector3.Normalize(tangent);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,7 +82,7 @@ public class Triangle : Geometry
     {
         normal = GetNormal(point, primitiveIndex, rayTime);
         tangent = this.tangent;
-        bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent));
+        bitangent = Vector3.Cross(normal, tangent);
         
         bool handedness = Vector3.Dot(Vector3.Cross(tangent, bitangent), normal) >= 0.0f;
         if (handedness) bitangent = -bitangent;

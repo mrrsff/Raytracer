@@ -57,8 +57,7 @@ public class Plane : Geometry
 
     public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
     {
-        var worldNormal = Transform.ToWorldDirection(normal);
-        return Vector3.Normalize(worldNormal);
+        return Transform.ToWorldDirection(normal);
     }
 
     public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent,
@@ -68,7 +67,10 @@ public class Plane : Geometry
 
         // Create arbitrary tangent and bitangent
         Vector3 up = MathF.Abs(normal.Y) < 0.999f ? Vector3.UnitY : Vector3.UnitZ;
-        tangent = Vector3.Normalize(Vector3.Cross(up, normal));
-        bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent));
+        tangent = Vector3.Cross(up, normal);
+        bitangent = Vector3.Cross(normal, tangent);
+        
+        tangent = Transform.ToWorldDirection(tangent);
+        bitangent = Transform.ToWorldDirection(bitangent);
     }
 }

@@ -72,9 +72,10 @@ public class Transform
         return Vector3.Transform(point, inverseTransformMatrix);
     }
 
-    public Vector3 ToWorldDirection(Vector3 dir)
+    public Vector3 ToWorldDirection(Vector3 dir, bool normalize = true)
     {
-        return Vector3.Normalize(Vector3.TransformNormal(dir, transformMatrix));
+        var result = Vector3.TransformNormal(dir, transformMatrix);
+        return normalize ? Vector3.Normalize(result) : result;
     }
     
     public Vector3 ToWorldNormal(Vector3 normal)

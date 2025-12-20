@@ -17,7 +17,8 @@ public struct IntersectionInfo()
     public bool Hit = false;
     public float Distance = float.MaxValue;
     public Vector3 Point = default;
-    public Vector3 Normal = default;
+    public Vector3 ShadingNormal = default;
+    public Vector3 GeometricNormal = default;
     public float IntersectionTestEpsilon;
     public Geometry HitGeometry = null!;
     public int XPixel = 0;
@@ -34,7 +35,12 @@ public struct IntersectionInfo()
         Hit = false;
         Distance = float.MaxValue;
         Point = default;
-        Normal = default;
+        ShadingNormal = default;
+        GeometricNormal = default;
+        HitGeometry = null!;
+        XPixel = 0;
+        YPixel = 0; 
+        RayTime = 0f;
     }
 
     public static IntersectionInfo NoHit => new IntersectionInfo() { };
@@ -56,13 +62,14 @@ public struct IntersectionInfo()
             Vector2 uv = GetUVCoordinates(normalTexture.TextureType != TextureType.Image);
             Vector3 normalFromTexture = normalTexture.SampleNormalFromUV(uv);
 
-            HitGeometry.GetTBN(Point, PrimitiveIndex, RayTime, out Vector3 tangent, out Vector3 bitangent,
-                out Vector3 normal);
+            HitGeometry.GetTBN(Point, PrimitiveIndex, RayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal);
+            tangent = Vector3.Normalize(tangent);
+            bitangent = Vector3.Normalize(bitangent);
 
             Vector3 TBNNormal = normalFromTexture.X * tangent +
                                 normalFromTexture.Y * bitangent +
                                 normalFromTexture.Z * normal;
-            Normal = Vector3.Normalize(TBNNormal);
+            ShadingNormal = Vector3.Normalize(TBNNormal);
             return;
         }
         
@@ -70,6 +77,9 @@ public struct IntersectionInfo()
         if (bumpTexture != null)
         {
             HitGeometry.GetTBN(Point, PrimitiveIndex, RayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal);
+            tangent = Vector3.Normalize(tangent);
+            bitangent = Vector3.Normalize(bitangent);
+            
             Vector2 uv = GetUVCoordinates(bumpTexture.TextureType != TextureType.Image);
             switch (bumpTexture.TextureType)
             {
@@ -83,9 +93,9 @@ public struct IntersectionInfo()
                     var dqdu = tangent + dhdu * normal;
                     var dqdv = bitangent + dhdv * normal;
                     
-                    Normal = Vector3.Normalize(Vector3.Cross(dqdv, dqdu));
-                    if (Vector3.Dot(Normal, normal) < 0f)
-                        Normal = -Normal;
+                    ShadingNormal = Vector3.Normalize(Vector3.Cross(dqdv, dqdu));
+                    if (Vector3.Dot(ShadingNormal, normal) < 0f)
+                        ShadingNormal = -ShadingNormal;
                     break;
                 case TextureType.Perlin:
                     const float eps = 0.001f;
@@ -97,11 +107,11 @@ public struct IntersectionInfo()
                     Vector3 pz = perlinTexture.Sample(hitPoint + new Vector3(0f, 0f, eps)) - baseNoise;
                     Vector3 gradient = new Vector3(px.X, py.Y, pz.Z) / eps;
                     Vector3 displacement = gradient.X * tangent + gradient.Y * bitangent + gradient.Z * normal;
-                    Normal = Vector3.Normalize(normal - displacement * perlinTexture.BumpFactor);
+                    ShadingNormal = Vector3.Normalize(normal - displacement * perlinTexture.BumpFactor);
                     break;
             }
             return;
         }
-        Normal = HitGeometry.GetNormal(Point, PrimitiveIndex, RayTime);
+        ShadingNormal = Vector3.Normalize(HitGeometry.GetNormal(Point, PrimitiveIndex, RayTime));
     }
 }

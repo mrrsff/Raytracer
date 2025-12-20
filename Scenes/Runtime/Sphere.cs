@@ -97,9 +97,9 @@ public class Sphere : Geometry
 
         normal = Vector3.Normalize(P);
         
-        tangent = tr.ToWorldDirection(tangent);
-        bitangent = tr.ToWorldDirection(bitangent);
-        normal = tr.ToWorldDirection(normal);
+        tangent = tr.ToWorldDirection(tangent, false);
+        bitangent = tr.ToWorldDirection(bitangent, false);
+        normal = tr.ToWorldDirection(normal, false);
     }
 
     public override Vector2 GetUVCoordinates(in Vector3 point, in int _, float rayTime, bool tiling)

@@ -23,7 +23,7 @@ public static class Program
 
         AssureOutputDirectory();
 
-        var scenes = SceneProvider.GetScenes(Params.ScenePath).ToList();
+        var scenes = SceneProvider.GetScenes(Params.ScenePath);
         
         SDLPreview? preview = null;
         if (Params.EnablePreview)
@@ -50,7 +50,7 @@ public static class Program
         
         var imagePaths = new ConcurrentBag<string>();
         
-        var firstScene = scenes.FirstOrDefault();
+        var firstScene = SceneProvider.GetFirstScene(Params.ScenePath);
         if (firstScene == null)
         {
             Console.WriteLine("No scenes found to render.");

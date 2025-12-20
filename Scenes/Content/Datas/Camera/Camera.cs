@@ -110,7 +110,7 @@ public class Camera
         return new Ray(Position, d);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Ray GenerateRayDRT(float pixelX, float pixelY, Vector2 lensSample, float time = 0.0f)
+    public Ray GenerateRayDRT(float pixelX, float pixelY, Vector2 lensSample = default, float time = 0.0f)
     {
         float sU = pixelX * sUMultiplier;
         float sV = pixelY * sVMultiplier;

@@ -18,6 +18,7 @@ public static class BlinnPhongShading
             foreach (var texture in intersection.Textures)
             {
                 var textureColor = texture.Sample(intersection); // [0,1]
+                if (Debug.RenderMipLevels) return textureColor;
                 switch (texture.DecalType)
                 {
                     case DecalType.ReplaceKD:
@@ -36,7 +37,7 @@ public static class BlinnPhongShading
         }
 
         var point = intersection.Point;
-        var normal = intersection.Normal;
+        var normal = intersection.ShadingNormal;
 
         Vector3 ambient = intersection.material.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
         Vector3 diffuse = Vector3.Zero;

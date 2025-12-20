@@ -3,6 +3,7 @@ using System.Numerics;
 using Raytracer.Core;
 using Raytracer.IO.Images;
 using Raytracer.Rendering.Intersections;
+using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Content.Datas.Textures;
 using Raytracer.Utility;
 
@@ -40,8 +41,7 @@ public class Image : Texture
         int maxLevels = 1;
         if (InterpolationType == InterpolationType.Trilinear)
         {
-            const int minimumSize = 32; // Minimum size for the smallest mipmap level (32x32)
-            maxLevels = (int)MathF.Floor(MathF.Log2(MathF.Max(Width, Height) / minimumSize)) + 1;
+            maxLevels = (int)MathF.Floor(MathF.Log2(MathF.Max(Width, Height))) + 1;
             maxLevels = Math.Max(1, maxLevels);
         }
         
@@ -56,22 +56,20 @@ public class Image : Texture
         // SaveMipmaps();
     }
 
-    private float mipLevel;
     public override Vector3 Sample(IntersectionInfo info)
     {
         Vector2 uv = info.GetUVCoordinates(false);
         if (InterpolationType == InterpolationType.Trilinear)
         {
-            mipLevel = ComputeMipLevel(info, Width, Height);
+            var mipLevel = Mipmap.ComputeMipLevel(info, Width, Height);
+            if (Debug.RenderMipLevels) return new Vector3(mipLevel / (_mipmaps.Count - 1));
+            return TrilinearSample(uv, mipLevel);
         }
         return SampleFromUV(uv);
     }
 
     public override Vector3 SampleFromUV(Vector2 uv)
     {
-        uv.X -= MathF.Floor(uv.X);
-        uv.Y -= MathF.Floor(uv.Y);
-        
         Vector3 sample;
         switch (InterpolationType)
         {
@@ -84,8 +82,6 @@ public class Image : Texture
                 sample = BilinearSample(_mipmaps[0], uv);
                 break;
             case InterpolationType.Trilinear:
-                sample = TrilinearSample(uv);
-                break;
             case InterpolationType.None:
             default:
                 throw new NotImplementedException($"Interpolation type {InterpolationType} not implemented.");
@@ -114,6 +110,9 @@ public class Image : Texture
 
     private Vector3 NearestNeighborSample(Vector2 uv)
     {
+        uv.X -= MathF.Floor(uv.X);
+        uv.Y -= MathF.Floor(uv.Y);
+        
         int x = (int)MathF.Round(uv.X * (Width  - 1));
         int y = (int)MathF.Round(uv.Y * (Height - 1));
         return _mipmaps[0].Pixels[y * Width + x];
@@ -145,16 +144,15 @@ public class Image : Texture
         return Vector3.Lerp(c0, c1, ty);
     }
     
-    private Vector3 TrilinearSample(Vector2 uv)
+    private Vector3 TrilinearSample(Vector2 uv, float mipLevel)
     {
-        if (mipLevel >= _mipmaps.Count - 1)
-        {
-            return BilinearSample(_mipmaps[^1], uv);
-        }
-
-        int level0 = Math.Min((int)Math.Floor(mipLevel), _mipmaps.Count - 1);
-        int level1 = Math.Min(level0 + 1, _mipmaps.Count - 1);
+        int level0 = Math.Clamp((int)MathF.Floor(mipLevel), 0, _mipmaps.Count - 1);
+        int level1 = Math.Clamp(level0 + 1, 0, _mipmaps.Count - 1);
+        
         float t = mipLevel - level0;
+        
+        // Debug.Log($"Trilinear Sample: mipLevel={mipLevel}, level0={level0}, level1={level1}, t={t}");
+        
         Mipmap mip0 = _mipmaps[level0];
         Mipmap mip1 = _mipmaps[level1];
 

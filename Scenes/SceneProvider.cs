@@ -23,4 +23,9 @@ public static class SceneProvider
             throw new FileNotFoundException("Scene path not found: " + path);
         }
     }
+    
+    public static Scene GetFirstScene(string path)
+    {
+        return GetScenes(path).First();
+    }
 }

@@ -73,10 +73,10 @@ public class Mesh : Geometry
         var localHitPoint = info.Point;
 
         info.Point = finalTransform.ToWorldPoint(localHitPoint);
-        info.Normal = finalTransform.ToWorldDirection(info.Normal);
+        info.GeometricNormal = finalTransform.ToWorldDirection(info.GeometricNormal);
         info.HitGeometry = this;
 
-        if (info.Normal.LengthSquared() < 1e-12f)
+        if (info.GeometricNormal.LengthSquared() < 1e-12f)
             return false; // invalid hit
 
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
@@ -84,7 +84,7 @@ public class Mesh : Geometry
             info.PrimitiveIndex >= MeshDefinition.Triangles.Length) return hit;
 
         var t = MeshDefinition.Triangles[info.PrimitiveIndex];
-        info.Normal = t.GetNormal(localHitPoint, info.PrimitiveIndex, ray.Time);
+        info.GeometricNormal = t.GetNormal(localHitPoint, info.PrimitiveIndex, ray.Time);
         
         return hit;
     }
@@ -125,9 +125,9 @@ public class Mesh : Geometry
         var localPoint = motionTransform.ToLocalPoint(point);
         t.GetTBN(localPoint, primitiveIndex, rayTime, out tangent, out bitangent, out normal);
         
-        // Transform to world space
-        tangent = motionTransform.ToWorldDirection(tangent);
-        bitangent = motionTransform.ToWorldDirection(bitangent);
-        normal = motionTransform.ToWorldDirection(normal);
+        tangent = motionTransform.ToWorldDirection(tangent, false);
+        bitangent = motionTransform.ToWorldDirection(bitangent, false);
+        normal = motionTransform.ToWorldDirection(normal, false);
+
     }
 }
