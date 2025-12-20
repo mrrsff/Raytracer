@@ -73,18 +73,13 @@ public class Mesh : Geometry
         var localHitPoint = info.Point;
 
         info.Point = finalTransform.ToWorldPoint(localHitPoint);
-        info.GeometricNormal = finalTransform.ToWorldDirection(info.GeometricNormal);
         info.HitGeometry = this;
-
-        if (info.GeometricNormal.LengthSquared() < 1e-12f)
-            return false; // invalid hit
-
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
-        if (ShadingMode == ShadingMode.Flat || info.PrimitiveIndex < 0 ||
-            info.PrimitiveIndex >= MeshDefinition.Triangles.Length) return hit;
-
+        
         var t = MeshDefinition.Triangles[info.PrimitiveIndex];
-        info.GeometricNormal = t.GetNormal(localHitPoint, info.PrimitiveIndex, ray.Time);
+        info.GeometricNormal = ShadingMode == ShadingMode.Flat
+            ? finalTransform.ToWorldDirection(t.Normal)
+            : t.GetNormal(localHitPoint, info.PrimitiveIndex, ray.Time);
         
         return hit;
     }

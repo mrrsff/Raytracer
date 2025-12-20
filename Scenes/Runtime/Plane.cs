@@ -43,6 +43,7 @@ public class Plane : Geometry
         info.Point = Transform.ToWorldPoint(localHitPoint);
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
         info.HitGeometry = this;
+        info.GeometricNormal = Transform.ToWorldDirection(normal);
         return true;
     }
 

@@ -75,4 +75,10 @@ public static class MathUtility
         u = Vector3.Normalize(Vector3.Cross(up, n));
         v = Vector3.Cross(n, u);
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsNan(Vector3 v)
+    {
+        return float.IsNaN(v.X) || float.IsNaN(v.Y) || float.IsNaN(v.Z);
+    }
 }

@@ -83,34 +83,25 @@ internal struct Mipmap
          *
          */
         
-        Ray ri = cam.GenerateRayDRT(px + 1, py);
-        Ray rj = cam.GenerateRayDRT(px, py + 1);
-        
         float nx = MathF.Abs(normal.X);
         float ny = MathF.Abs(normal.Y);
         float nz = MathF.Abs(normal.Z);
 
         int[] indices;
 
-        if (nz > nx && nz > ny)
-        {
-            indices = [0, 1];
-        }
-        else if (ny > nx) 
-        {
-            indices = [0, 2];
-        }
-        else 
-        {
-            indices = [1, 2];
-        }
+        if (nz > nx && nz > ny) indices = [0, 1];
+        else if (ny > nx) indices = [0, 2];
+        else indices = [1, 2];
         
+        Ray r1 = cam.GenerateRayDRT(px + 1, py);
+        Ray r2 = cam.GenerateRayDRT(px, py + 1);
+
         Vector3 p = hit.Point;
-        Vector3 p_ri = IntersectRayWithPlane(ri, p, normal);
-        Vector3 p_rj = IntersectRayWithPlane(rj, p, normal);
-        
-        Vector3 dpdi = p_ri - p;
-        Vector3 dpdj = p_rj - p;
+        if (!IntersectRayWithPlane(r1, p, normal, out Vector3 p_r1) || !IntersectRayWithPlane(r2, p, normal, out Vector3 p_r2))
+            return float.MaxValue;
+
+        Vector3 dpd1 = p_r1 - p;
+        Vector3 dpd2 = p_r2 - p;
         
         hit.HitGeometry.GetTBN(p, hit.PrimitiveIndex, hit.RayTime, out Vector3 tangent, out Vector3 bitangent, out _);
         
@@ -121,13 +112,15 @@ internal struct Mipmap
         
         Vector2 a = new Vector2(dp_du[indices[0]], dp_du[indices[1]]);
         Vector2 b = new Vector2(dp_dv[indices[0]], dp_dv[indices[1]]);
-        Vector2 c_di = new Vector2(dpdi[indices[0]], dpdi[indices[1]]);
-        Vector2 c_dj = new Vector2(dpdj[indices[0]], dpdj[indices[1]]);
+        Vector2 c_d1 = new Vector2(dpd1[indices[0]], dpd1[indices[1]]);
+        Vector2 c_d2 = new Vector2(dpd2[indices[0]], dpd2[indices[1]]);
         
-        Vector2 duvdi = SolveSystem(a, b, c_di);
-        Vector2 duvdj = SolveSystem(a, b, c_dj);
+        Vector2 duvd1 = SolveSystem(a, b, c_d1);
+        Vector2 duvd2 = SolveSystem(a, b, c_d2);
+        
+        // Debug.Log($"a: {a:F2}, b: {b:F2}, c_d1: {c_d1:F2}, c_d2: {c_d2:F2} => duvd1: {duvd1:F4}, duvd2: {duvd2:F4}");
 
-        var duvMax = duvdj.Length() > duvdi.Length() ? duvdj : duvdi;
+        var duvMax = duvd2.Length() > duvd1.Length() ? duvd2 : duvd1;
 
         float A = duvMax.X * width;
         float B = duvMax.Y * height;
@@ -153,15 +146,30 @@ internal struct Mipmap
         return new Vector2(x, y);
     }
     
-    private static Vector3 IntersectRayWithPlane(Ray ray, Vector3 planePoint, Vector3 planeNormal)
+    public static bool IntersectRayWithPlane(
+        in Ray ray,
+        in Vector3 planePoint,
+        in Vector3 planeNormal,
+        out Vector3 hitPoint)
     {
         float denom = Vector3.Dot(planeNormal, ray.Direction);
+
         if (MathF.Abs(denom) < 1e-6f)
         {
-            return ray.Origin; // Ray is parallel to the plane
+            Debug.Log("Ray is parallel to the plane, plane normal: " + planeNormal + ", ray direction: " + ray.Direction);
+            hitPoint = default;
+            return false;
         }
 
         float t = Vector3.Dot(planePoint - ray.Origin, planeNormal) / denom;
-        return ray.Origin + t * ray.Direction;
+
+        if (t <= 0.0f)
+        {
+            hitPoint = default;
+            return false;
+        }
+
+        hitPoint = ray.Origin + t * ray.Direction;
+        return true;
     }
 }

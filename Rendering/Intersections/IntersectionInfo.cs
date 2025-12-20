@@ -5,6 +5,7 @@ using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Content.Datas.Textures;
 using Raytracer.Scenes.Runtime;
 using Raytracer.Scenes.Runtime.Textures;
+using Raytracer.Utility;
 
 namespace Raytracer.Rendering.Intersections;
 
@@ -55,6 +56,7 @@ public struct IntersectionInfo()
         if (!Hit) return;
         if (HitGeometry == null)
             return;
+
         
         var normalTexture = Textures?.FirstOrDefault(t => t.DecalType == DecalType.ReplaceNormal);
         if (normalTexture != null)
@@ -63,8 +65,10 @@ public struct IntersectionInfo()
             Vector3 normalFromTexture = normalTexture.SampleNormalFromUV(uv);
 
             HitGeometry.GetTBN(Point, PrimitiveIndex, RayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal);
+            
             tangent = Vector3.Normalize(tangent);
             bitangent = Vector3.Normalize(bitangent);
+            normal = Vector3.Normalize(normal);
 
             Vector3 TBNNormal = normalFromTexture.X * tangent +
                                 normalFromTexture.Y * bitangent +
@@ -77,8 +81,15 @@ public struct IntersectionInfo()
         if (bumpTexture != null)
         {
             HitGeometry.GetTBN(Point, PrimitiveIndex, RayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal);
+            if (MathUtility.IsNan(tangent) || MathUtility.IsNan(bitangent) || MathUtility.IsNan(normal))
+            {
+                ShadingNormal = Vector3.Normalize(HitGeometry.GetNormal(Point, PrimitiveIndex, RayTime));
+                return;
+            }
+            
             tangent = Vector3.Normalize(tangent);
             bitangent = Vector3.Normalize(bitangent);
+            normal = Vector3.Normalize(normal);
             
             Vector2 uv = GetUVCoordinates(bumpTexture.TextureType != TextureType.Image);
             switch (bumpTexture.TextureType)
@@ -94,9 +105,12 @@ public struct IntersectionInfo()
                     var dqdv = bitangent + dhdv * normal;
                     
                     ShadingNormal = Vector3.Normalize(Vector3.Cross(dqdv, dqdu));
-                    if (Vector3.Dot(ShadingNormal, normal) < 0f)
+                    if (Vector3.Dot(ShadingNormal, normal) < 0f) // bump should not invert normal
+                    {
                         ShadingNormal = -ShadingNormal;
+                    }
                     break;
+                
                 case TextureType.Perlin:
                     const float eps = 0.001f;
                     PerlinTexture perlinTexture = (PerlinTexture)bumpTexture;

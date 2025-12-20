@@ -60,26 +60,27 @@ public class Sphere : Geometry
         info.Point = worldHitPoint;
         info.Distance = worldDistance;
         info.HitGeometry = this;
+        info.GeometricNormal = GetNormal(worldHitPoint, info.PrimitiveIndex, info.RayTime);
 
         return true;
     }
-    public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
+    public override Vector3 GetNormal(in Vector3 point, in int _, float rayTime)
     {
         Transform tr = GetMotionBlurTransform(rayTime);
         Vector3 localPoint = tr.ToLocalPoint(point);
         Vector3 localNormal = Vector3.Normalize(localPoint - center);
-        Vector3 worldNormal = tr.ToWorldDirection(localNormal);
-        return Vector3.Normalize(worldNormal);
+        Vector3 worldNormal = tr.ToWorldDirection(localNormal, false);
+        return worldNormal;
     }
 
-    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal)
+    public override void GetTBN(in Vector3 point, in int _, float rayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal)
     {
         Transform tr = GetMotionBlurTransform(rayTime);
+
         Vector3 localPoint = tr.ToLocalPoint(point);
         Vector3 P = localPoint - center;
 
         float r = radius;
-
         float theta = MathF.Acos(P.Y / r);
         float phi = MathF.Atan2(P.Z, P.X);
 
@@ -88,18 +89,18 @@ public class Sphere : Geometry
             0.0f,
             -2.0f * MathF.PI * P.X
         );
-
-        bitangent = new Vector3(
-            MathF.PI * P.Y * MathF.Cos(phi),
-            -MathF.PI * r * MathF.Sin(theta),
-            MathF.PI * P.Y * MathF.Sin(phi)
-        );
-
-        normal = Vector3.Normalize(P);
         
+        bitangent = new Vector3(
+            MathF.Cos(phi) * MathF.Cos(theta),
+            -MathF.Sin(theta),
+            MathF.Sin(phi) * MathF.Cos(theta)
+        );
+        bitangent *= MathF.PI * r;
+        
+        normal = Vector3.Normalize(P);
+        normal = tr.ToWorldDirection(normal, false);
         tangent = tr.ToWorldDirection(tangent, false);
         bitangent = tr.ToWorldDirection(bitangent, false);
-        normal = tr.ToWorldDirection(normal, false);
     }
 
     public override Vector2 GetUVCoordinates(in Vector3 point, in int _, float rayTime, bool tiling)

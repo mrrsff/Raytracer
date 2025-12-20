@@ -1,9 +1,7 @@
-﻿using System.Drawing;
-using System.Numerics;
+﻿using System.Numerics;
 using Raytracer.Core;
 using Raytracer.IO.Images;
 using Raytracer.Rendering.Intersections;
-using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Content.Datas.Textures;
 using Raytracer.Utility;
 
@@ -19,7 +17,9 @@ public class Image : Texture
     
     public Image(TextureInfo textureInfo, ImageDatas imageDatas) : base(textureInfo)
     {
-        // if (BumpFactor >= 1f) BumpFactor *= 0.0045f; // bump_mapping_transformed
+        // BumpFactor *= 0.0045f; // bump_mapping_transformed
+        // BumpFactor *= 0.014f; // sphere_bump_mapping
+        // BumpFactor *= 0.1f; // mytap
         if (BumpFactor >= 1f) BumpFactor *= 0.1f;
         
         var image = imageDatas.GetImageData(textureInfo.ImageId);
