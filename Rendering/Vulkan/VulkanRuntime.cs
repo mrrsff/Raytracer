@@ -1,6 +1,8 @@
-﻿using Raytracer.Rendering.Vulkan.Backend;
+﻿using Raytracer.Core;
+using Raytracer.Rendering.Vulkan.Backend;
 using Raytracer.Rendering.Vulkan.Backend.Allocations;
 using Raytracer.Rendering.Vulkan.Backend.Inputs;
+using Raytracer.Rendering.Vulkan.Backend.Scene;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
@@ -18,13 +20,16 @@ public sealed class VulkanRuntime : IDisposable
     private SwapchainPresenter _presenter;
     private InputHandler _inputHandler;
     private TimeManager _timeManager;
+    private SceneResources _sceneResources;
     
     private uint width = 1280;
     private uint height = 720;
-    private string shaderPath;
-    public VulkanRuntime(string shaderPath = null)
+    private readonly string shaderPath;
+    private readonly SceneDefinition _sceneDefinition;
+    public VulkanRuntime(string shaderPath, SceneDefinition sceneDefinition)
     {
         this.shaderPath = shaderPath;
+        _sceneDefinition = sceneDefinition;
         _timeManager = new TimeManager();
     }
     public void Start(Action onLoadCallback = null)
@@ -91,13 +96,16 @@ public sealed class VulkanRuntime : IDisposable
     private void OnLoad()
     {
         _vkContext = new VkContext(vkWindow._window);
-
+        
+        _sceneResources = new SceneResources(_sceneDefinition, _vkContext);
+        
         _outputImage = _vkContext.CreateStorageImage((uint)vkWindow._window.Size.X, (uint)vkWindow._window.Size.Y);
 
-        _rayTracingPipeline = new ComputePipeline(_vkContext, shaderPath, _outputImage);
+        _rayTracingPipeline = new ComputePipeline(_vkContext, shaderPath, _outputImage, _sceneResources.DescriptorSet);
         
         _presenter = new SwapchainPresenter(_vkContext, vkWindow);
         
         _inputHandler = new InputHandler(vkWindow);
+        
     }
 }

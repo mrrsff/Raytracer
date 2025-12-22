@@ -4,8 +4,7 @@ using System.Runtime.InteropServices;
 namespace Raytracer.Rendering.Vulkan.Backend.Scene;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct PointLight
+public struct SceneGlobals
 {
-    public Vector4 Position;
-    public Vector4 Color;
+    public Vector3 AmbientLightColor; float _pad0;
 }

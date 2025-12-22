@@ -33,6 +33,9 @@ linux:
 	@$(DOTNET) publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:AssemblyName=$(TARGET) $(FLAGS)
 	@make copy-linux
 
+shader:
+	@glslc .\Shaders\raytracer.comp -o .\Shaders\raytracer.comp.spv
+
 copy-linux: 
 	@cp "$(BUILD_DIR)/linux-x64/publish/$(TARGET)" "./$(TARGET)"
 

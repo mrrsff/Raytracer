@@ -1,4 +1,5 @@
-﻿using Silk.NET.Vulkan;
+﻿using Raytracer.Core;
+using Silk.NET.Vulkan;
 
 namespace Raytracer.Rendering.Vulkan.Backend.Allocations;
 
@@ -17,7 +18,7 @@ public unsafe class DescriptorSetWrapper : IDisposable
 
     public DescriptorSetLayout Layout;
     public DescriptorPool Pool;
-    public Silk.NET.Vulkan.DescriptorSet Handle;
+    public DescriptorSet Handle;
 
     public DescriptorSetWrapper(VkContext ctx, DescriptorBinding[] bindings)
     {
@@ -152,5 +153,59 @@ public unsafe class DescriptorSetWrapper : IDisposable
 
         if (Layout.Handle != 0)
             _vk.DestroyDescriptorSetLayout(_device, Layout, null);
+    }
+
+
+    public class Builder
+    {
+        private readonly List<DescriptorBinding> _bindings = new();
+
+        private Builder AddBinding(uint binding, DescriptorType type, ShaderStageFlags stages)
+        {
+            _bindings.Add(new DescriptorBinding
+            {
+                Binding = binding,
+                Type = type,
+                Stages = stages
+            });
+            return this;
+        }
+
+        public DescriptorSetWrapper Build(VkContext ctx)
+        {
+            return new DescriptorSetWrapper(ctx, _bindings.ToArray());
+        }
+        
+        public Builder ComputeUniformBuffer(uint binding)
+        {
+            return AddBinding(binding, DescriptorType.UniformBuffer, ShaderStageFlags.ComputeBit);
+        }
+        
+        public Builder UBOCompute(uint binding)
+        {
+            return AddBinding(binding, DescriptorType.UniformBuffer, ShaderStageFlags.ComputeBit);
+        }
+        
+        public Builder SSBOCompute(uint binding)
+        {
+            return AddBinding(binding, DescriptorType.StorageBuffer, ShaderStageFlags.ComputeBit);
+        }
+        public Builder ComputeStorageBuffer(uint binding)
+        {
+            return AddBinding(binding, DescriptorType.StorageBuffer, ShaderStageFlags.ComputeBit);
+        }
+        public Builder ComputeStorageImage(uint binding)
+        {
+            return AddBinding(binding, DescriptorType.StorageImage, ShaderStageFlags.ComputeBit);
+        }
+
+        public Builder Print()
+        {
+            foreach (var b in _bindings)
+            {
+                Debug.Log($"Binding: {b.Binding}, Type: {b.Type}, Stages: {b.Stages}");
+            }
+            return this;
+        }
     }
 }

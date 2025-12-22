@@ -94,6 +94,11 @@ public class Camera
 
     public Vector3 Forward;
     public Vector3 Right;
+    public Vector3 Q => q;
+    public Vector3 M => m;
+    public float SUMultiplier => sUMultiplier;
+    public float SVMultiplier => sVMultiplier;
+    
     private Vector3 m;
     private Vector3 q;
     private float sUMultiplier;
