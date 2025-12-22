@@ -10,13 +10,13 @@ namespace Raytracer.Scenes.Runtime;
 
 public class Plane : Geometry
 {
-    public Vector3 point;
-    public Vector3 normal;
+    public Vector3 _point;
+    public Vector3 _normal;
 
     public Plane(PlaneData data, VertexData vertexData)
     {
-        point = vertexData.At(data.Point);
-        normal = Vector3.Normalize(data.Normal);
+        _point = vertexData.At(data.Point);
+        _normal = Vector3.Normalize(data.Normal);
         MaterialIndex = data.Material;
         Transform = new Transform();
         TextureIndices = data.Textures;
@@ -27,12 +27,12 @@ public class Plane : Geometry
         var localRay = Transform.ToLocalRay(ray);
 
         // Dot product of ray direction and plane normal
-        float denom = Vector3.Dot(localRay.Direction, normal);
+        float denom = Vector3.Dot(localRay.Direction, _normal);
         if (MathF.Abs(denom) < RayTracerRenderer.IntersectionTestEpsilon)
             return false; // Ray is parallel to the plane
 
         // Distance along ray
-        float t = Vector3.Dot(point - localRay.Origin, normal) / denom;
+        float t = Vector3.Dot(_point - localRay.Origin, _normal) / denom;
         if (t < 0)
             return false; // Intersection behind ray origin
 
@@ -43,7 +43,7 @@ public class Plane : Geometry
         info.Point = Transform.ToWorldPoint(localHitPoint);
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
         info.HitGeometry = this;
-        info.GeometricNormal = Transform.ToWorldDirection(normal);
+        info.GeometricNormal = Transform.ToWorldDirection(_normal);
         return true;
     }
 
@@ -58,20 +58,16 @@ public class Plane : Geometry
 
     public override Vector3 GetNormal(in Vector3 point, in int primitiveIndex, float rayTime)
     {
-        return Transform.ToWorldDirection(normal);
+        return Transform.ToWorldDirection(_normal);
     }
 
-    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent,
-        out Vector3 normal)
+    public override void GetTBN(in Vector3 point, in int primitiveIndex, float rayTime, out Vector3 tangent, out Vector3 bitangent, out Vector3 normal)
     {
         normal = GetNormal(point, primitiveIndex, rayTime);
-
-        // Create arbitrary tangent and bitangent
-        Vector3 up = MathF.Abs(normal.Y) < 0.999f ? Vector3.UnitY : Vector3.UnitZ;
-        tangent = Vector3.Cross(up, normal);
-        bitangent = Vector3.Cross(normal, tangent);
         
-        tangent = Transform.ToWorldDirection(tangent);
-        bitangent = Transform.ToWorldDirection(bitangent);
+        Vector3 reference = MathF.Abs(normal.Y) < 0.999f ? Vector3.UnitY : Vector3.UnitX;
+
+        tangent = Vector3.Normalize(Vector3.Cross(normal, reference));
+        bitangent = Vector3.Cross(normal, tangent);
     }
 }

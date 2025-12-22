@@ -1,0 +1,36 @@
+#version 460
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(set = 0, binding = 0, rgba8) uniform image2D outputImage;
+
+layout(push_constant) uniform PushConstants
+{
+    float time;
+    int width;
+    int height;
+} pc;
+
+void main()
+{
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+
+    if (pixel.x >= pc.width || pixel.y >= pc.height)
+    return;
+
+    vec2 uv = vec2(pixel) / vec2(pc.width, pc.height);
+    uv = uv * 2.0 - 1.0;
+
+    float r = length(uv);
+    float angle = atan(uv.y, uv.x);
+
+    float v = sin(10.0 * r - pc.time * 2.0 + angle * 4.0);
+
+    vec3 color = 0.5 + 0.5 * vec3(
+    sin(v + pc.time),
+    sin(v + pc.time + 2.094),
+    sin(v + pc.time + 4.188)
+    );
+
+    imageStore(outputImage, pixel, vec4(color, 1.0));
+}

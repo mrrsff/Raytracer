@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
-using Raytracer.Rendering.DebugRendering;
+using Raytracer.Rendering.RenderingDebug;
 using Raytracer.Utility;
 
 namespace Raytracer.Core;

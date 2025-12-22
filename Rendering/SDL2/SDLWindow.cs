@@ -23,7 +23,7 @@ public abstract class SDLWindow
 
         winWidth = width;
         winHeight = height;
-
+        
         window = SDL_CreateWindow(
             title,
             SDL_WINDOWPOS_CENTERED,

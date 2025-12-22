@@ -105,8 +105,6 @@ internal struct Mipmap
         
         hit.HitGeometry.GetTBN(p, hit.PrimitiveIndex, hit.RayTime, out Vector3 tangent, out Vector3 bitangent, out _);
         
-        // Debug.Log($"Tangent Length: {tangent.Length()}, Bitangent Length: {bitangent.Length()}");
-        
         Vector3 dp_du = tangent;
         Vector3 dp_dv = bitangent;
         
@@ -117,8 +115,6 @@ internal struct Mipmap
         
         Vector2 duvd1 = SolveSystem(a, b, c_d1);
         Vector2 duvd2 = SolveSystem(a, b, c_d2);
-        
-        // Debug.Log($"a: {a:F2}, b: {b:F2}, c_d1: {c_d1:F2}, c_d2: {c_d2:F2} => duvd1: {duvd1:F4}, duvd2: {duvd2:F4}");
 
         var duvMax = duvd2.Length() > duvd1.Length() ? duvd2 : duvd1;
 
@@ -128,7 +124,7 @@ internal struct Mipmap
         float BB = B * B;
         float level = 0.5f + MathF.Log2(AA + BB);
         float resultLevel = MathF.Max(0f, level);
-        // Debug.Log($"Computed Mip Level: {level} (AA: {AA}, BB: {BB})");
+
         return resultLevel;
     }
 

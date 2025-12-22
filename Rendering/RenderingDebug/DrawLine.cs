@@ -2,7 +2,7 @@
 using Raytracer.IO.Images;
 using Raytracer.Scenes.Content.Datas.Camera;
 
-namespace Raytracer.Rendering.DebugRendering;
+namespace Raytracer.Rendering.RenderingDebug;
 
 public class DrawLine(Vector3 From, Vector3 To, Vector3 color) : IDebugDrawCommand
 {

@@ -2,7 +2,7 @@
 using Raytracer.Scenes;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.IO.Images;
-using Raytracer.Rendering.DebugRendering;
+using Raytracer.Rendering.RenderingDebug;
 using Raytracer.Utility;
 
 namespace Raytracer.Rendering
