@@ -54,6 +54,7 @@ tar:
 		--exclude=hw2 \
 		--exclude=hw3 \
 		--exclude=hw4 \
+		--exclude=hw5 \
 		--exclude=Outputs \
 		--exclude=Inputs \
 		--exclude=.git \

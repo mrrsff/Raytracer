@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Raytracer.Core;
-using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.CPU.Intersections;
 using Raytracer.Scenes.Runtime.Meshes;
 
 namespace Raytracer.Scenes.Runtime;

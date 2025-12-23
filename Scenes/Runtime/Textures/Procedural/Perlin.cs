@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using Raytracer.Rendering.Sampling;
 using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Runtime.Textures.Procedural;

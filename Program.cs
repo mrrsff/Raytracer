@@ -1,4 +1,5 @@
 ﻿using Raytracer.Rendering;
+using Raytracer.Rendering.CPU;
 using Raytracer.Rendering.Vulkan;
 
 namespace Raytracer;
@@ -16,8 +17,8 @@ public static class Program
         
         Params.FromArgs(args);
 
-        // _technique = new PreviewRendering();
-        _technique = new GPURendering();
+        _technique = new PreviewRendering();
+        // _technique = new GPURendering();
         _technique.StartRendering(args);
     }
 }

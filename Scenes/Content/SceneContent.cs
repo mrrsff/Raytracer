@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using Raytracer.Scenes.Content.Datas;
-using Raytracer.Scenes.Content.Datas.Camera;
+using Raytracer.Scenes.Content.Datas.CameraData;
 using Raytracer.Scenes.Content.Datas.Textures;
 using Raytracer.Utility;
 

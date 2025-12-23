@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
 using Raytracer.IO.Images;
-using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.CPU.Intersections;
 using Raytracer.Scenes.Content.Datas.Textures;
 using Raytracer.Utility;
 
@@ -174,9 +174,7 @@ public class Image : Texture
                 {
                     var color = mip.Pixels[y * mip.Width + x];
                     if (color.X > 1f || color.Y > 1f || color.Z > 1f)
-                    {
                         color = ColorUtility.Normalize(color);
-                    }
                     int r = (int)(color.X * 255);
                     int g = (int)(color.Y * 255);
                     int b = (int)(color.Z * 255);

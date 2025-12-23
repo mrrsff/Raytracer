@@ -1,5 +1,5 @@
 ﻿using System.Numerics;
-using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.CPU.Intersections;
 using Raytracer.Scenes.Content.Datas.Textures;
 
 namespace Raytracer.Scenes.Runtime.Textures;

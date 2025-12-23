@@ -1,8 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Raytracer.Core;
-using Raytracer.Rendering.Intersections;
-using Raytracer.Scenes.Content.Datas.Camera;
+using Raytracer.Rendering.CPU.Intersections;
 using Raytracer.Scenes.Content.Datas.Textures;
 
 namespace Raytracer.Scenes.Runtime.Textures;

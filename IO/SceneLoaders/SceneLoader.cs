@@ -25,6 +25,7 @@ public static class SceneLoader
                 new IntConverter(),
                 new IntArrayConverter(),
                 new FloatArrayConverter(),
+                new TMOOptionsConverter()
             }
         };
 

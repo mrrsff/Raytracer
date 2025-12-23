@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
-using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.CPU.Intersections;
 using Raytracer.Scenes.Runtime.Meshes;
 using Raytracer.Scenes.Runtime.Textures;
 
