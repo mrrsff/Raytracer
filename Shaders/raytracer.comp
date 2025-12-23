@@ -42,16 +42,9 @@ void main()
 
     if (pixel.x >= size.x || pixel.y >= size.y)
     return;
-
-    Camera cam = camera;
-
-    vec3 s = cam.Q + pixel.x * cam.sUMult * cam.right -pixel.y * cam.sVMult * cam.up;
-
-    vec3 rd = normalize(s - cam.position); // Ray direction
-    vec3 ro = cam.position; // Ray origin
     
-    // Simple gradient background based on ray direction
-    vec3 color = 0.5 * (rd + vec3(1.0, 1.0, 1.0));
+    // good animation
+    vec3 color = 0.5 + 0.5 * cos(PushConstants.time + vec3(0, 2, 4) + vec3(pixel, 0) * 0.01);
 
     imageStore(outputImage, pixel, vec4(color, 1.0));
 }
