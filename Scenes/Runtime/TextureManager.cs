@@ -7,6 +7,7 @@ namespace Raytracer.Scenes.Runtime;
 public class TextureManager
 {
     public List<Image> Images = new();
+    public List<HDRImage> HDRImages = new();
     public List<PerlinTexture> PerlinTextures = new();
     public List<CheckerboardTexture> CheckerboardTextures = new();
     
@@ -15,49 +16,53 @@ public class TextureManager
     {
         if (content.Textures == null) return;
         
-        foreach (var textureMap in content.Textures.TextureMap)
+        List<int> loadedImageIds = new();
+        if (content.Textures.TextureMap != null)
         {
-            Texture texture = textureMap.Type switch
+            foreach (var textureMap in content.Textures.TextureMap)
             {
-                "image" => new Image(textureMap, content.Textures.Images),
-                "perlin" => new PerlinTexture(textureMap),
-                "checkerboard" => new CheckerboardTexture(textureMap),
-                _ => throw new NotImplementedException($"Texture type {textureMap.Type} is not implemented.")
-            };
+                Texture texture = textureMap.Type switch
+                {
+                    "image" => new Image(textureMap, content.Textures.Images),
+                    "perlin" => new PerlinTexture(textureMap),
+                    "checkerboard" => new CheckerboardTexture(textureMap),
+                    _ => throw new NotImplementedException($"Texture type {textureMap.Type} is not implemented.")
+                };
+                loadedImageIds.Add(textureMap.ImageId);
 
-            Textures.TryAdd(textureMap.Id, texture);
+                Textures.TryAdd(textureMap.Id, texture);
 
-            switch (texture)
-            {
-                case Image img:
-                    Images.Add(img);
-                    break;
-                case PerlinTexture perlinTex:
-                    PerlinTextures.Add(perlinTex);
-                    break;
-                case CheckerboardTexture checkerTex:
-                    CheckerboardTextures.Add(checkerTex);
-                    break;
+                switch (texture)
+                {
+                    case Image img:
+                        Images.Add(img);
+                        break;
+                    case PerlinTexture perlinTex:
+                        PerlinTextures.Add(perlinTex);
+                        break;
+                    case CheckerboardTexture checkerTex:
+                        CheckerboardTextures.Add(checkerTex);
+                        break;
+                }
             }
         }
-    }
-    
-    public T GetAs<T>(int id) where T : Texture
-    {
-        if (Textures.TryGetValue(id, out var texture))
+        var imgDatas2 = content.Textures.Images;
+        if (imgDatas2 == null) return;
+        
+        foreach (var imgData in imgDatas2.Image)
         {
-            if (texture is T typedTexture)
-            {
-                return typedTexture;
-            }
-            throw new InvalidCastException($"Texture with Id: {id} is not of type {typeof(T).Name}.");
+            if (loadedImageIds.Contains(imgData.Id)) continue;
+            var imageTexture = new HDRImage(imgData);
+            Textures.TryAdd(imgData.Id, imageTexture);
+            HDRImages.Add(imageTexture);
         }
-        throw new KeyNotFoundException($"Texture with Id: {id} not found.");
     }
-    
     public Texture GetTexture(int id)
     {
-        return Textures.TryGetValue(id, out var texture) ? texture : throw new KeyNotFoundException($"Texture with Id: {id} not found.");
+        if (!Textures.ContainsKey(id) && HDRImages.All(tex => tex.Id != id))
+            throw new KeyNotFoundException($"Texture with ID {id} not found.");
+        
+        return Textures.TryGetValue(id, out var texture) ? texture : HDRImages.First(tex => tex.Id == id);
     }
     
     public bool TryGetBackgroundTexture(out Texture? texture)

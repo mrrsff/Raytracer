@@ -6,21 +6,25 @@ namespace Raytracer.Rendering.CPU.Tonemaps.TonemapFunctions;
 
 public class AcesOperator : TonemapOperator
 {
-    public AcesOperator(TMOOptions options) : base(options)
-    {
-    }
-
+    private const float a = 2.51f;
+    private const float b = 0.03f;
+    private const float c = 2.43f;
+    private const float d = 0.59f;
+    private const float e = 0.14f;
+    public AcesOperator(TMOOptions options) : base(options) { }
     public override Vector3 Tonemap(ImageBuffer image, int x, int y)
     {
         Vector3 color = image.GetPixel(x, y);
-        
-        const float a = 2.51f;
-        const float b = 0.03f;
-        const float c = 2.43f;
-        const float d = 0.59f;
-        const float e = 0.14f;
+        color *= exposure;
+        float L = Luminance(color);
+        float Lm = Map(L);
+        return color * (Lm / L);
+    }
 
-        return (color * (a * color + new Vector3(b))) /
-               (color * (c * color + new Vector3(d)) + new Vector3(e));
+    private static float Map(float L)
+    {
+        var x = (L * (a * L + b) /
+            (L * (L * c + d)) + e);
+        return saturate(x);
     }
 }

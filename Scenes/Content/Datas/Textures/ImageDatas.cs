@@ -48,6 +48,10 @@ public class ImageDatas
         foreach (var data in Image)
         {
             var path = Params.GetFilePathInSceneDir(data.Path);
+            if (Path.GetExtension(path).Equals(".exr", StringComparison.OrdinalIgnoreCase) || 
+                Path.GetExtension(path).Equals(".hdr", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             var image = SixLabors.ImageSharp.Image.Load<Rgb24>(path);
             _loadedImages.Add(image);
         }

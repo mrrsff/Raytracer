@@ -10,7 +10,7 @@ internal static class ImageSaver
         int width = image.Width;
         int height = image.Height;
 
-        using var output = new Image<Rgba32>(width, height);
+        using var output = new Image<Rgb24>(width, height);
 
         var buffer = image.ToByteBuffer();
 
@@ -19,12 +19,12 @@ internal static class ImageSaver
         {
             for (int x = 0; x < width; x++)
             {
-                byte r = buffer[i++];
-                byte g = buffer[i++];
                 byte b = buffer[i++];
-                byte a = buffer[i++];
+                byte g = buffer[i++];
+                byte r = buffer[i++];
+                i++;
                 
-                output[x, y] = new Rgba32(r, g, b, a);
+                output[x, y] = new Rgb24(r, g, b);
             }
         }
 

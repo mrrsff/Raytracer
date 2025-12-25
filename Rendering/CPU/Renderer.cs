@@ -23,7 +23,6 @@ namespace Raytracer.Rendering.CPU
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             if (Debug.PrintRenderTime) Debug.Log($"Starting render for camera '{Scene.GetCamera(cameraIndex).ImageName}'...");
             Camera = Scene.GetCamera(cameraIndex);
-            Camera.InitializeCamera();
             OnRender(buffer);
             DebugRenderer.Rasterize(Camera, buffer);
             stopwatch.Stop();

@@ -16,6 +16,12 @@ public static class ThreadRng
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float NextFloat() => (float)Instance.NextDouble();
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float NextFloat(float max) => (float)Instance.NextDouble() * max;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float NextFloat(float min, float max) => min + (float)Instance.NextDouble() * (max - min);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int NextInt(int max) => Instance.NextInt(max);

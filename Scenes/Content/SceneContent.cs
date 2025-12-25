@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using System.Text;
+using Raytracer.Core;
 using Raytracer.Scenes.Content.Datas;
 using Raytracer.Scenes.Content.Datas.CameraData;
 using Raytracer.Scenes.Content.Datas.Textures;

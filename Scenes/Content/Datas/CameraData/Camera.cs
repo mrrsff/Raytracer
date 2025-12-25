@@ -10,11 +10,8 @@ using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Content.Datas.CameraData;
 
-public enum CameraType
-{
-    None,
-    LookAt
-}
+public enum CameraType { None, LookAt }
+public enum Handedness { right, left }
 
 public class Camera
 {
@@ -23,6 +20,7 @@ public class Camera
     public Vector3 Position;
     public Vector3 Gaze;
     public Vector3 GazePoint;
+    public Handedness _handedness = Handedness.right;
     public Vector3 Up;
     public float FovY;
     public Rect NearPlane;
@@ -35,17 +33,16 @@ public class Camera
     [JsonConverter(typeof(SingleOrListConverter<TonemapData>))]
     public List<TonemapData> Tonemap;
 
-    public Tonemapper[] runtimeTonemaps;
-    
-    public float ApertureSize = 0;
-    public float FocusDistance = 0f;
-    public float ShutterOpen = 0.0f;
-    public float ShutterClose = 1.0f;
-    
+    private Tonemapper[] runtimeTonemaps;
+
+    private const float ApertureSize = 0;
+    private const float FocusDistance = 0f;
+    private const float ShutterOpen = 0.0f;
+    private const float ShutterClose = 1.0f;
+
     public Transform Transform = new Transform();
-    public void InitializeCamera()
+    public void Initialize()
     {
-        // Transform position and orientation
         Position = Transform.ToWorldPoint(Position);
         Gaze = Transform.ToWorldDirection(Gaze);
         Up = Transform.ToWorldDirection(Up);
@@ -63,17 +60,17 @@ public class Camera
 
         var w = Vector3.Normalize(-Gaze);
         var v = Vector3.Normalize(Up - Vector3.Dot(Up, w) * w);
-        var u = Vector3.Cross(v, w);
+        Vector3 u = _handedness == Handedness.right ? Vector3.Cross(v, w) : Vector3.Cross(w, v);
 
         Forward = -w; // points into scene
         Right = u;
         Up = v;
 
-        m = Position + Forward * NearDistance;
-        q = m + (NearPlane.Left * Right) + (NearPlane.Top * Up);
+        M = Position + Forward * NearDistance;
+        Q = M + (NearPlane.Left * Right) + (NearPlane.Top * Up);
 
-        sUMultiplier = (NearPlane.Right - NearPlane.Left) / ImageResolution.Width;
-        sVMultiplier = (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
+        SUMultiplier = (NearPlane.Right - NearPlane.Left) / ImageResolution.Width;
+        SVMultiplier = (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
 
         if (Tonemap == null) return;
         
@@ -87,33 +84,31 @@ public class Camera
 
     public Vector3 Forward;
     public Vector3 Right;
-    public Vector3 Q => q;
-    public Vector3 M => m;
-    public float SUMultiplier => sUMultiplier;
-    public float SVMultiplier => sVMultiplier;
-    
-    private Vector3 m;
-    private Vector3 q;
-    private float sUMultiplier;
-    private float sVMultiplier;
-    
+    public Vector3 Q { get; private set; }
+
+    public Vector3 M { get; private set; }
+
+    public float SUMultiplier { get; private set; }
+
+    public float SVMultiplier { get; private set; }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ray GenerateRay(float i, float j)
     {
-        float sU = i * sUMultiplier;
-        float sV = j * sVMultiplier;
+        float sU = i * SUMultiplier;
+        float sV = j * SVMultiplier;
 
-        Vector3 s = q + (sU * Right) - (sV * Up);
+        Vector3 s = Q + (sU * Right) - (sV * Up);
         Vector3 d = Vector3.Normalize(s - Position);
         return new Ray(Position, d);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ray GenerateRayDRT(float pixelX, float pixelY, Vector2 lensSample = default, float time = 0.0f)
     {
-        float sU = pixelX * sUMultiplier;
-        float sV = pixelY * sVMultiplier;
+        float sU = pixelX * SUMultiplier;
+        float sV = pixelY * SVMultiplier;
 
-        Vector3 s = q + (sU * Right) - (sV * Up);
+        Vector3 s = Q + (sU * Right) - (sV * Up);
 
         Vector3 dir = Vector3.Normalize(s - Position);
 
@@ -139,7 +134,8 @@ public class Camera
     public ImageBuffer[] ApplyTonemaps(ImageBuffer image)
     {
         if (runtimeTonemaps == null || runtimeTonemaps.Length == 0) return [image];
-        ImageBuffer[] tonemappedImages = new ImageBuffer[runtimeTonemaps.Length];
+        ImageBuffer[] tonemappedImages = new ImageBuffer[runtimeTonemaps.Length + 1];
+        tonemappedImages[^1] = image; // Original image
         for (int i = 0; i < runtimeTonemaps.Length; i++)
         {
             tonemappedImages[i] = new ImageBuffer(image.Width, image.Height, Vector3.Zero);
@@ -156,9 +152,12 @@ public class Camera
                 {
                     Vector3 tonemappedColor = tonemap.Apply(image, x, y);
                     tonemappedImages[i].SetPixel(x, y, tonemappedColor);
+                    // if (i > 0)
+                    //     Debug.Log($"Tonemapping [{i}] Pixel ({x}, {y}): Original Color {image.GetPixel(x, y)} -> Tonemapped Color {tonemappedColor}");
                 }
             }
         }
+
         return tonemappedImages;
     }
     

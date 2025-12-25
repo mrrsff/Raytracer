@@ -16,7 +16,7 @@ internal static class ExrSaver
             width,
             height,
             3,      // RGB
-            true,
+            false,
             path
         );
 

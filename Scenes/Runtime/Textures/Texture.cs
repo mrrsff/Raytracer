@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
-using Raytracer.Core;
 using Raytracer.Rendering.CPU.Intersections;
 using Raytracer.Scenes.Content.Datas.Textures;
 
@@ -14,6 +13,12 @@ public abstract class Texture
     public float BumpFactor;
     public int Id;
 
+    protected Texture(int Id)
+    {
+        DecalType = DecalType.None;
+        InterpolationType = InterpolationType.Nearest;
+        BumpFactor = 1f;
+    }
     protected Texture(TextureInfo textureInfo)
     {
         DecalType = textureInfo.DecalMode.ToDecalType();

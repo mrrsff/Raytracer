@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Raytracer.Rendering.CPU.Sampling;
 
 namespace Raytracer.Utility;
 

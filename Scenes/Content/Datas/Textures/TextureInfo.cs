@@ -18,4 +18,5 @@ public struct TextureInfo
     public float Offset;
     public float[] BlackColor;
     public float[] WhiteColor;
+    
 }

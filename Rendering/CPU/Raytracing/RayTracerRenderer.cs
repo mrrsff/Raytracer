@@ -282,7 +282,7 @@ public class RayTracerRenderer : CPURenderer
             IntersectionInfo hit = Scene.Intersect(ray);
             if (!hit.Hit)
             {
-                finalColor += weight * Scene.GetBackgroundColor(x, y, Camera);
+                finalColor += weight * Scene.GetBackgroundColor(hit, ray);
                 continue;
             }
 

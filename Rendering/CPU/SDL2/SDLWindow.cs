@@ -1,4 +1,6 @@
-﻿using static SDL2.SDL;
+﻿using System.Drawing;
+using System.Drawing.Imaging;
+using static SDL2.SDL;
 
 namespace Raytracer.Rendering.CPU.SDL2;
 
@@ -45,13 +47,7 @@ public abstract class SDLWindow : IDisposable
     
     private IntPtr CreateTexture(int w, int h)
     {
-        return SDL_CreateTexture(
-            renderer,
-            SDL_PIXELFORMAT_ABGR8888,
-            (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-            w,
-            h
-        );
+        return SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING, w, h);
     }
 
     public virtual void Resize(int newW, int newH)
@@ -183,5 +179,19 @@ public abstract class SDLWindow : IDisposable
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
+    }
+    
+    public string SaveTextureToFile(string filePath)
+    {
+        IntPtr pixels;
+        int pitch;
+        SDL_LockTexture(contentTexture, IntPtr.Zero, out pixels, out pitch);
+
+        using var bitmap = new Bitmap(contentWidth, contentHeight, pitch, PixelFormat.Format32bppArgb, pixels);
+        bitmap.Save(filePath, ImageFormat.Png);
+
+        SDL_UnlockTexture(contentTexture);
+
+        return filePath;
     }
 }

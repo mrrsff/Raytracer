@@ -17,8 +17,8 @@ class params:
         preview = ''
         compileProgram = False
         for arg in args[2:]:
-            if arg in ('--preview', '--p'):
-                preview = arg
+            if arg in ('--no-preview', '--np'):
+                preview = '--no-preview'
             elif arg in ('--compile', '--c'):
                 compileProgram = True
         self.json_file = json_file
@@ -27,7 +27,7 @@ class params:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 batchTest.py <directory> [--preview] [--compile]")
+        print("Usage: python3 batchTest.py <directory> [--no-preview] [--compile]")
         sys.exit(1)
 
     p = params(sys.argv)

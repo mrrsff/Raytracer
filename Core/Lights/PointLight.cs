@@ -1,10 +1,11 @@
 ﻿using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
+using Raytracer.Rendering.CPU;
 
-namespace Raytracer.Core;
+namespace Raytracer.Core.Lights;
 
-public class PointLight
+public class PointLight : Light
 {
     [JsonPropertyName("_id")] public int Id;
     public string Transformations;
@@ -23,7 +24,23 @@ public class PointLight
             .Append(Intensity)
             .Append(')').ToString();
     }
-    
+
+    public override bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
+    {
+        Vector3 toLight = Position - P;
+
+        if (renderer.Scene.IsOccluded(P, Position, N, time))
+        {
+            L = irradiance = default;
+            return false;
+        }
+
+        float dist2 = toLight.LengthSquared();
+        L = Vector3.Normalize(toLight);
+        irradiance = Intensity / dist2;
+        return true;
+    }
+
     public void CalculatePosition()
     {
         var transformMatrix = Transform.Matrix;

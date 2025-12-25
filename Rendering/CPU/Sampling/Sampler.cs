@@ -84,4 +84,14 @@ public static class Sampler
 
         return samples;
     }
+    
+    public static Vector3 RandomUnitVectorSphere()
+    {
+        float z = ThreadRng.NextFloat(-1f, 1f);
+        float r = MathF.Sqrt(1f - z * z);
+        float phi = ThreadRng.NextFloat(0f, 2f * MathF.PI);
+        float x = r * MathF.Cos(phi);
+        float y = r * MathF.Sin(phi);
+        return new Vector3(x, y, z);
+    }
 }

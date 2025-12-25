@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering.CPU.Intersections;
-using Raytracer.Rendering.CPU.Sampling;
 using Raytracer.Scenes.Content.Datas.Textures;
 
 namespace Raytracer.Rendering.CPU.Shading;
@@ -21,85 +21,46 @@ public static class BlinnPhongShading
                 if (Debug.RenderMipLevels) return textureColor;
                 switch (texture.DecalType)
                 {
-                    case DecalType.ReplaceKD:
-                        kd = textureColor;
-                        break;
-                    case DecalType.BlendKD:
-                        kd = textureColor * .5f + kd * .5f;
-                        break;
-                    case DecalType.ReplaceKS:
-                        ks = textureColor;
-                        break;
-                    case DecalType.ReplaceAll:
-                        return textureColor;
+                    case DecalType.ReplaceKD: kd = textureColor; break;
+                    case DecalType.BlendKD: kd = textureColor * .5f + kd * .5f; break; 
+                    case DecalType.ReplaceKS: ks = textureColor; break;
+                    case DecalType.ReplaceAll: return textureColor;
                 }
             }
         }
-
-        var point = intersection.Point;
-        var normal = intersection.ShadingNormal;
+        
+        Vector3 P = intersection.Point;
+        Vector3 N = intersection.ShadingNormal;
+        Vector3 V = Vector3.Normalize(intersection.RayOrigin - P);
 
         Vector3 ambient = intersection.material.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
         Vector3 diffuse = Vector3.Zero;
         Vector3 specular = Vector3.Zero;
-        Vector3 viewDir = Vector3.Normalize(intersection.RayOrigin - point);
-
-        if (renderer.Scene.Content.Lights.PointLight != null)
+        
+        if (renderer.Scene.Content.Lights.AllLights.Count == 0)
+            return ambient;
+        
+        foreach (var light in renderer.Scene.Content.Lights.AllLights)
         {
-            foreach (var light in renderer.Scene.Content.Lights.PointLight)
+            if (light.Sample(P, N, time, renderer, out Vector3 L, out Vector3 irradiance))
             {
-                if (renderer.Scene.IsOccluded(point, light.Position, normal, time))
-                    continue;
-
-                var lightDelta = light.Position - point;
-                Vector3 lightDir = Vector3.Normalize(lightDelta);
-                Vector3 irradiance = light.Intensity / (lightDelta.LengthSquared());
-
-                // Diffuse
-                float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);
-                diffuse += diff * kd * irradiance;
-
-                // Specular
-                Vector3 halfDir = Vector3.Normalize(lightDir + viewDir);
-                float spec = MathF.Pow(MathF.Max(Vector3.Dot(normal, halfDir), 0), intersection.material.PhongExponent);
-                specular += spec * ks * irradiance;
-            }
-        }
-
-        if (renderer.Scene.Content.Lights.AreaLight != null)
-        {
-            foreach (var light in renderer.Scene.Content.Lights.AreaLight)
-            {
-                Vector2 sample = Sampler.UniformRandom();
-                
-                Vector3 samplePosition =
-                    light.Position +
-                    light.Size * (sample.X - 0.5f) * light.U +
-                    light.Size * (sample.Y - 0.5f) * light.V;
-
-                if (renderer.Scene.IsOccluded(point, samplePosition, normal, time))
-                {
-                    continue;
-                }
-        
-                var lightDelta = samplePosition - point;
-                Vector3 lightDir = Vector3.Normalize(lightDelta);
-
-                float cosLight = Vector3.Dot(light.Normal, -lightDir);
-                cosLight = MathF.Abs(cosLight);
-                Vector3 irradiance = light.Radiance * (light.Area * cosLight / lightDelta.LengthSquared());
-        
-                // Diffuse
-                float diff = MathF.Max(Vector3.Dot(normal, lightDir), 0);
-                diffuse += diff * kd * irradiance;
-        
-                // Specular
-                Vector3 halfDir = Vector3.Normalize(lightDir + viewDir);
-                float spec = MathF.Pow(MathF.Max(Vector3.Dot(normal, halfDir), 0), intersection.material.PhongExponent);
-                specular += spec * ks * irradiance;
+                EvalBlinnPhong(N, V, L, kd, ks, intersection.material.PhongExponent, irradiance, ref diffuse, ref specular);
             }
         }
         Vector3 color = ambient + diffuse + specular;
         return color;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void EvalBlinnPhong(in Vector3 N, in Vector3 V, in Vector3 L, in Vector3 kd, in Vector3 ks, float phongExp, in Vector3 irradiance, ref Vector3 diffuse, ref Vector3 specular)
+    {
+        float ndotl = MathF.Max(Vector3.Dot(N, L), 0f); // if ndotl <= 0, light is below the surface
+        ndotl = Math.Abs(ndotl);
+
+        diffuse += kd * irradiance * ndotl;
+
+        Vector3 H = Vector3.Normalize(L + V);
+        float spec = MathF.Pow(MathF.Max(Vector3.Dot(N, H), 0f), phongExp);
+        specular += ks * irradiance * spec;
     }
 }

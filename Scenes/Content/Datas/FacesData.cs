@@ -20,7 +20,7 @@ public struct FacesData
     {
         return new StringBuilder()
             .AppendLine($"Face Type: {Type}")
-            .AppendLine($"Data: [{string.Join(", ", Data)}]")
+            .AppendLine($"Data: [{ (Data == null ? "" : string.Join(", ", Data))}]")
             .ToString();
     }
 }

@@ -13,7 +13,7 @@ public static class Params
     {
         if (args.Length == 0)
         {
-            throw new ArgumentException("Usage: ./raytracer scene.json [--preview]");
+            throw new ArgumentException("Usage: ./raytracer scene.json [--no-preview]");
         }
 
         ScenePath = args[0];

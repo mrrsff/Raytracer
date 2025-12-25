@@ -4,6 +4,7 @@ using Raytracer.IO.Images;
 using Raytracer.Rendering.CPU.Tonemaps.TonemapFunctions;
 using Raytracer.Scenes.Content.Datas.CameraData;
 using Raytracer.Scenes.Content.Datas.Textures;
+using Raytracer.Utility;
 
 namespace Raytracer.Rendering.CPU.Tonemaps;
 
@@ -16,8 +17,8 @@ public class Tonemapper
     public Tonemapper(TonemapOperator tonemapOperator, TonemapData data)
     {
         _operator = tonemapOperator;
-        saturation = data.Saturation;
-        gamma = data.Gamma;
+        saturation = data.Saturation <= 0.0f ? 1.0f : data.Saturation;
+        gamma = data.Gamma <= 0.0f ? 2.2f : data.Gamma;
     }
     
     public void Prepare(ImageBuffer image)
@@ -28,12 +29,14 @@ public class Tonemapper
     public Vector3 Apply(ImageBuffer buffer, int x, int y)
     {
         Vector3 c = _operator.Tonemap(buffer, x, y);
-
-        const float TOLERANCE = 1e-3f;
-        if (Math.Abs(saturation - 1.0f) > TOLERANCE)
+        
+        if (Math.Abs(saturation - 1.0f) > 1e-3f)
         {
             float Ld = TonemapOperator.Luminance(c);
-
+            
+            // var col = c / Ld;
+            // Debug.Log($"[{_operator.GetType().Name}] Pre-Saturation: L={Ld}, col={TonemapOperator.Luminance(col)} c={c}");
+        
             if (Ld > 0.0f)
             {
                 c = new Vector3(
@@ -43,17 +46,24 @@ public class Tonemapper
                 );
             }
         }
-
+        
         c.X = Math.Clamp(c.X, 0.0f, 1.0f);
         c.Y = Math.Clamp(c.Y, 0.0f, 1.0f);
         c.Z = Math.Clamp(c.Z, 0.0f, 1.0f);
-
+        
+        if (c == Vector3.Zero) 
+            return c;
+        
         float invGamma = 1.0f / gamma;
         c = new Vector3(
             MathF.Pow(c.X, invGamma),
             MathF.Pow(c.Y, invGamma),
             MathF.Pow(c.Z, invGamma)
         );
+        
+        if (x % 500 == 10 && y % 500 == 10) 
+            Debug.Log($"[{_operator.GetType().Name}] Tonemap: {buffer.GetPixel(x, y)} -> {c}");
+        
         return c;
     }
 }

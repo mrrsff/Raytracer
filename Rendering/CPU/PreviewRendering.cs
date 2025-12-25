@@ -44,21 +44,21 @@ public class PreviewRendering : RenderingTechnique
 
         var renderTask = Task.Run(() =>
         {
-            for (int cam = 0; cam < scene.Content.Cameras.Camera.Count; cam++)
+            for (int cameraIndex = 0; cameraIndex < scene.Content.Cameras.Camera.Count; cameraIndex++)
             {
                 lock (bufferLock)
                 {
-                    buffer = renderer.CreateEmptyImageBuffer(cam);
+                    buffer = renderer.CreateEmptyImageBuffer(cameraIndex);
                     preview?.SetContentDimensions(buffer.Width, buffer.Height);
                 }
 
                 RayStats.Reset();
-                renderer.RenderIntoExistingBuffer(cam, buffer);
+                renderer.RenderIntoExistingBuffer(cameraIndex, buffer);
                 SaveOutputs(renderer, buffer);
             }
         });
 
-        RunPreviewLoop(preview, renderer, renderTask, bufferLock, () => buffer);
+        RunPreviewLoop(preview, bufferLock, () => buffer);
 
         cts.Cancel();
         renderTask.Wait();
@@ -68,18 +68,21 @@ public class PreviewRendering : RenderingTechnique
 
     private static void SaveOutputs(RayTracerRenderer renderer, ImageBuffer buffer)
     {
-        MediaSaver.SaveImage(Params.OutputDirectory, buffer);
-
+        var paths = new List<string>();
         foreach (var img in renderer.Camera.ApplyTonemaps(buffer))
-            MediaSaver.SaveImage(Params.OutputDirectory, img);
+            paths.Add(MediaSaver.SaveImage(Params.OutputDirectory, img));
+        
+        Debug.Log("Saved outputs to:");
+        foreach (var path in paths)
+            Debug.Log(" - " + path);
     }
 
-    private static void RunPreviewLoop(SDLPreview? preview, RayTracerRenderer renderer, Task renderTask, object bufferLock, Func<ImageBuffer?> bufferAccessor)
+    private static void RunPreviewLoop(SDLPreview? preview, object bufferLock, Func<ImageBuffer?> bufferAccessor)
     {
         if (preview == null)
             return;
 
-        int fps = 60;
+        int fps = 144;
         int frameDurationMs = 1000 / fps;
         while (preview.PollEvents())
         {
@@ -90,7 +93,7 @@ public class PreviewRendering : RenderingTechnique
 
                 try
                 {
-                    var bytes = buffer.Normalize().ToByteBuffer();
+                    var bytes = buffer.ToByteBuffer();
                     preview.UpdateFrame(bytes, buffer.Width, buffer.Height);
                 }
                 catch (Exception e)
@@ -101,6 +104,8 @@ public class PreviewRendering : RenderingTechnique
             
             Thread.Sleep(frameDurationMs);
         }
+        // preview.SaveTextureToFile(Path.Combine(Params.OutputDirectory, "preview_final.png"));
+        Debug.Log("Preview window closed, stopping rendering.");
     }
 
     private static SDLPreview? TryCreatePreview()
