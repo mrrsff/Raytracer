@@ -12,13 +12,6 @@ public unsafe partial class VkContext
     {
         return new VkImage(this, width, height, format, usageFlags);
     }
-    public VkBuffer CreateStagingBuffer(uint size)
-    {
-        return new VkBuffer(this, size, 
-            BufferUsageFlags.TransferSrcBit | BufferUsageFlags.TransferDstBit, 
-            MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit
-        );
-    }
     public CommandBuffer BeginSingleTimeCommands()
     {
         var allocInfo = new CommandBufferAllocateInfo

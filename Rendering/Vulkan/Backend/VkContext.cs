@@ -100,10 +100,7 @@ public unsafe partial class VkContext : IDisposable
             if (properties.DeviceType == PhysicalDeviceType.DiscreteGpu) _physicalDevice = gpu;
         }
         if (_physicalDevice.Handle == 0) _physicalDevice = devices.First();
-        var deviceProps = _vk.GetPhysicalDeviceProperties(_physicalDevice);
        
-        Debug.Log(SilkMarshal.PtrToString((nint)deviceProps.DeviceName));
-
         var enabledDeviceExtensions = new List<string>()
         {
             KhrSwapchain.ExtensionName

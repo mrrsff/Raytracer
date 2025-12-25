@@ -4,68 +4,30 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Raytracer.Rendering.Vulkan.Backend.Allocations.BufferObjects;
 
-public unsafe class SSBO<T> : Allocation where T : unmanaged
+public sealed unsafe class SSBO<T> : VkBuffer where T : unmanaged
 {
-    public Buffer Buffer;
-
-    public uint Capacity;
-    public uint Count;
-
-    public ulong SizeInBytes => Capacity * (ulong)Unsafe.SizeOf<T>();
+    public uint Capacity { get; private set; }
+    public uint Count { get; private set; }
 
     private readonly bool _allowOverflow;
 
-    public DescriptorBufferInfo DescriptorInfo => new()
-    {
-        Buffer = Buffer,
-        Offset = 0,
-        Range = SizeInBytes
-    };
+    public ulong SizeInBytes => Capacity * (ulong)Unsafe.SizeOf<T>();
 
-    public SSBO(
-        VkContext vkContext,
-        uint capacity,
-        bool allowOverflow
-    ) : base(vkContext)
+    public DescriptorBufferInfo DescriptorInfo => GetBufferInfo();
+
+    public SSBO(VkContext ctx, uint capacity, bool allowOverflow) 
+        : base(ctx, capacity * (uint)Unsafe.SizeOf<T>(), BufferUsageFlags.StorageBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit)
     {
         Capacity = capacity;
         _allowOverflow = allowOverflow;
-        CreateBuffer();
     }
-    private void CreateBuffer()
-    {
-        var bufferInfo = new BufferCreateInfo
-        {
-            SType = StructureType.BufferCreateInfo,
-            Size = SizeInBytes,
-            Usage = BufferUsageFlags.StorageBufferBit,
-            SharingMode = SharingMode.Exclusive
-        };
-
-        if (Vk.CreateBuffer(Device, bufferInfo, null, out Buffer) != Result.Success)
-            throw new Exception("Failed to create SSBO buffer");
-
-        Vk.GetBufferMemoryRequirements(Device, Buffer, out var memReq);
-
-        var allocInfo = new MemoryAllocateInfo
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memReq.Size,
-            MemoryTypeIndex = VkContext.FindMemoryType(memReq.MemoryTypeBits, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit)
-        };
-
-        if (Vk.AllocateMemory(Device, allocInfo, null, out Memory) != Result.Success)
-            throw new Exception("Failed to allocate SSBO memory");
-
-        Vk.BindBufferMemory(Device, Buffer, Memory, 0);
-    }
-
     public void SetData(ReadOnlySpan<T> data)
     {
         if (data.Length > Capacity)
         {
             if (!_allowOverflow)
-                throw new InvalidOperationException("SSBO capacity exceeded and overflow is disabled");
+                throw new InvalidOperationException(
+                    "SSBO capacity exceeded and overflow is disabled");
 
             Resize((uint)data.Length);
         }
@@ -77,15 +39,20 @@ public unsafe class SSBO<T> : Allocation where T : unmanaged
 
         fixed (T* src = data)
         {
-            Unsafe.CopyBlock(
-                destination: mapped,
-                source: src,
-                byteCount: (uint)(Count * Unsafe.SizeOf<T>()));
+            System.Buffer.MemoryCopy(
+                src,
+                mapped,
+                Size,
+                Count * (ulong)Unsafe.SizeOf<T>()
+            );
         }
 
         UnmapMemory();
     }
 
+    // -----------------------------
+    // Element update
+    // -----------------------------
     public void UpdateElement(uint index, in T value)
     {
         if (index >= Capacity)
@@ -95,20 +62,29 @@ public unsafe class SSBO<T> : Allocation where T : unmanaged
         MapMemory(ref mapped);
 
         byte* dst = (byte*)mapped + index * Unsafe.SizeOf<T>();
-        Unsafe.Copy(dst, ref Unsafe.AsRef(value));
+        Unsafe.Copy(dst, ref Unsafe.AsRef(in value));
 
         UnmapMemory();
     }
+
+    // -----------------------------
+    // Resize (reallocate)
+    // -----------------------------
     private void Resize(uint newCapacity)
     {
         // Save old
-        Buffer oldBuffer = Buffer;
-        DeviceMemory oldMemory = Memory;
-        uint oldCapacity = Capacity;
+        var oldBuffer = Buffer;
+        var oldMemory = Memory;
+        var oldSize   = Size;
 
-        // Create new
+        // Create new VkBuffer
         Capacity = newCapacity;
-        CreateBuffer();
+        Size = newCapacity * (uint)Unsafe.SizeOf<T>();
+
+        RecreateBuffer(
+            BufferUsageFlags.StorageBufferBit,
+            MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit
+        );
 
         // Copy old contents
         void* oldMapped = null;
@@ -117,10 +93,11 @@ public unsafe class SSBO<T> : Allocation where T : unmanaged
         Vk.MapMemory(Device, oldMemory, 0, Vk.WholeSize, 0, ref oldMapped);
         Vk.MapMemory(Device, Memory, 0, Vk.WholeSize, 0, ref newMapped);
 
-        Unsafe.CopyBlock(
-            destination: newMapped,
-            source: oldMapped,
-            byteCount: (uint)(oldCapacity * Unsafe.SizeOf<T>())
+        System.Buffer.MemoryCopy(
+            oldMapped,
+            newMapped,
+            Size,
+            oldSize
         );
 
         Vk.UnmapMemory(Device, oldMemory);
@@ -130,12 +107,25 @@ public unsafe class SSBO<T> : Allocation where T : unmanaged
         Vk.DestroyBuffer(Device, oldBuffer, null);
         Vk.FreeMemory(Device, oldMemory, null);
     }
-    public override void Dispose()
+    protected void RecreateBuffer(BufferUsageFlags usage, MemoryPropertyFlags memoryFlags)
     {
-        if (Buffer.Handle != 0)
-            Vk.DestroyBuffer(Device, Buffer, null);
+        // destroy current
+        Vk.DestroyBuffer(Device, Buffer, null);
+        Vk.FreeMemory(Device, Memory, null);
 
-        if (Memory.Handle != 0)
-            Vk.FreeMemory(Device, Memory, null);
+        // create new
+        var bufferInfo = new BufferCreateInfo
+        {
+            SType = StructureType.BufferCreateInfo,
+            Size = Size,
+            Usage = usage,
+            SharingMode = SharingMode.Exclusive
+        };
+
+        Vk.CreateBuffer(Device, bufferInfo, null, out Buffer);
+
+        Vk.GetBufferMemoryRequirements(Device, Buffer, out var memReq);
+        Memory = VkContext.AllocateMemory(memReq, memoryFlags);
+        Vk.BindBufferMemory(Device, Buffer, Memory, 0);
     }
 }

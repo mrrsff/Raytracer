@@ -13,7 +13,6 @@ public class TimeManager
         {
             DeltaTime = dt;
             TotalTime += dt;
-            return;
         }
     }
     

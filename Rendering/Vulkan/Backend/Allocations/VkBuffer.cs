@@ -3,9 +3,9 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Raytracer.Rendering.Vulkan.Backend.Allocations;
 
-public sealed unsafe class VkBuffer : Allocation
+public unsafe class VkBuffer : Allocation
 {
-    public readonly uint Size;
+    public uint Size;
     public Buffer Buffer;
 
     private readonly BufferUsageFlags _bufferUsageFlags;
@@ -17,7 +17,6 @@ public sealed unsafe class VkBuffer : Allocation
         _bufferUsageFlags = usageFlags;
         _memoryPropertyFlags = memoryFlags;
 
-        //create buffer
         var bufferInfo = new BufferCreateInfo
         {
             SType = StructureType.BufferCreateInfo,
@@ -28,7 +27,6 @@ public sealed unsafe class VkBuffer : Allocation
 
         Vk.CreateBuffer(Device, bufferInfo, null, out Buffer);
 
-        //allocate and bind memory
         Vk.GetBufferMemoryRequirements(Device, Buffer, out var memReq);
         Memory = VkContext.AllocateMemory(memReq, _memoryPropertyFlags);
         Vk.BindBufferMemory(Device, Buffer, Memory, 0);
@@ -38,7 +36,7 @@ public sealed unsafe class VkBuffer : Allocation
     {
         var cmd = VkContext.BeginSingleTimeCommands();
         var layers = new ImageSubresourceLayers(ImageAspectFlags.ColorBit, 0, 0, 1);
-        var copyRegion = new BufferImageCopy(0, 0, 0, layers, default, vkImage.ImageExtent);
+        var copyRegion = new BufferImageCopy(0, 0, 0, layers, null, vkImage.ImageExtent);
         Vk.CmdCopyBufferToImage(cmd, Buffer, vkImage.Image, ImageLayout.TransferDstOptimal, 1, copyRegion);
         VkContext.EndSingleTimeCommands(cmd);
     }

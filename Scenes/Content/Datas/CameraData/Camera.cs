@@ -35,10 +35,10 @@ public class Camera
 
     private Tonemapper[] runtimeTonemaps;
 
-    private const float ApertureSize = 0;
-    private const float FocusDistance = 0f;
-    private const float ShutterOpen = 0.0f;
-    private const float ShutterClose = 1.0f;
+    private float ApertureSize;
+    private float FocusDistance;
+    private float ShutterOpen;
+    private float ShutterClose = 1.0f;
 
     public Transform Transform = new Transform();
     public void Initialize()
@@ -85,11 +85,8 @@ public class Camera
     public Vector3 Forward;
     public Vector3 Right;
     public Vector3 Q { get; private set; }
-
     public Vector3 M { get; private set; }
-
     public float SUMultiplier { get; private set; }
-
     public float SVMultiplier { get; private set; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

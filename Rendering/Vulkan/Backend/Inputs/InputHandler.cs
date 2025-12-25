@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
 using Silk.NET.Input;
+using Silk.NET.Input.Extensions;
 
 namespace Raytracer.Rendering.Vulkan.Backend.Inputs;
 
@@ -38,6 +39,14 @@ public sealed class InputHandler
             SubscribeMouse(mouse);
             break;
         }
+    }
+    public bool SetMouseLock(bool hidden)
+    {
+        var mouse = _inputContext?.Mice.FirstOrDefault();
+        if (mouse == null) return false;
+
+        mouse.Cursor.CursorMode = hidden ? CursorMode.Raw : CursorMode.Normal;
+        return true;
     }
 
     private void SubscribeKeyboard(IKeyboard keyboard)

@@ -104,4 +104,8 @@ public sealed class InputActionMap
 
         return sb.ToString();
     }
+    public void ToggleMouseLock(bool locked)
+    {
+        _input.SetMouseLock(locked);
+    }
 }

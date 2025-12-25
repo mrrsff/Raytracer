@@ -27,9 +27,8 @@ public class SceneDefinition
             Forward = cam.Forward,
             Right = cam.Right,
             Up = cam.Up,
-            Q = cam.Q,
-            sUMult = cam.SUMultiplier,
-            sVMult = cam.SVMultiplier
+            FovY = cam.FovY,
+            AspectRatio = cam.ImageResolution.X / (float)cam.ImageResolution.Y
         };
     }
 }

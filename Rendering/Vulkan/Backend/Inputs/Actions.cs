@@ -8,7 +8,9 @@ public enum InputAction
     MoveRight,
     MoveUp,
     MoveDown,
-    Look
+    Sprint,
+    Look,
+    ToggleMouse
 }
 public enum ActionPhase
 {

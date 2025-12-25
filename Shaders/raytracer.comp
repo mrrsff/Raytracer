@@ -1,50 +1,47 @@
 #version 460
-layout(local_size_x = 8, local_size_y = 8) in;
+#extension GL_EXT_scalar_block_layout : enable
 
-layout(set = 0, binding = 0, rgba8) uniform writeonly image2D outputImage;
+#include "scene_layout.glsl"
+#include "intersections.glsl"
+#include "shading.glsl"
 
-struct Camera
-{
-    vec3 position; float _pad0;
-    vec3 forward; float _pad1;
-    vec3 right; float _pad2;
-    vec3 up; float _pad3;
-    vec3 Q; float _pad4;
-    float sUMult; float sVMult;
-    float _pad5;float _pad6;
-};
-
-struct SceneGlobals
-{
-    vec3 ambientLight;
-    float _pad0;
-};
-
-layout( push_constant ) uniform constants
-{
-    float time;
-} PushConstants;
-
-layout(set = 1, binding = 0) uniform SceneBuffer
-{
-    SceneGlobals globals;
-};
-
-layout(set = 1, binding = 1) readonly buffer CameraBuffer
-{
-    Camera camera;
-};
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(rgba8, binding = 0) uniform writeonly image2D outputImage;
 
 void main()
 {
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 size  = imageSize(outputImage);
+    ivec2 size = imageSize(outputImage);
 
     if (pixel.x >= size.x || pixel.y >= size.y)
     return;
+
+    float imageAspectRatio = float(size.x) / float(size.y);
+    float u = (float(pixel.x) + 0.5) / float(size.x);
+    float v = (float(pixel.y) + 0.5) / float(size.y);
+
+    float tanFovY = tan(radians(camera.fovY) / 2.0);
+    float Px = (2.0 * u - 1.0) * tanFovY * imageAspectRatio;
+    float Py = (1.0 - 2.0 * v) * tanFovY;
+
+    vec3 rayOrigin = camera.position;
+    vec3 rayDirection = normalize(Px * camera.right + Py * camera.up + camera.forward);
     
-    // good animation
-    vec3 color = 0.5 + 0.5 * cos(PushConstants.time + vec3(0, 2, 4) + vec3(pixel, 0) * 0.01);
+    vec3 color = sceneGlobals.ambientLight;
+    float closestT = 1e20;
+    for (int i = 0; i < sceneGlobals.numSpheres; ++i)
+    {
+        float t = intersect_sphere(rayOrigin, rayDirection, spheres[i]);
+        if (t > 0.0 && t < closestT)
+        {
+            closestT = t;
+            vec3 hitPoint = rayOrigin + t * rayDirection;
+            vec3 normal = normalize(hitPoint - spheres[i].center);
+            // Simple shading
+            color = shade(hitPoint, normal);
+            
+        }
+    } 
 
     imageStore(outputImage, pixel, vec4(color, 1.0));
 }

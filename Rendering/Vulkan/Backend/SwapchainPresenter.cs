@@ -85,20 +85,36 @@ public sealed unsafe class SwapchainPresenter : IDisposable
     private void RecordCopyToSwapchain(CommandBuffer cmd, uint imageIndex, VkImage computeImage)
     {
         computeImage.RecordTransition(_ctx.Vk, cmd, ImageLayout.TransferSrcOptimal);
-
         Transitions.TransitionSwapchainImage(_ctx, cmd, _images[imageIndex], ImageLayout.Undefined, ImageLayout.TransferDstOptimal);
 
-        var region = new ImageCopy
+        var blit = new ImageBlit
         {
             SrcSubresource = new ImageSubresourceLayers(ImageAspectFlags.ColorBit, 0, 0, 1),
             DstSubresource = new ImageSubresourceLayers(ImageAspectFlags.ColorBit, 0, 0, 1),
-            Extent = new Extent3D(computeImage.Width, computeImage.Height, 1)
+            // Source offsets (the full size of the compute image)
+            SrcOffsets = 
+            {
+                [0] = new Offset3D(0, 0, 0),
+                [1] = new Offset3D((int)computeImage.Width, (int)computeImage.Height, 1)
+            },
+            // Destination offsets (the full size of the swapchain image)
+            DstOffsets = 
+            {
+                [0] = new Offset3D(0, 0, 0),
+                [1] = new Offset3D((int)computeImage.Width, (int)computeImage.Height, 1)
+            }
         };
 
-        _ctx.Vk.CmdCopyImage(cmd, computeImage.Image, ImageLayout.TransferSrcOptimal, _images[imageIndex], ImageLayout.TransferDstOptimal, 1, &region);
+        // Use CmdBlitImage instead of CmdCopyImage to handle the BGRA/RGBA swap
+        _ctx.Vk.CmdBlitImage(
+            cmd, 
+            computeImage.Image, ImageLayout.TransferSrcOptimal, 
+            _images[imageIndex], ImageLayout.TransferDstOptimal, 
+            1, &blit, 
+            Filter.Linear // Linear filtering if scaling is needed
+        );
 
         computeImage.RecordTransition(_ctx.Vk, cmd, ImageLayout.General);
-
         Transitions.TransitionSwapchainImage(_ctx, cmd, _images[imageIndex], ImageLayout.TransferDstOptimal, ImageLayout.PresentSrcKhr);
     }
     private void SubmitAndPresent(uint imageIndex)

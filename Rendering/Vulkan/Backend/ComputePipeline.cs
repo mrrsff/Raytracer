@@ -10,8 +10,8 @@ public sealed unsafe class ComputePipeline : IDisposable
 {
     public VkContext _context { get; private set; }
 
-    private DescriptorSetWrapper _sceneSet;
-    private DescriptorSetWrapper _imageSet;
+    private DescriptorSetWrapper _outputImageSet;
+    private DescriptorSetWrapper[] _allDescriptorSets;
     private ShaderModule _shaderModule;
     private PipelineLayoutWrapper _pipelineLayout;
     private Pipeline _pipeline;
@@ -25,29 +25,40 @@ public sealed unsafe class ComputePipeline : IDisposable
         public int Height;
     }
 
-    public ComputePipeline(VkContext context, string shaderPath, VkImage outputImage, DescriptorSetWrapper sceneSet)
+    public ComputePipeline(VkContext context, string shaderPath, VkImage outputImage, DescriptorSetWrapper[] descriptorSets)
     {
-        _imageSet = new DescriptorSetWrapper.Builder().ComputeStorageImage(0).Build(context);
-        _sceneSet = sceneSet;
+        _outputImageSet = new DescriptorSetWrapper.Builder().ComputeStorageImage(0).Build(context);
+        _allDescriptorSets = new DescriptorSetWrapper[descriptorSets.Length + 1];
+        _allDescriptorSets[0] = _outputImageSet;
+        Array.Copy(descriptorSets, 0, _allDescriptorSets, 1, descriptorSets.Length);
+        
         _context = context;
         _outputImage = outputImage;
         
         var pushRanges = new[] { new PushConstantRange { StageFlags = ShaderStageFlags.ComputeBit, Offset = 0, Size = (uint)Unsafe.SizeOf<PushConstants>() } };
-
-        _pipelineLayout = new PipelineLayoutWrapper(_context, [_imageSet.Layout, _sceneSet.Layout], pushRanges);
+        
+        _pipelineLayout = new PipelineLayoutWrapper(_context, GetDescriptorSetLayouts(), pushRanges);
 
         _shaderModule = _context.LoadShaderModule(shaderPath);
         _pipeline = _context.CreateComputePipeline(_pipelineLayout.Handle, _shaderModule);
 
         UpdateOutputImage(outputImage);
     }
+    private DescriptorSetLayout[] GetDescriptorSetLayouts()
+    {
+        var layouts = new DescriptorSetLayout[_allDescriptorSets.Length];
+        for (int i = 0; i < _allDescriptorSets.Length; i++)
+            layouts[i] = _allDescriptorSets[i].Layout;
+        
+        return layouts;
+    }
     public void Record(CommandRecorder cmdRecorder, uint width, uint height)
     {
         cmdRecorder.ImageBarrier(_outputImage.Image, ImageLayout.Undefined, ImageLayout.General, 0, AccessFlags.ShaderWriteBit, PipelineStageFlags.TopOfPipeBit, PipelineStageFlags.ComputeShaderBit);
 
         cmdRecorder.BindComputePipeline(_pipeline);
-        cmdRecorder.BindDescriptorSet(_pipelineLayout.Handle, _imageSet.Handle);
-        cmdRecorder.BindDescriptorSet(_pipelineLayout.Handle, _sceneSet.Handle, 1);
+        for (int i = 0; i < _allDescriptorSets.Length; i++)
+            cmdRecorder.BindDescriptorSet(_pipelineLayout.Handle, _allDescriptorSets[i].Handle, (uint)i);
 
         PushConstants pc = new()
         {
@@ -68,15 +79,17 @@ public sealed unsafe class ComputePipeline : IDisposable
 
         var imageInfo = image.GetImageInfo();
 
-        _imageSet.UpdateStorageImage(0, imageInfo);
+        _outputImageSet.UpdateStorageImage(0, imageInfo);
     }
+    
     public void Dispose()
     {
         _context.DestroyPipeline(_pipeline);
         _context.DestroyShaderModule(_shaderModule);
 
         _pipelineLayout.Dispose();
-        _sceneSet.Dispose();
+        foreach (var ds in _allDescriptorSets)
+            ds.Dispose();
     }
 
 }

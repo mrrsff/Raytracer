@@ -52,6 +52,15 @@ public sealed unsafe class CommandRecorder
         EnsureRecording();
         _vk.CmdBindDescriptorSets(Cmd, PipelineBindPoint.Compute, layout, setIndex, 1, descriptorSet, 0, null);
     }
+    public void BindDescriptorSets(PipelineLayout layout, DescriptorSet[] descriptorSets, uint firstSet = 0)
+    {
+        EnsureRecording();
+
+        fixed (DescriptorSet* pSets = descriptorSets)
+        {
+            _vk.CmdBindDescriptorSets(Cmd, PipelineBindPoint.Compute, layout, firstSet, (uint)descriptorSets.Length, pSets, 0, null);
+        }
+    }
 
     public void PushConstants<T>(PipelineLayout layout, ShaderStageFlags stages, in T data) where T : unmanaged
     {

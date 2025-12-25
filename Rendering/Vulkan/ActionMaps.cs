@@ -13,9 +13,11 @@ public static class ActionMaps
         map.Bind(InputAction.MoveBackward, new KeyBinding(Key.S));
         map.Bind(InputAction.MoveLeft, new KeyBinding(Key.A));
         map.Bind(InputAction.MoveRight, new KeyBinding(Key.D));
-        map.Bind(InputAction.MoveUp, new KeyBinding(Key.ControlLeft));
-        map.Bind(InputAction.MoveDown, new KeyBinding(Key.ShiftLeft));
+        map.Bind(InputAction.MoveUp, new KeyBinding(Key.Q));
+        map.Bind(InputAction.MoveDown, new KeyBinding(Key.E));
+        map.Bind(InputAction.Sprint, new KeyBinding(Key.ShiftLeft));
         map.Bind(InputAction.Look, new MouseMoveBinding());
+        map.Bind(InputAction.ToggleMouse, new KeyBinding(Key.Escape));
         return map;
     }
     

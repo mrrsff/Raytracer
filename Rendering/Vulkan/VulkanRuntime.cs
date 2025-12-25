@@ -3,6 +3,7 @@ using Raytracer.Rendering.Vulkan.Backend;
 using Raytracer.Rendering.Vulkan.Backend.Allocations;
 using Raytracer.Rendering.Vulkan.Backend.Inputs;
 using Raytracer.Rendering.Vulkan.Backend.Scene;
+using Raytracer.Rendering.Vulkan.Backend.Scene.Objects;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
@@ -70,7 +71,6 @@ public sealed class VulkanRuntime : IDisposable
             HandleResize();
             _resizePending = false;
         }
-        // _rayTracingPipeline.Dispatch(width, height);
         
         _presenter.Present(recorder => _rayTracingPipeline.Record(recorder, width, height), _outputImage);
     }
@@ -101,11 +101,30 @@ public sealed class VulkanRuntime : IDisposable
         
         _outputImage = _vkContext.CreateStorageImage((uint)vkWindow._window.Size.X, (uint)vkWindow._window.Size.Y);
 
-        _rayTracingPipeline = new ComputePipeline(_vkContext, shaderPath, _outputImage, _sceneResources.DescriptorSet);
+        _rayTracingPipeline = new ComputePipeline(_vkContext, shaderPath, _outputImage,
+            [_sceneResources.SceneDescriptorSet, _sceneResources.PerFrameDescriptorSet]);
         
         _presenter = new SwapchainPresenter(_vkContext, vkWindow);
         
         _inputHandler = new InputHandler(vkWindow);
         
+    }
+    
+    public void UpdateSceneGlobals(in SceneGlobals globals)
+    {
+        _sceneResources.UpdateSceneGlobals(globals);
+    }
+
+    public void UpdateSpheres(ReadOnlySpan<SphereGPU> spheres)
+    {
+        _sceneResources.UpdateSpheres(spheres);
+    }
+    public void UpdateCamera(in CameraGpu camera)
+    {
+        _sceneResources.UpdateCamera(camera);
+    }
+    public void UpdateLights(ReadOnlySpan<PointLightGPU> lights)
+    {
+        _sceneResources.UpdateLights(lights);
     }
 }
