@@ -10,7 +10,14 @@ public enum InputAction
     MoveDown,
     Sprint,
     Look,
-    ToggleMouse
+    ToggleMouse,
+    IncreaseSpeed,
+    DecreaseSpeed,
+    IncreaseSensitivity,
+    DecreaseSensitivity,
+    EngageFlythrough, // Usually Right Mouse Button
+    OrbitModifier,    // Usually Alt
+    PanModifier       // Usually Middle Mouse Button
 }
 public enum ActionPhase
 {

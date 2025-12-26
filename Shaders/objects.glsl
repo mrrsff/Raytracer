@@ -12,9 +12,9 @@ struct Sphere
 
 struct Vertex
 {
-    vec3 position;
-    vec3 normal;
-    vec2 uv;
+    vec3 position; float _pad0;
+    vec3 normal; float _pad1;
+    vec2 uv; vec2 _pad2;
 };
 
 struct Triangle
@@ -22,6 +22,7 @@ struct Triangle
     int v0; // these are indices of vertices
     int v1;
     int v2;
+    int _pad0;
 };
 
 struct Mesh
@@ -32,15 +33,14 @@ struct Mesh
     int triangleOffset;
     int triangleCount;
     
-    int flags;
+    int flags; vec3 _pad0;
 };
 
 struct MeshInstance
 {
     int meshIndex;
-    int materialIndex;
-    vec4 transformRow0;
-    vec4 transformRow1;
-    vec4 transformRow2;
+    int materialIndex; vec2 _pad0;
+    mat4 transform;
 };
+
 #endif // OBJECTS_GLSL

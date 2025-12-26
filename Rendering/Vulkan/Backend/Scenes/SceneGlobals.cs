@@ -9,6 +9,7 @@ namespace Raytracer.Rendering.Vulkan.Backend.Scenes;
 public struct SceneGlobals
 {
     public Vector3 AmbientLightColor; public float Padding0;
+    public Vector3 BackgroundColor; public float Padding1;
     
     public int NumPointLights; 
     public int NumMeshes;
@@ -21,6 +22,13 @@ public struct SceneGlobals
 
     public override string ToString()
     {
-        return $"SceneGlobals(AmbientLightColor={AmbientLightColor}, NumPointLights={NumPointLights}, NumMeshes={NumMeshes}, NumVertices={NumVertices}, NumTriangles={NumTriangles}, NumMaterials={NumMaterials}, NumMeshInstances={NumMeshInstances})";
+        return $"SceneGlobals(AmbientLightColor={AmbientLightColor}," +
+               $" BackgroundColor={BackgroundColor}," +
+               $" NumPointLights={NumPointLights}, " +
+               $"NumMeshes={NumMeshes}, " +
+               $"NumVertices={NumVertices}, " +
+               $"NumTriangles={NumTriangles}, " +
+               $"NumMaterials={NumMaterials}, " +
+               $"NumMeshInstances={NumMeshInstances})";
     }
 }

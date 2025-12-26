@@ -34,6 +34,7 @@ public sealed class CameraController
         {
             Position = initial.Value.Position;
             _forward = initial.Value.Forward;
+            VerticalFov = initial.Value.FovY;
             ComputeBasisFromForward(_forward, out _right, out _up);
             Yaw = MathF.Atan2(_forward.Z, _forward.X);
             Pitch = MathF.Asin(_forward.Y);
@@ -60,37 +61,63 @@ public sealed class CameraController
     bool right = false;
     bool up = false;
     bool down = false;
+    
+    private bool _isRMBPressed = false;
+    private bool _isAltPressed = false;
+    private bool _isMiddleMousePressed = false;
 
     private void OnAction(InputActionEvent e)
     {
-        if (e.Action == InputAction.MoveForward)
-            forward = e.Phase != ActionPhase.Canceled;
-
-        if (e.Action == InputAction.MoveBackward)
-            backward = e.Phase != ActionPhase.Canceled;
-
-        if (e.Action == InputAction.MoveRight)
-            right = e.Phase != ActionPhase.Canceled;
-
-        if (e.Action == InputAction.MoveLeft)
-            left = e.Phase != ActionPhase.Canceled;
-
-        if (e.Action == InputAction.MoveUp)
-            up = e.Phase != ActionPhase.Canceled;
-
-        if (e.Action == InputAction.MoveDown)
-            down = e.Phase != ActionPhase.Canceled;
-
-        if (e.Action == InputAction.Sprint)
-            isSprinting = e.Phase != ActionPhase.Canceled;
-
-        if (e.Action == InputAction.Look && e.Phase == ActionPhase.Performed)
-            _lookDelta += e.Value;
-
-        if (e.Action == InputAction.ToggleMouse && e.Phase == ActionPhase.Canceled)
+        // 1. Capture Engagement States
+        if (e.Action == InputAction.EngageFlythrough)
         {
-            _actionMap.ToggleMouseLock(!mouseLocked);
-            mouseLocked = !mouseLocked;
+            _isRMBPressed = e.Phase != ActionPhase.Canceled;
+            _actionMap.ToggleMouseLock(_isRMBPressed); // Auto-lock mouse when looking
+        }
+        if (e.Action == InputAction.OrbitModifier)
+            _isAltPressed = e.Phase != ActionPhase.Canceled;
+        
+        if (e.Action == InputAction.PanModifier)
+            _isMiddleMousePressed = e.Phase != ActionPhase.Canceled;
+
+        // 2. Only allow WASD movement if RMB is held (Unity Flythrough)
+        if (_isRMBPressed)
+        {
+            if (e.Action == InputAction.MoveForward) forward = e.Phase != ActionPhase.Canceled;
+            if (e.Action == InputAction.MoveBackward) backward = e.Phase != ActionPhase.Canceled;
+            if (e.Action == InputAction.MoveRight) right = e.Phase != ActionPhase.Canceled;
+            if (e.Action == InputAction.MoveLeft) left = e.Phase != ActionPhase.Canceled;
+            if (e.Action == InputAction.MoveUp) up = e.Phase != ActionPhase.Canceled;
+            if (e.Action == InputAction.MoveDown) down = e.Phase != ActionPhase.Canceled;
+            if (e.Action == InputAction.Sprint) isSprinting = e.Phase != ActionPhase.Canceled;
+        }
+        else
+        {
+            // Reset movement if RMB is released
+            forward = backward = left = right = up = down = false;
+        }
+
+        // 3. Capture Look Delta
+        if (e.Action == InputAction.Look && e.Phase == ActionPhase.Performed)
+        {
+            _lookDelta += e.Value;
+        }
+        
+        if (e.Action == InputAction.IncreaseSpeed && e.Phase == ActionPhase.Canceled)
+        {
+            SetMoveSpeed(Settings.MoveSpeed * 1.1f);
+        }
+        if (e.Action == InputAction.DecreaseSpeed && e.Phase == ActionPhase.Canceled)
+        {
+            SetMoveSpeed(Settings.MoveSpeed / 1.1f);
+        }
+        if (e.Action == InputAction.IncreaseSensitivity && e.Phase == ActionPhase.Canceled)
+        {
+            SetLookSensitivity(Settings.LookSensitivity * 1.1f);
+        }
+        if (e.Action == InputAction.DecreaseSensitivity && e.Phase == ActionPhase.Canceled)
+        {
+            SetLookSensitivity(Settings.LookSensitivity / 1.1f);
         }
 
         _moveIntent = new Vector3(
@@ -99,39 +126,61 @@ public sealed class CameraController
             (forward ? 1f : 0f) - (backward ? 1f : 0f)
         );
     }
+    
+    private void SetMoveSpeed(float newSpeed)
+    {
+        if (MathF.Abs(Settings.MoveSpeed - newSpeed) < 1e-6f)
+            return;
+
+        float old = Settings.MoveSpeed;
+        Settings.MoveSpeed = newSpeed;
+        Debug.Log($"[Camera] MoveSpeed changed: {old} → {newSpeed}");
+    }
+
+    private void SetLookSensitivity(float newSensitivity)
+    {
+        if (MathF.Abs(Settings.LookSensitivity - newSensitivity) < 1e-6f)
+            return;
+
+        float old = Settings.LookSensitivity;
+        Settings.LookSensitivity = newSensitivity;
+        Debug.Log($"[Camera] LookSensitivity changed: {old} → {newSensitivity}");
+    }
 
     private bool _dirty = true;
     public void Update(float deltaTime)
     {
-        bool hasMovement = _moveIntent != Vector3.Zero;
         bool hasLook = _lookDelta != Vector2.Zero;
-        if (!hasMovement && !hasLook)
-            return;
+        bool hasMovement = _moveIntent != Vector3.Zero;
 
-        _dirty = true;
-        
-        if (hasLook)
+        if (_isRMBPressed && hasLook)
         {
+            // Unity-style Flythrough Rotation
             Yaw += _lookDelta.X * LookSensitivity;
             Pitch -= _lookDelta.Y * LookSensitivity;
-            
-            const float MaxPitch = MathF.PI * 0.48f; // Just below 90 degrees to avoid gimbal lock
-            Pitch = Math.Clamp(Pitch, -MaxPitch, MaxPitch);
+            Pitch = Math.Clamp(Pitch, -MathF.PI * 0.48f, MathF.PI * 0.48f);
             ComputeBasis(Yaw, Pitch, out _forward, out _right, out _up);
-            // Debug.Log(_lookDelta);
-            _lookDelta = Vector2.Zero;
+            _dirty = true;
         }
+        else if (_isMiddleMousePressed && hasLook)
+        {
+            // Unity-style Panning (Middle Mouse)
+            float panSpeed = MoveSpeed * 0.05f; 
+            Position -= _right * _lookDelta.X * panSpeed * deltaTime;
+            Position += _up * _lookDelta.Y * panSpeed * deltaTime;
+            _dirty = true;
+        }
+
         if (hasMovement)
         {
+            // Standard WASD Flythrough
             _moveIntent = Vector3.Normalize(_moveIntent);
-            Vector3 move = 
-                _forward * _moveIntent.Z +
-                _right   * _moveIntent.X +
-                _up      * _moveIntent.Y;
-        
-            if (move != Vector3.Zero)
-                Position += Vector3.Normalize(move) * MoveSpeed * deltaTime * (isSprinting ? Settings.SprintMultiplier : 1f);
+            Vector3 move = (_forward * _moveIntent.Z) + (_right * _moveIntent.X) + (_up * _moveIntent.Y);
+            Position += move * MoveSpeed * deltaTime * (isSprinting ? Settings.SprintMultiplier : 1f);
+            _dirty = true;
         }
+
+        _lookDelta = Vector2.Zero;
     }
     
     private bool _cachedDirty = true;

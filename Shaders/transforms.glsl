@@ -4,67 +4,62 @@
 #include "objects.glsl"
 #include "definitions.glsl"
 
-mat3 rotationPart(mat4x3 m)
+mat3 rotationPart(mat4 m)
 {
     return mat3(m);
 }
 
-vec3 translationPart(mat4x3 m)
+vec3 translationPart(mat4 m)
 {
-    return m[3];
+    return m[3].xyz;
 }
 
-vec3 toWorldPosition(vec3 localPos, mat4x3 transform)
+vec3 toWorldPosition(vec3 localPos, mat4 m)
 {
-    return transform * vec4(localPos, 1.0);
+    return (m * vec4(localPos, 1.0)).xyz;
 }
 
-vec3 toLocalPosition(vec3 worldPos, mat4x3 transform)
+vec3 toLocalPosition(vec3 worldPos, mat4 m)
 {
-    mat3 R = rotationPart(transform);
-    vec3 T = translationPart(transform);
-
-    mat3 invR = inverse(R);
-    return invR * (worldPos - T);
+    mat3 R = mat3(m);
+    vec3 T = m[3].xyz;
+    return inverse(R) * (worldPos - T);
 }
 
-vec3 toWorldDirection(vec3 localDir, mat4x3 transform)
+vec3 toWorldDirection(vec3 localDir, mat4 m)
 {
-    return normalize(rotationPart(transform) * localDir);
+    return normalize(mat3(m) * localDir);
 }
 
-vec3 toLocalDirection(vec3 worldDir, mat4x3 transform)
+vec3 toLocalDirection(vec3 worldDir, mat4 m)
 {
-    mat3 invR = inverse(rotationPart(transform));
-    return normalize(invR * worldDir);
+    return normalize(inverse(mat3(m)) * worldDir);
 }
 
-vec3 toWorldNormal(vec3 localNormal, mat4x3 transform)
+vec3 toWorldNormal(vec3 localNormal, mat4 m)
 {
-    mat3 R = rotationPart(transform);
-    mat3 invTransR = transpose(inverse(R));
-    return normalize(invTransR * localNormal);
+    return normalize(transpose(inverse(mat3(m))) * localNormal);
 }
 
-vec3 toLocalNormal(vec3 worldNormal, mat4x3 transform)
+vec3 toLocalNormal(vec3 worldNormal, mat4 m)
 {
-    mat3 R = rotationPart(transform);
-    return normalize(R * worldNormal);
+    return normalize(transpose(mat3(m)) * worldNormal);
 }
 
-Ray toWorldRay(Ray ray, mat4x3 transform)
+Ray toWorldRay(Ray ray, mat4 m)
 {
     Ray outRay;
-    outRay.origin = toWorldPosition(ray.origin, transform);
-    outRay.direction = toWorldDirection(ray.direction, transform);
+    outRay.origin = toWorldPosition(ray.origin, m);
+    outRay.direction = toWorldDirection(ray.direction, m);
     return outRay;
 }
 
-Ray toLocalRay(Ray ray, mat4x3 transform)
+Ray toLocalRay(Ray ray, mat4 m)
 {
+    mat3 invR = inverse(mat3(m));
     Ray outRay;
-    outRay.origin = toLocalPosition(ray.origin, transform);
-    outRay.direction = toLocalDirection(ray.direction, transform);
+    outRay.origin = invR * (ray.origin - m[3].xyz);
+    outRay.direction = normalize(invR * ray.direction);
     return outRay;
 }
 #endif // TRANSFORMS_GLSL

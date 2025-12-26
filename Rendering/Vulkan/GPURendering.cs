@@ -57,7 +57,7 @@ public class GPURendering : RenderingTechnique, IDisposable
     private void SetupInputHandling()
     {
         var userInput = ActionMaps.CreateUserActionMap(_vulkanRuntime.InputHandler);
-        var settings = new InputSettings { MoveSpeed = 15f, LookSensitivity = 0.2f, SprintMultiplier = 4f};
+        var settings = new InputSettings { MoveSpeed = 0.2f, LookSensitivity = 0.02f, SprintMultiplier = 4f};
         _cameraController = new CameraController(userInput, settings, sceneDefinition.Camera);
     }
     private void UpdateCamera()

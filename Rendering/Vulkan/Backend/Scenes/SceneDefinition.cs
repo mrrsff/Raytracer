@@ -30,7 +30,8 @@ public class SceneDefinition
         this.scene = scene;
         Globals = new SceneGlobals
         {
-            AmbientLightColor = scene.Content.BackgroundColor
+            AmbientLightColor = scene.Content.Lights.AmbientLight,
+            BackgroundColor = scene.Content.BackgroundColor
         };
         
         CreateCamera();
@@ -99,7 +100,7 @@ public class SceneDefinition
                 Vertices[currentVertexOffset + v] = new VertexGPU
                 {
                     Position = meshDefinition.Vertices[v],
-                    Normal = meshDefinition.VertexNormals[v],
+                    Normal = Vector3.Normalize(meshDefinition.VertexNormals[v]),
                     UV = meshDefinition.TexCoords != null && meshDefinition.TexCoords.Length > v
                         ? meshDefinition.TexCoords[v]
                         : new Vector2(0, 0)
@@ -135,6 +136,8 @@ public class SceneDefinition
                 Transform = MeshTransformGPU.Create(mesh.Transform.Matrix),
                 MaterialIndex = mesh.MaterialIndex
             };
+            
+            // Debug.Log(MeshInstances[instanceIndex - 1].Transform + " vs " + mesh.Transform.Matrix);
         }
         
         Globals.NumVertices = Vertices.Length;

@@ -1,6 +1,9 @@
 #ifndef SCENE_LAYOUT_GLSL
 #define SCENE_LAYOUT_GLSL
 
+#define INTERSECTION_TEST_EPSILON 1e-6
+#define SHADOW_BIAS 1e-3
+
 #extension GL_EXT_scalar_block_layout : enable
 
 #include "definitions.glsl"
@@ -62,7 +65,7 @@ Mesh GetMesh(int index)
 
 Material GetMaterial(int index)
 {
-    return materials[index];
+    return materials[index - 1];
 }
 
 MeshInstance GetMeshInstance(int index)

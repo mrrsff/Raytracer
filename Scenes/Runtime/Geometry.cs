@@ -9,7 +9,7 @@ namespace Raytracer.Scenes.Runtime;
 public abstract class Geometry
 {
     public Transform Transform = Transform.Identity;
-    public BoundingBox? Bounds;
+    public BoundingBox Bounds;
     public int MaterialIndex;
     public Vector3 MotionBlur = Vector3.Zero;
     public int[] TextureIndices = [];

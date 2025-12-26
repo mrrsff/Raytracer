@@ -10,29 +10,21 @@ public struct MaterialGPU
     public uint Type;
     public float Roughness;
     public float PhongExponent;
-    public float _pad0;
-
-    public Vector3 DiffuseReflectance;
-    public float _pad1;
-
-    public Vector3 SpecularReflectance;
-    public float _pad2;
-
-    public Vector3 MirrorReflectance;
-    public float _pad3;
-
-    // Dielectric
-    public Vector3 AbsorptionCoefficient;
-    public float RefractionIndex;
-
     public float AbsorptionIndex;
-    public float _pad4;
-    public float _pad5;
-    public float _pad6;
+
+    public Vector4 AmbientReflectance;
+    public Vector4 DiffuseReflectance;
+    public Vector4 SpecularReflectance;
+    public Vector4 MirrorReflectance;
+    public Vector4 AbsorptionCoefficient;
+
+    public float RefractionIndex;
+    private Vector3 _pad; // force 16-byte alignment
 
     public override string ToString()
     {
         return $"MaterialGPU(Type={Type}, Roughness={Roughness}, PhongExponent={PhongExponent}, " +
+               $"AmbientReflectance={AmbientReflectance}, " +
                $"DiffuseReflectance={DiffuseReflectance}, SpecularReflectance={SpecularReflectance}, " +
                $"MirrorReflectance={MirrorReflectance}, AbsorptionCoefficient={AbsorptionCoefficient}, " +
                $"RefractionIndex={RefractionIndex}, AbsorptionIndex={AbsorptionIndex})";
@@ -45,10 +37,11 @@ public struct MaterialGPU
             Type = (uint)material.Type,
             Roughness = material.Roughness,
             PhongExponent = material.PhongExponent,
-            DiffuseReflectance = material.DiffuseReflectance,
-            SpecularReflectance = material.SpecularReflectance,
-            MirrorReflectance = material.MirrorReflectance,
-            AbsorptionCoefficient = material.AbsorptionCoefficient,
+            AmbientReflectance = material.AmbientReflectance.AsVector4(),
+            DiffuseReflectance = material.DiffuseReflectance.AsVector4(),
+            SpecularReflectance = material.SpecularReflectance.AsVector4(),
+            MirrorReflectance = material.MirrorReflectance.AsVector4(),
+            AbsorptionCoefficient = material.AbsorptionCoefficient.AsVector4(),
             RefractionIndex = material.RefractionIndex,
             AbsorptionIndex = material.AbsorptionIndex
         };

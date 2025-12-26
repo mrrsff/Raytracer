@@ -13,31 +13,28 @@ struct Camera
 
 struct Material
 {
-    uint  type;
+    uint type;
     float roughness;
     float phongExponent;
-    float _pad0;
-
-    vec3  diffuseReflectance;
-    float _pad1;
-
-    vec3  specularReflectance;
-    float _pad2;
-
-    vec3  mirrorReflectance;
-    float _pad3;
-
-    vec3  absorptionCoefficient;
-    float refractionIndex;
-
     float absorptionIndex;
-    vec3  _pad4;
+
+    vec4 ambientReflectance;
+    vec4 diffuseReflectance;
+    vec4 specularReflectance;
+    vec4 mirrorReflectance;
+    vec4 absorptionCoefficient;
+
+    float refractionIndex;
+    vec3 _pad;
 };
 
 struct SceneGlobals
 {
     vec3 ambientLight;
     float _pad0;
+    
+    vec3 backgroundColor;
+    float _pad1;
     
     int numPointLights;
     int numMeshes;

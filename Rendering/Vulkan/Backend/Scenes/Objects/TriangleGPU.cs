@@ -7,7 +7,7 @@ public struct TriangleGPU
 {
     public int Vertex0;
     public int Vertex1;
-    public int Vertex2;
+    public int Vertex2; int _pad0;
 
     public override string ToString()
     {

@@ -27,20 +27,10 @@ Intersection intersectTriangle(Ray ray, Vertex v0, Vertex v1, Vertex v2, in bool
     vec3 edge2 = v2.position - v0.position;
     vec3 h = cross(ray.direction, edge2);
     float a = dot(edge1, h);
-    
-//    // backface culling
-//    if (backfaceCulling) {
-//        if (a < 1e-8)
-//            return hit;
-//    }
-//    else {
-//        if (abs(a) < 1e-8)
-//            return hit; // Ray is parallel to triangle
-//    }
-    
-    if (abs(a) < 1e-8)
-    return hit; // Ray is parallel to triangle
 
+    if (abs(a) < 1e-8) return hit;
+//    if (backfaceCulling && a < 0.0) return hit;
+    
     float f = 1.0 / a;
     vec3 s = ray.origin - v0.position;
     float u = f * dot(s, h);
@@ -53,69 +43,33 @@ Intersection intersectTriangle(Ray ray, Vertex v0, Vertex v1, Vertex v2, in bool
         return hit;
 
     float tHit = f * dot(edge2, q);
-    if (tHit < 0.0)
+    if (tHit < INTERSECTION_TEST_EPSILON)
         return hit; // Triangle is behind ray
 
     hit.t = tHit;
     hit.position = ray.origin + ray.direction * tHit;
-    hit.geometricNormal = normalize(cross(edge1, edge2));
     if (smoothNormals) {
-        hit.shadingNormal = normalize((1.0 - u - v) * v0.normal + u * v1.normal + v * v2.normal); // barycentric interpolation   
+        float w = 1.0 - u - v;
+        hit.shadingNormal = normalize(w * v0.normal + u * v1.normal + v * v2.normal); // barycentric interpolation
     }
     else {
-        hit.shadingNormal = hit.geometricNormal;
+        hit.shadingNormal = normalize(cross(edge1, edge2));
     }
+    hit.geometricNormal = hit.shadingNormal;
     hit.uv = (1.0 - u - v) * v0.uv + u * v1.uv + v * v2.uv;
 
     return hit;
 }
-
-//Intersection intersectMesh(Ray ray, int meshIndex)
-//{
-//    Intersection closestHit;
-//    closestHit.t = -1.0;
-//
-//    MeshInstance instance = GetMeshInstance(meshIndex);
-//    Mesh mesh = GetMesh(0);
-//
-//    mat4x3 worldFromLocal = mat4x3(instance.transformRow0, instance.transformRow1, instance.transformRow2);
-//    Ray localRay = ray;
-//
-//    for (int i = 0; i < mesh.triangleCount; ++i)
-//    {
-//        Triangle tri = GetTriangle(mesh.triangleOffset + i);
-//        Vertex v0 = GetVertex(mesh.vertexOffset + tri.v0);
-//        Vertex v1 = GetVertex(mesh.vertexOffset + tri.v1);
-//        Vertex v2 = GetVertex(mesh.vertexOffset + tri.v2);
-//
-//        Intersection hit = intersectTriangle(ray, v0, v1, v2, false, true);
-//        if (hit.t > 0.0 && (closestHit.t < 0.0 || hit.t < closestHit.t))
-//        {
-//            closestHit = hit;
-//            closestHit.meshIndex = meshIndex;
-//            closestHit.primIndex = i;
-//            closestHit.materialIndex = instance.materialIndex;
-//        }
-//    }
-//
-//    if (closestHit.t > 0.0)
-//    {
-////        float worldT = length(toWorldPosition(localRay.origin + localRay.direction * closestHit.t, worldFromLocal) - ray.origin);
-////        closestHit.t = worldT;
-////        closestHit.position = toWorldPosition(closestHit.position, worldFromLocal);
-////        closestHit.geometricNormal = toWorldNormal(closestHit.geometricNormal, worldFromLocal);
-////        closestHit.shadingNormal = toWorldNormal(closestHit.shadingNormal, worldFromLocal);
-//    }
-//
-//    return closestHit;
-//}
 
 Intersection intersectMesh(Ray ray, int meshIndex)
 {
     Intersection closestHit;
     closestHit.t = -1.0;
 
-    Mesh mesh = GetMesh(meshIndex);
+    MeshInstance instance = GetMeshInstance(meshIndex);
+    Mesh mesh = GetMesh(instance.meshIndex);
+
+    Ray localRay = toLocalRay(ray, instance.transform);
 
     for (int i = 0; i < mesh.triangleCount; ++i)
     {
@@ -124,11 +78,22 @@ Intersection intersectMesh(Ray ray, int meshIndex)
         Vertex v1 = GetVertex(mesh.vertexOffset + tri.v1);
         Vertex v2 = GetVertex(mesh.vertexOffset + tri.v2);
 
-        Intersection hit = intersectTriangle(ray, v0, v1, v2, false, false);
-        if (hit.t > 0.0)
+        Intersection hit = intersectTriangle(localRay, v0, v1, v2, true, false);
+        if (hit.t > INTERSECTION_TEST_EPSILON  && (closestHit.t < 0.0 || hit.t < closestHit.t))
         {
-            return hit;
+            closestHit = hit;
+            closestHit.meshIndex = meshIndex;
+            closestHit.primIndex = i;
+            closestHit.materialIndex = instance.materialIndex;
         }
+    }
+
+    if (closestHit.t > 0.0)
+    {
+        closestHit.position = toWorldPosition(closestHit.position, instance.transform);
+        closestHit.geometricNormal = toWorldNormal(closestHit.geometricNormal, instance.transform);
+        closestHit.shadingNormal = toWorldNormal(closestHit.shadingNormal, instance.transform);
+        closestHit.t = length(closestHit.position - ray.origin);
     }
 
     return closestHit;
@@ -142,11 +107,12 @@ Intersection intersectScene(Ray ray)
     for (int i = 0; i < sceneGlobals.numMeshes; ++i)
     {
         Intersection hit = intersectMesh(ray, i);
-        if (hit.t > 0.0 && (closestHit.t < 0.0 || hit.t < closestHit.t))
+        if (hit.t > INTERSECTION_TEST_EPSILON && (closestHit.t < 0.0 || hit.t < closestHit.t))
         {
             closestHit = hit;
         }
     }
+    
 
     return closestHit;
 }
