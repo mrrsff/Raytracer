@@ -47,15 +47,19 @@ public class Camera
         Gaze = Transform.ToWorldDirection(Gaze);
         Up = Transform.ToWorldDirection(Up);
         
+        float aspect = (float)ImageResolution.Width / ImageResolution.Height;
         if (Type == CameraType.LookAt)
         {
             Gaze = Vector3.Normalize(GazePoint - Position);
 
-            float aspect = (float)ImageResolution.Width / ImageResolution.Height;
             NearPlane.Top = NearDistance * MathF.Tan(FovY * MathF.PI / 360.0f);
             NearPlane.Bottom = -NearPlane.Top;
             NearPlane.Right = aspect * NearPlane.Top;
             NearPlane.Left = -NearPlane.Right;
+        }
+        else
+        {
+            FovY = 2.0f * MathF.Atan(NearPlane.Top / NearDistance) * 180.0f / MathF.PI;
         }
 
         var w = Vector3.Normalize(-Gaze);

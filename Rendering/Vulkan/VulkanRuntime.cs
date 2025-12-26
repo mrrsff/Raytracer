@@ -2,8 +2,8 @@
 using Raytracer.Rendering.Vulkan.Backend;
 using Raytracer.Rendering.Vulkan.Backend.Allocations;
 using Raytracer.Rendering.Vulkan.Backend.Inputs;
-using Raytracer.Rendering.Vulkan.Backend.Scene;
-using Raytracer.Rendering.Vulkan.Backend.Scene.Objects;
+using Raytracer.Rendering.Vulkan.Backend.Scenes;
+using Raytracer.Rendering.Vulkan.Backend.Scenes.Objects;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
@@ -21,16 +21,14 @@ public sealed class VulkanRuntime : IDisposable
     private SwapchainPresenter _presenter;
     private InputHandler _inputHandler;
     private TimeManager _timeManager;
-    private SceneResources _sceneResources;
+    public SceneResources _sceneResources;
     
     private uint width = 1280;
     private uint height = 720;
     private readonly string shaderPath;
-    private readonly SceneDefinition _sceneDefinition;
-    public VulkanRuntime(string shaderPath, SceneDefinition sceneDefinition)
+    public VulkanRuntime(string shaderPath)
     {
         this.shaderPath = shaderPath;
-        _sceneDefinition = sceneDefinition;
         _timeManager = new TimeManager();
     }
     public void Start(Action onLoadCallback = null)
@@ -97,7 +95,7 @@ public sealed class VulkanRuntime : IDisposable
     {
         _vkContext = new VkContext(vkWindow._window);
         
-        _sceneResources = new SceneResources(_sceneDefinition, _vkContext);
+        _sceneResources = new SceneResources(_vkContext);
         
         _outputImage = _vkContext.CreateStorageImage((uint)vkWindow._window.Size.X, (uint)vkWindow._window.Size.Y);
 
@@ -110,21 +108,8 @@ public sealed class VulkanRuntime : IDisposable
         
     }
     
-    public void UpdateSceneGlobals(in SceneGlobals globals)
+    public void UpdateCamera(CameraGpu cameraGpu)
     {
-        _sceneResources.UpdateSceneGlobals(globals);
-    }
-
-    public void UpdateSpheres(ReadOnlySpan<SphereGPU> spheres)
-    {
-        _sceneResources.UpdateSpheres(spheres);
-    }
-    public void UpdateCamera(in CameraGpu camera)
-    {
-        _sceneResources.UpdateCamera(camera);
-    }
-    public void UpdateLights(ReadOnlySpan<PointLightGPU> lights)
-    {
-        _sceneResources.UpdateLights(lights);
+        _sceneResources.CameraSsbo.SetData([cameraGpu]);
     }
 }

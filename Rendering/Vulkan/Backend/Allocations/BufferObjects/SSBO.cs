@@ -128,4 +128,17 @@ public sealed unsafe class SSBO<T> : VkBuffer where T : unmanaged
         Memory = VkContext.AllocateMemory(memReq, memoryFlags);
         Vk.BindBufferMemory(Device, Buffer, Memory, 0);
     }
+    
+    public string ReadGPUDataAsString()
+    {
+        void* mapped = null;
+        MapMemory(ref mapped);
+
+        Span<T> dataSpan = new Span<T>(mapped, (int)Count);
+        string result = string.Join(Environment.NewLine, dataSpan.ToArray());
+
+        UnmapMemory();
+
+        return result;
+    }
 }

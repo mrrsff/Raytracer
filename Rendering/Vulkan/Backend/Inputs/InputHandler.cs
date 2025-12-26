@@ -40,12 +40,17 @@ public sealed class InputHandler
             break;
         }
     }
+
+    private bool IsMouseLocked;
     public bool SetMouseLock(bool hidden)
     {
         var mouse = _inputContext?.Mice.FirstOrDefault();
         if (mouse == null) return false;
 
         mouse.Cursor.CursorMode = hidden ? CursorMode.Raw : CursorMode.Normal;
+        IsMouseLocked = hidden;
+        _mousePosition = mouse.Position; // Snap to current cursor location
+        _mouseDelta = Vector2.Zero;
         return true;
     }
 
@@ -119,6 +124,11 @@ public sealed class InputHandler
 
         _mouseDelta += position - _mousePosition;
         _mousePosition = position;
+        
+        if (IsMouseLocked)
+        {
+            _mouseDelta *= 0.5f; // Raw movement is usually too high for camera control
+        }
 
         MouseMove?.Invoke(_mouseDelta);
     }

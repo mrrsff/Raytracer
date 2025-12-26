@@ -23,7 +23,7 @@ bool samplePointLight(PointLight light, vec3 P, vec3 N, out vec3 L, out vec3 irr
     float dist2 = dot(toLight, toLight);
     L = normalize(toLight);
 
-    irradiance = light.intensity * light.color / dist2;
+    irradiance = light.intensity / dist2;
     return true;
 }
 
@@ -39,8 +39,13 @@ vec3 shadePointLights(vec3 P, vec3 N, vec3 V, vec3 kd, vec3 ks, float phongExp)
 
         if (samplePointLight(pointLights[i], P, N, L, irradiance))
         {
-            // shadow test must be here
-            if (intersectAny(P + N * 0.001, L) >= 0.0)
+            // shadow test
+            float maxDistance = length(pointLights[i].position - P);
+            vec3 shadowOrigin = P + N * 0.001;
+            Ray shadowRay;
+            shadowRay.origin = shadowOrigin;
+            shadowRay.direction = L;
+            if (IntersectAny(shadowRay, maxDistance))
                 continue;
 
             evalBlinnPhong(N, V, L, kd, ks, phongExp, irradiance, diffuse, specular);

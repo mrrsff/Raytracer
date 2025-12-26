@@ -1,26 +1,36 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Raytracer.Rendering.Vulkan.Backend.Allocations.BufferObjects;
 
-public unsafe class UBO : VkBuffer
+public sealed unsafe class UBO<T> : VkBuffer where T : unmanaged
 {
-    public UBO(VkContext ctx, uint size) : base(ctx, size, BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit)
-    { }
-
     public DescriptorBufferInfo DescriptorInfo => GetBufferInfo();
 
-    public void Update<T>(in T data) where T : unmanaged
-    {
-        uint dataSize = (uint)Unsafe.SizeOf<T>();
-        if (dataSize > Size)
-            throw new InvalidOperationException("UBO overflow");
+    public UBO(VkContext ctx) 
+        : base(ctx, (uint)Unsafe.SizeOf<T>(), BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit) { }
 
+    public void SetData(in T data)
+    {
         void* mapped = null;
         MapMemory(ref mapped);
         Unsafe.Copy(mapped, ref Unsafe.AsRef(in data));
         UnmapMemory();
+    }
+
+    private T? Read()
+    {
+        void* mapped = null;
+        MapMemory(ref mapped);
+
+        T value = Unsafe.Read<T>(mapped);
+
+        UnmapMemory();
+        return value;
+    }
+
+    public override string ToString()
+    {
+        return Read()?.ToString() ?? "<null>";
     }
 }

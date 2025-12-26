@@ -2,7 +2,7 @@
 using System.Numerics;
 using Raytracer.Core;
 using Raytracer.Rendering.Vulkan.Backend.Inputs;
-using Raytracer.Rendering.Vulkan.Backend.Scene;
+using Raytracer.Rendering.Vulkan.Backend.Scenes.Objects;
 using Raytracer.Utility;
 
 namespace Raytracer.Rendering.Vulkan.Controllers;
@@ -28,8 +28,27 @@ public sealed class CameraController
     private Vector3 _moveIntent;
     private Vector2 _lookDelta;
     private bool isSprinting = false;
-    public CameraController(InputActionMap input, InputSettings settings)
+    public CameraController(InputActionMap input, InputSettings settings, CameraGpu? initial = null)
     {
+        if (initial.HasValue)
+        {
+            Position = initial.Value.Position;
+            _forward = initial.Value.Forward;
+            ComputeBasisFromForward(_forward, out _right, out _up);
+            Yaw = MathF.Atan2(_forward.Z, _forward.X);
+            Pitch = MathF.Asin(_forward.Y);
+            
+            _cachedGpuCamera = initial.Value;
+            _cachedDirty = false;
+        }
+        else
+        {
+            Position = Vector3.Zero;
+            Yaw = 0f;
+            Pitch = 0f;
+            ComputeBasis(Yaw, Pitch, out _forward, out _right, out _up);
+        }
+        
         Settings = settings;
         _actionMap = input;
         _actionMap.ActionEvent += OnAction;
@@ -41,6 +60,7 @@ public sealed class CameraController
     bool right = false;
     bool up = false;
     bool down = false;
+
     private void OnAction(InputActionEvent e)
     {
         if (e.Action == InputAction.MoveForward)
@@ -48,31 +68,31 @@ public sealed class CameraController
 
         if (e.Action == InputAction.MoveBackward)
             backward = e.Phase != ActionPhase.Canceled;
-        
+
         if (e.Action == InputAction.MoveRight)
             right = e.Phase != ActionPhase.Canceled;
-        
+
         if (e.Action == InputAction.MoveLeft)
             left = e.Phase != ActionPhase.Canceled;
-        
+
         if (e.Action == InputAction.MoveUp)
             up = e.Phase != ActionPhase.Canceled;
-        
+
         if (e.Action == InputAction.MoveDown)
             down = e.Phase != ActionPhase.Canceled;
 
         if (e.Action == InputAction.Sprint)
             isSprinting = e.Phase != ActionPhase.Canceled;
-        
+
         if (e.Action == InputAction.Look && e.Phase == ActionPhase.Performed)
             _lookDelta += e.Value;
-        
+
         if (e.Action == InputAction.ToggleMouse && e.Phase == ActionPhase.Canceled)
         {
             _actionMap.ToggleMouseLock(!mouseLocked);
             mouseLocked = !mouseLocked;
         }
-        
+
         _moveIntent = new Vector3(
             (right ? 1f : 0f) - (left ? 1f : 0f),
             (up ? 1f : 0f) - (down ? 1f : 0f),
@@ -95,12 +115,12 @@ public sealed class CameraController
             Yaw += _lookDelta.X * LookSensitivity;
             Pitch -= _lookDelta.Y * LookSensitivity;
             
-            const float MaxPitch = MathF.PI * 0.499f; // Just below 90 degrees to avoid gimbal lock
+            const float MaxPitch = MathF.PI * 0.48f; // Just below 90 degrees to avoid gimbal lock
             Pitch = Math.Clamp(Pitch, -MaxPitch, MaxPitch);
             ComputeBasis(Yaw, Pitch, out _forward, out _right, out _up);
+            // Debug.Log(_lookDelta);
             _lookDelta = Vector2.Zero;
         }
-        
         if (hasMovement)
         {
             _moveIntent = Vector3.Normalize(_moveIntent);
@@ -112,7 +132,6 @@ public sealed class CameraController
             if (move != Vector3.Zero)
                 Position += Vector3.Normalize(move) * MoveSpeed * deltaTime * (isSprinting ? Settings.SprintMultiplier : 1f);
         }
-        
     }
     
     private bool _cachedDirty = true;
@@ -147,6 +166,13 @@ public sealed class CameraController
             MathF.Cos(pitch) * MathF.Sin(yaw)
         ));
 
+        right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitY));
+        up = Vector3.Normalize(Vector3.Cross(right, forward));
+    }
+    
+    private static void ComputeBasisFromForward(Vector3 forward, out Vector3 right, out Vector3 up)
+    {
+        forward = Vector3.Normalize(forward);
         right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitY));
         up = Vector3.Normalize(Vector3.Cross(right, forward));
     }

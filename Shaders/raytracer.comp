@@ -1,47 +1,82 @@
 #version 460
-#extension GL_EXT_scalar_block_layout : enable
 
 #include "scene_layout.glsl"
 #include "intersections.glsl"
 #include "shading.glsl"
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-layout(rgba8, binding = 0) uniform writeonly image2D outputImage;
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (rgba8, binding = 0) uniform writeonly image2D outputImage;
+
+//vec3 TraceRay(Ray ray)
+//{
+//    vec3 finalColor = vec3(0.0);
+//    vec3 throughput = vec3(1.0);
+//
+//    int maxBounces = 3; //sceneGlobals.maxBounces;
+//    for (int bounce = 0; bounce < maxBounces; ++bounce)
+//    {
+//        Intersection intersection = intersectScene(ray);
+//        if (intersection.t < 0.0)
+//        {
+//            finalColor += throughput * sceneGlobals.ambientLight;
+//            break;
+//        }
+//
+//        vec3 hitPoint = ray.origin + ray.direction * intersection.t;
+//        vec3 normal = intersection.shadingNormal;
+//
+//        vec3 shadedColor = shade(hitPoint, normal);
+//        finalColor += throughput * shadedColor;
+//        break;
+//    }
+//
+//    return finalColor;
+//}
+bool IntersectSphere(Ray ray, vec3 center, float radius, out float tHit)
+{
+    vec3 oc = ray.origin - center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2.0 * dot(oc, ray.direction);
+    float c = dot(oc, oc) - radius * radius;
+
+    float disc = b * b - 4.0 * a * c;
+    if (disc < 0.0)
+    return false;
+
+    float sqrtDisc = sqrt(disc);
+    float t0 = (-b - sqrtDisc) / (2.0 * a);
+    float t1 = (-b + sqrtDisc) / (2.0 * a);
+
+    tHit = (t0 > 0.0) ? t0 : t1;
+    return tHit > 0.0;
+}
+vec3 TraceRay(Ray ray)
+{
+    // test sphere: centered at z = -3, radius 1
+    vec3 sphereCenter = vec3(0.0, 0.0, -10.0);
+    float sphereRadius = 1.0;
+
+    float t;
+    if (IntersectSphere(ray, sphereCenter, sphereRadius, t))
+    {
+        vec3 hitPos = ray.origin + t * ray.direction;
+        vec3 N = normalize(hitPos - sphereCenter);
+        return N * 0.5 + 0.5;
+    }
+
+    return vec3(0.1); 
+}
 
 void main()
-{
+{    
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
     ivec2 size = imageSize(outputImage);
 
     if (pixel.x >= size.x || pixel.y >= size.y)
     return;
 
-    float imageAspectRatio = float(size.x) / float(size.y);
-    float u = (float(pixel.x) + 0.5) / float(size.x);
-    float v = (float(pixel.y) + 0.5) / float(size.y);
-
-    float tanFovY = tan(radians(camera.fovY) / 2.0);
-    float Px = (2.0 * u - 1.0) * tanFovY * imageAspectRatio;
-    float Py = (1.0 - 2.0 * v) * tanFovY;
-
-    vec3 rayOrigin = camera.position;
-    vec3 rayDirection = normalize(Px * camera.right + Py * camera.up + camera.forward);
-    
-    vec3 color = sceneGlobals.ambientLight;
-    float closestT = 1e20;
-    for (int i = 0; i < sceneGlobals.numSpheres; ++i)
-    {
-        float t = intersect_sphere(rayOrigin, rayDirection, spheres[i]);
-        if (t > 0.0 && t < closestT)
-        {
-            closestT = t;
-            vec3 hitPoint = rayOrigin + t * rayDirection;
-            vec3 normal = normalize(hitPoint - spheres[i].center);
-            // Simple shading
-            color = shade(hitPoint, normal);
-            
-        }
-    } 
+    Ray ray = generateCameraRay(pixel.x, pixel.y, size.x, size.y, camera);
+    vec3 color = TraceRay(ray);
 
     imageStore(outputImage, pixel, vec4(color, 1.0));
 }

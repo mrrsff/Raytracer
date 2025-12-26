@@ -1,53 +1,11 @@
 #ifndef SCENE_LAYOUT_GLSL
 #define SCENE_LAYOUT_GLSL
 
-struct Camera
-{
-    vec3 position; float _pad0;
-    vec3 forward; float _pad1;
-    vec3 right; float _pad2;
-    vec3 up; float _pad3;
-    float fovY; 
-    float aspectRatio;
-    vec2 _pad4;    
-};
+#extension GL_EXT_scalar_block_layout : enable
 
-struct Sphere
-{
-    vec3 center;
-    float radius;
-};
-
-struct PointLight
-{
-    vec3 position;
-    float intensity;
-    vec3 color;
-    float radius;
-};
-
-struct SceneGlobals
-{
-    vec3 ambientLight;
-    float _pad0;
-    int numSpheres;
-    int numPointLights;
-    int _pad1; int _pad2;
-};
-
-struct Material
-{
-    vec3  albedo;        // 12 bytes
-    float roughness;     // 4
-
-    vec3  emission;      // 12
-    float metallic;      // 4
-
-    uint  type;          // 4
-    uint  _pad0;         // padding
-    uint  _pad1;
-    uint  _pad2;
-};
+#include "definitions.glsl"
+#include "objects.glsl"
+#include "lights.glsl"
 
 layout(set = 1, binding = 0, std430) readonly uniform SceneGlobalsBuffer
 {
@@ -61,7 +19,19 @@ layout(set = 1, binding = 2, std430) readonly buffer PointLightBuffer
 {
     PointLight pointLights[];
 };
-layout(set = 1, binding = 3, std430) readonly buffer MaterialBuffer
+layout(set = 1, binding = 3, std430) readonly buffer MeshBuffer
+{
+    Mesh meshes[];
+};
+layout(set = 1, binding = 4, std430) readonly buffer VertexBuffer
+{
+    Vertex vertices[];
+};
+layout(set = 1, binding = 5, std430) readonly buffer TriangleBuffer
+{
+    Triangle triangles[];
+};
+layout(set = 1, binding = 6, std430) readonly buffer MaterialBuffer
 {
     Material materials[];
 };
@@ -70,5 +40,34 @@ layout(set = 2, binding = 0, std430) readonly buffer CameraBuffer
 {
     Camera camera;
 };
+layout(set = 2, binding = 1, std430) readonly buffer MeshInstancesBuffer
+{
+    MeshInstance meshInstances[];
+};
+
+Vertex GetVertex(int index)
+{
+    return vertices[index];
+}
+
+Triangle GetTriangle(int index)
+{
+    return triangles[index];
+}
+
+Mesh GetMesh(int index)
+{
+    return meshes[index];
+}
+
+Material GetMaterial(int index)
+{
+    return materials[index];
+}
+
+MeshInstance GetMeshInstance(int index)
+{
+    return meshInstances[index];
+}
 
 #endif // SCENE_LAYOUT_GLSL

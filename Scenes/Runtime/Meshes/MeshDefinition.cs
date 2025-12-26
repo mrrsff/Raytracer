@@ -8,6 +8,7 @@ namespace Raytracer.Scenes.Runtime.Meshes;
 
 public class MeshDefinition
 {
+    public int Id { get; set; }
     public Vector3[] Vertices { get; private set; }
     public Triangle[] Triangles { get; private set; }
     public Vector3[] VertexNormals { get; private set; }

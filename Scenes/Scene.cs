@@ -20,6 +20,7 @@ public partial class Scene
 {
     [JsonPropertyName("Scene")] public SceneContent Content;
 
+    public readonly List<MeshDefinition> MeshDefinitions = [];
     public List<Geometry> Geometries = [];
     public List<Plane> Planes = [];
     public BoundingVolumeHierarchy? TLAS;
@@ -98,7 +99,7 @@ public partial class Scene
             ApplyTransformations(transform, meshData.Transformations);
             var mesh = new Mesh(meshData, this, transform);
             Geometries.Add(mesh);
-            originalMeshes.Add(meshData.Id, mesh);
+            originalMeshes.TryAdd(meshData.Id, mesh);
         }
 
         foreach (var meshInstance in Content.Objects.MeshInstance)
@@ -113,7 +114,16 @@ public partial class Scene
             Geometries.Add(instancedMesh);
             originalMeshes.TryAdd(meshInstance.Id, instancedMesh);
         }
-
+        
+        // Convert original meshes to MeshDefinitions
+        HashSet<int> addedMeshIds = [];
+        foreach (var (_, mesh) in originalMeshes)
+        {
+            if (addedMeshIds.Contains(mesh.baseMeshId)) continue;
+            
+            MeshDefinitions.Add(mesh.MeshDefinition);
+            addedMeshIds.Add(mesh.baseMeshId);
+        }
         foreach (var sphereData in Content.Objects.Sphere)
         {
             var sphere = new Sphere(sphereData, Content.VertexData);

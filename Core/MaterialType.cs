@@ -4,7 +4,7 @@ namespace Raytracer.Core;
 
 public enum MaterialType
 {
-    None,
+    None = 0,
     Mirror,
     Conductor,
     Dielectric

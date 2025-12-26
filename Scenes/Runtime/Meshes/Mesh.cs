@@ -12,8 +12,8 @@ namespace Raytracer.Scenes.Runtime.Meshes;
 public class Mesh : Geometry
 {
     public readonly int baseMeshId;
-    private MeshDefinition MeshDefinition { get; set; }
-    private ShadingMode ShadingMode { get; set; }
+    public MeshDefinition MeshDefinition { get; private set; }
+    public ShadingMode ShadingMode { get; private set; }
 
     public override int GetPrimitiveCount() => MeshDefinition.Triangles.Length;
     public Mesh(MeshData meshData, Scene scene, Transform transform)
@@ -32,6 +32,8 @@ public class Mesh : Geometry
         {
             MeshDefinition = new MeshDefinition(meshData, scene.Content.VertexData, scene.Content.TexCoordData);   
         }
+
+        MeshDefinition.Id = meshData.Id;
         TextureIndices = meshData.Textures;
         Initialize();
     }
