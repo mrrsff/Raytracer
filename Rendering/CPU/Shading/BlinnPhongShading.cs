@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Raytracer.Core;
 using Raytracer.Rendering.CPU.Intersections;
 using Raytracer.Scenes.Content.Datas.Textures;
+using Raytracer.Utility;
 
 namespace Raytracer.Rendering.CPU.Shading;
 
@@ -30,15 +31,12 @@ public static class BlinnPhongShading
         }
         
         Vector3 P = intersection.Point;
-        Vector3 N = intersection.ShadingNormal;
+        Vector3 N = intersection.Normal;
         Vector3 V = Vector3.Normalize(intersection.RayOrigin - P);
 
         Vector3 ambient = intersection.material.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
         Vector3 diffuse = Vector3.Zero;
         Vector3 specular = Vector3.Zero;
-        
-        if (renderer.Scene.Content.Lights.AllLights.Count == 0)
-            return ambient;
         
         foreach (var light in renderer.Scene.Content.Lights.AllLights)
         {

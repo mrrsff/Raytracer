@@ -9,7 +9,7 @@ public struct TextureInfo
     public int ImageId;
     public string Interpolation;
     public string DecalMode;
-    public int Normalizer;
+    public float Normalizer;
     public float BumpFactor;
     public float NoiseScale;
     public string NoiseConversion;

@@ -292,12 +292,6 @@ public class RayTracerRenderer : CPURenderer
                 var color = new Vector3(uv.X, uv.Y, 0f) * 255f;
                 return color;
             }
-            if (Debug.RenderNormals)
-            {
-                var color = (hit.ShadingNormal + Vector3.One) * 0.5f * 255f;
-                // Debug.Log("Rendering normals : " + hit.Normal + " -> " + color);
-                return color;
-            }
             hit.Camera = Camera;
             hit.XPixel = x;
             hit.YPixel = y;
@@ -307,10 +301,10 @@ public class RayTracerRenderer : CPURenderer
             
             if (hit.material!.Type == MaterialType.Dielectric || hit.material.Type == MaterialType.Conductor)
             {
-                cosThetaI = Vector3.Dot(-ray.Direction, hit.ShadingNormal);
+                cosThetaI = Vector3.Dot(-ray.Direction, hit.Normal);
                 if (IsInside)
                 {
-                    hit.ShadingNormal = -hit.ShadingNormal;
+                    hit.Normal = -hit.Normal;
                     weight *= GetAbsorption(hit.material!.AbsorptionCoefficient, currentDistanceTraveled);
                 }
             }
@@ -318,6 +312,12 @@ public class RayTracerRenderer : CPURenderer
             if (Debug.RenderMipLevels)
             {
                 return Shade(hit, ray.Time) * 255f;
+            }
+            
+            if (Debug.RenderNormals)
+            {
+                var color = (hit.Normal + Vector3.One) * 0.5f * 255f;
+                return color;
             }
 
             finalColor += Shade(hit, ray.Time) * weight;
@@ -355,14 +355,14 @@ public class RayTracerRenderer : CPURenderer
                     float etat = IsInside ? airRefractionIndex : hit.material.RefractionIndex;
                     float eta = etai / etat;
                     
-                    if (Refract(ray.Direction, hit.ShadingNormal, eta, out Vector3 refrDir))
+                    if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
                     {
                         if (hit.material.Roughness > 0f)
                         {
                             refrDir = GlossyReflection.PerturbDirection(refrDir, hit.material.Roughness, Sampler.UniformRandom());
                         }
                         
-                        Ray refractedRay = new Ray(hit.Point - hit.ShadingNormal * Scene.Content.ShadowRayEpsilon, refrDir, true);
+                        Ray refractedRay = new Ray(hit.Point - hit.Normal * ShadowRayEpsilon, refrDir, true);
                         
                         float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
                         

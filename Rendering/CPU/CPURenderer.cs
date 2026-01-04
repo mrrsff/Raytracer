@@ -13,7 +13,8 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected Ray GetReflectedRay(in IntersectionInfo intersection, in Ray incomingRay)
     {
-        Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(incomingRay.Direction, intersection.ShadingNormal));
+        Vector3 reflectedDir = Vector3.Normalize(Vector3.Reflect(incomingRay.Direction, intersection.Normal));
+        
         if (intersection.material!.Roughness > 0f)
         {
             reflectedDir = GlossyReflection.PerturbDirection(
@@ -23,7 +24,7 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
         }
 
         return new Ray(
-            intersection.Point + intersection.ShadingNormal * Scene.Content.ShadowRayEpsilon,
+            intersection.Point + intersection.Normal * Scene.Content.ShadowRayEpsilon,
             reflectedDir,
             false,
             incomingRay.Time);

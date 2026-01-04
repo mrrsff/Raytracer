@@ -54,7 +54,7 @@ public static class TriangleIntersection
         info.Hit = true;
         info.Distance = t;
         info.Point = o + d * t;
-        info.GeometricNormal = normal;
+        info.Normal = normal;
         return true;
     }
 }

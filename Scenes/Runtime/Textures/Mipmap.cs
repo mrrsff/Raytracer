@@ -52,7 +52,7 @@ internal struct Mipmap
         Camera cam = hit.Camera;
         int px = hit.XPixel;
         int py = hit.YPixel;
-        Vector3 normal = hit.GeometricNormal;
+        Vector3 normal = hit.Normal;
         
         // To support mipmapping, we need to compute two vectors and find their maximum
         // Tex coord change per pixel along the horizontal image direction

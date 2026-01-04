@@ -27,14 +27,13 @@ public class PointLight : Light
 
     public override bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
     {
-        Vector3 toLight = Position - P;
-
         if (renderer.Scene.IsOccluded(P, Position, N, time))
         {
             L = irradiance = default;
             return false;
         }
 
+        Vector3 toLight = Position - P;
         float dist2 = toLight.LengthSquared();
         L = Vector3.Normalize(toLight);
         irradiance = Intensity / dist2;

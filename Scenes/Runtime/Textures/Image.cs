@@ -32,8 +32,7 @@ public class Image : Texture
         {
             for (int x = 0; x < Width; x++)
             {
-                var pixel = image[x, y];
-                Vector3 color = new Vector3(pixel.R, pixel.G, pixel.B) / normalizer;
+                Vector3 color = image.GetPixel(x, y) / normalizer;
                 pixels[y * Width + x] = color; // [0, 1]
             }
         }

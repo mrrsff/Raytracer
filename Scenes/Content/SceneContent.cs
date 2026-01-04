@@ -18,7 +18,7 @@ public class SceneContent
     public Materials Materials;
     public int MaxRecursionDepth = 1;
     public Objects Objects;
-    public float ShadowRayEpsilon = 1e-3f;
+    public float ShadowRayEpsilon = 1e-4f;
     public Transformations Transformations;
     public VertexData VertexData;
     public Textures Textures;

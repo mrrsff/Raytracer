@@ -17,8 +17,8 @@ public static class Program
         
         Params.FromArgs(args);
 
-        // _technique = new PreviewRendering();
-        _technique = new GPURendering();
+        _technique = new PreviewRendering();
+        // _technique = new GPURendering();
         _technique.StartRendering(args);
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System.Numerics;
 using System.Text.Json.Serialization;
 using Raytracer.Rendering.CPU;
+using Raytracer.Rendering.CPU.Sampling;
 using Raytracer.Scenes.Runtime.Textures;
+using Raytracer.Utility;
 
 namespace Raytracer.Core.Lights;
 
@@ -29,22 +31,62 @@ public class SphericalDirectionalLight : Light
             return false;
         }
         
-        Vector3 direction = Rendering.CPU.Sampling.Sampler.RandomUnitVectorSphere();
-        if (Vector3.Dot(direction, N) < 0)
-        {
-            direction = -direction;
-        }
-        L = Vector3.Normalize(direction);
+        Vector3 local = SampleLocal();
         
-        Vector2 uv = GetUV(direction);
+        MathUtility.BuildONB(N, out Vector3 T, out Vector3 B);
+        L = Vector3.Normalize(local.X * T + local.Y * B + local.Z * N);
+        if (Vector3.Dot(L, N) <= 0f)
+        {
+            irradiance = Vector3.Zero;
+            return false;
+        }
+        Vector2 uv = GetUV(L);
         
         Vector3 radiance = _image.SampleFromUV(uv);
         
-        float NdotL = MathF.Max(Vector3.Dot(N, L), 0f);
-        irradiance = radiance * NdotL * 2 * MathF.PI;
+        if (Sampler == SamplerType.cosine)
+        {
+            irradiance = radiance * MathF.PI;
+        }
+        else
+        {
+            float NdotL = Vector3.Dot(N, L);
+            irradiance = radiance * NdotL * 2f * MathF.PI;
+        }
+
         return irradiance != Vector3.Zero;
     }
 
+    private Vector3 SampleLocal()
+    {
+        float u1 = ThreadRng.NextFloat();
+        float u2 = ThreadRng.NextFloat();
+
+        if (Sampler == SamplerType.cosine)
+        {
+            // cosine-weighted hemisphere (z >= 0)
+            float r = MathF.Sqrt(u1);
+            float phi = 2f * MathF.PI * u2;
+
+            float x = r * MathF.Cos(phi);
+            float y = r * MathF.Sin(phi);
+            float z = MathF.Sqrt(1f - u1);
+
+            return new Vector3(x, y, z);
+        }
+        else
+        {
+            // uniform hemisphere (z >= 0)
+            float z = u1;
+            float r = MathF.Sqrt(MathF.Max(0f, 1f - z * z));
+            float phi = 2f * MathF.PI * u2;
+
+            float x = r * MathF.Cos(phi);
+            float y = r * MathF.Sin(phi);
+
+            return new Vector3(x, y, z);
+        }
+    }
     public override string ToString()
     {
         return $"SphericalDirectionalLight(Id: {Id}, Type: {Type}, ImageId: {ImageId}, Sampler: {Sampler})";
@@ -61,16 +103,29 @@ public class SphericalDirectionalLight : Light
     }
     private Vector2 LatlongUV(Vector3 direction)
     {
-        float u = (1 + (MathF.Atan2(direction.Z, direction.X) / MathF.PI)) * 0.5f;
-        float v = (MathF.Acos(direction.Y) / MathF.PI);
+        float u = (1f + MathF.Atan2(direction.X, -direction.Z) / MathF.PI) * 0.5f;
+        float v = MathF.Acos(direction.Y) / MathF.PI;
         return new Vector2(u, v);
     }
     private Vector2 ProbeUV(Vector3 direction)
     {
-        float r = MathF.Acos(-direction.Z) / (MathF.PI * (MathF.Pow(direction.X * direction.X + direction.Y * direction.Y, 0.5f)));
-        float u = (direction.X * r + 1) / 2f;
-        float v = (-direction.Y * r + 1) / 2f;
-        return new Vector2(u, v);
+        float x = direction.X;
+        float y = direction.Y;
+        float z = -direction.Z; 
+
+        float d = MathF.Sqrt(x * x + y * y);
+
+        if (d < 0.0001f) 
+        {
+            return new Vector2(0.5f, 0.5f);
+        }
+
+        float r = (1.0f / MathF.PI) * MathF.Acos(z) / d;
+
+        float u = x * r;
+        float v = y * r;
+
+        return new Vector2(0.5f * (u + 1.0f), 1 - 0.5f * (v + 1.0f));
     }
     
     public Vector3 SampleFromUV(Vector2 uv)
@@ -86,5 +141,6 @@ public enum SphericalDirectionalLightType
 }
 public enum SamplerType
 {
+    uniform,
     cosine
 }

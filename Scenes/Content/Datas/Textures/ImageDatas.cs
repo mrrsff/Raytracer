@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Numerics;
+using System.Text.Json.Serialization;
 using Raytracer.IO.SceneLoaders.Converters;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -12,7 +13,7 @@ public class ImageDatas
     [JsonConverter(typeof(SingleOrListConverter<ImageData>))]
     public List<ImageData> Image;
     
-    private List<Image<Rgb24>> _loadedImages;
+    private List<RuntimeImageData> _loadedImages;
 
     public override string ToString()
     {
@@ -27,7 +28,7 @@ public class ImageDatas
         return $"Images:\n{imagesInfo}";
     }
     
-    public Image<Rgb24> GetImageData(int id)
+    public RuntimeImageData GetImageData(int id)
     {
         if (_loadedImages == null) LoadImages();
 
@@ -44,16 +45,47 @@ public class ImageDatas
 
     private void LoadImages()
     {
-        _loadedImages = [];
+        _loadedImages = new List<RuntimeImageData>();
         foreach (var data in Image)
         {
             var path = Params.GetFilePathInSceneDir(data.Path);
-            if (Path.GetExtension(path).Equals(".exr", StringComparison.OrdinalIgnoreCase) || 
+            if (Path.GetExtension(path).Equals(".exr", StringComparison.OrdinalIgnoreCase) ||
                 Path.GetExtension(path).Equals(".hdr", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var image = SixLabors.ImageSharp.Image.Load<Rgb24>(path);
-            _loadedImages.Add(image);
+            {
+                TinyEXR.Exr.LoadEXR(path, out var pixelData, out var width, out var height);
+                var pixels = new List<Vector3>(width * height);
+                for (int i = 0; i < pixelData.Length; i += 4)
+                {                    
+                    pixels.Add(new Vector3(pixelData[i], pixelData[i + 1], pixelData[i + 2]));
+                }
+                var runtimeImageData = new RuntimeImageData 
+                {
+                    Width = width,
+                    Height = height,
+                    Pixels = pixels
+                };
+                _loadedImages.Add(runtimeImageData);
+            }
+            else
+            {
+                var image = SixLabors.ImageSharp.Image.Load<Rgb24>(path);
+                var pixelData = new List<Vector3>(image.Width * image.Height);
+                for (int y = 0; y < image.Height; y++)
+                {
+                    for (int x = 0; x < image.Width; x++)
+                    {
+                        var pixel = image[x, y];
+                        pixelData.Add(new Vector3(pixel.R, pixel.G, pixel.B));
+                    }
+                }
+                var runtimeImageData = new RuntimeImageData
+                {
+                    Width = image.Width,
+                    Height = image.Height,
+                    Pixels = pixelData
+                };
+                _loadedImages.Add(runtimeImageData);
+            }
         }
     }
 }
@@ -66,5 +98,17 @@ public struct ImageData
     public override string ToString()
     {
         return $"Image Id: {Id}, Path: {Path}";
+    }
+}
+
+public struct RuntimeImageData
+{
+    public int Width;
+    public int Height;
+    public List<Vector3> Pixels;
+    
+    public Vector3 GetPixel(int x, int y)
+    {
+        return Pixels[y * Width + x];
     }
 }

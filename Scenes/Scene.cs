@@ -191,10 +191,13 @@ public partial class Scene
             TryAcceptHit();
         }
 
-        best.RayOrigin = ray.Origin;
-        best.RayTime = ray.Time;
-        best.Textures = GetTextures(best.HitGeometry?.TextureIndices ?? []);
-        best.CalculateNormal();
+        if (best.Hit)
+        {
+            best.RayOrigin = ray.Origin;
+            best.RayTime = ray.Time;
+            best.Textures = GetTextures(best.HitGeometry?.TextureIndices ?? []);
+            best.CalculateNormal();
+        }
 
         return best;
 

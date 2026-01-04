@@ -79,7 +79,7 @@ public class Mesh : Geometry
         info.Distance = Vector3.Distance(ray.Origin, info.Point);
         
         var t = MeshDefinition.Triangles[info.PrimitiveIndex];
-        info.GeometricNormal = ShadingMode == ShadingMode.Flat
+        info.Normal = ShadingMode == ShadingMode.Flat
             ? finalTransform.ToWorldDirection(t.Normal)
             : t.GetNormal(localHitPoint, info.PrimitiveIndex, ray.Time);
         

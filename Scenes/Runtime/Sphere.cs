@@ -60,7 +60,7 @@ public class Sphere : Geometry
         info.Point = worldHitPoint;
         info.Distance = worldDistance;
         info.HitGeometry = this;
-        info.GeometricNormal = GetNormal(worldHitPoint, info.PrimitiveIndex, info.RayTime);
+        info.Normal = GetNormal(worldHitPoint, info.PrimitiveIndex, info.RayTime);
 
         return true;
     }
@@ -69,7 +69,7 @@ public class Sphere : Geometry
         Transform tr = GetMotionBlurTransform(rayTime);
         Vector3 localPoint = tr.ToLocalPoint(point);
         Vector3 localNormal = Vector3.Normalize(localPoint - center);
-        Vector3 worldNormal = tr.ToWorldDirection(localNormal, false);
+        Vector3 worldNormal = tr.ToWorldNormal(localNormal);
         return worldNormal;
     }
 
