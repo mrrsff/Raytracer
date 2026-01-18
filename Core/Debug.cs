@@ -18,10 +18,9 @@ public static class Debug
     public static bool UseParallelBVHBuild = true;
     public static bool UseSAH = true;
     
-    public static bool EnableDebugRendering = true;
+    public static bool EnableDebugRendering = false;
     public static bool RenderUVs = false;
     public static bool RenderNormals = false;
-    public static bool RenderMipLevels = false;
     
     public static void Log(object msg,
         [CallerMemberName] string memberName = "",

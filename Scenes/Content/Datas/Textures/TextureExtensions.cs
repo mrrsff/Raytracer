@@ -53,6 +53,7 @@ public static class TextureExtensions
 
 public enum TextureType
 {
+    None,
     Image,
     Perlin,
     Checkerboard
@@ -60,6 +61,7 @@ public enum TextureType
 
 public enum DecalType
 {
+    None,
     ReplaceKD,
     BlendKD,
     ReplaceKS,

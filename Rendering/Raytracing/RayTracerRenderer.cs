@@ -55,7 +55,7 @@ public class RayTracerRenderer : CPURenderer
         }
         
         finalColor /= totalWeight;
-        buffer.SetPixel(x, y, ColorUtility.Normalize(finalColor));
+        buffer.SetPixel(x, y, finalColor);
     }
 
     #region Rendering
@@ -281,7 +281,7 @@ public class RayTracerRenderer : CPURenderer
             IntersectionInfo hit = Scene.Intersect(ray);
             if (!hit.Hit)
             {
-                finalColor += weight * Scene.GetBackgroundColor(x, y, Camera);
+                finalColor += weight * Scene.GetBackgroundColor(hit, ray);
                 continue;
             }
 
@@ -312,11 +312,6 @@ public class RayTracerRenderer : CPURenderer
                     hit.ShadingNormal = -hit.ShadingNormal;
                     weight *= GetAbsorption(hit.material!.AbsorptionCoefficient, currentDistanceTraveled);
                 }
-            }
-
-            if (Debug.RenderMipLevels)
-            {
-                return Shade(hit, ray.Time) * 255f;
             }
 
             finalColor += Shade(hit, ray.Time) * weight;

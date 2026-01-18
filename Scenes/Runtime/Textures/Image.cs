@@ -62,7 +62,6 @@ public class Image : Texture
         if (InterpolationType == InterpolationType.Trilinear)
         {
             var mipLevel = Mipmap.ComputeMipLevel(info, Width, Height);
-            if (Debug.RenderMipLevels) return new Vector3(mipLevel / (_mipmaps.Count - 1));
             return TrilinearSample(uv, mipLevel);
         }
         return SampleFromUV(uv);

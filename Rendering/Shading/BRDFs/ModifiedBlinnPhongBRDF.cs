@@ -1,42 +1,35 @@
 using System.Numerics;
-using Raytracer.Core;
 using Raytracer.Scenes.Content.Datas;
 
 namespace Raytracer.Rendering.Shading.BRDFs;
 
 public class ModifiedBlinnPhongBRDF : IBRDF
 {
-    private readonly Vector3 kd;
-    private readonly Vector3 ks;
     private readonly float exponent;
     private readonly bool normalized;
-    
-    public ModifiedBlinnPhongBRDF(Material mat, BRDFDefinition def)
+    public ModifiedBlinnPhongBRDF(BRDFDefinition def)
     {
-        kd = mat.DiffuseReflectance;
-        ks = mat.SpecularReflectance;
         exponent = def.Exponent;
+        normalized = def.Normalized;
     }
 
-    public Vector3 Evaluate(Vector3 wi, Vector3 wo, Vector3 n)
+    public Vector3 Evaluate(Vector3 kd, Vector3 ks, Vector3 wi, Vector3 wo, Vector3 n)
     {
+        var cosI = Vector3.Dot(n, wi);
+        if (cosI <= 0f) return Vector3.Zero;
+        Vector3 wh = Vector3.Normalize(wi + wo);
+        
+        float ah = MathF.Max(Vector3.Dot(n, wh), 0f);
+        float specularFactor = MathF.Pow(ah, exponent);
+        
+        var diff = kd;
+        var spec = ks * specularFactor;
+        
         if (normalized)
         {
-            Vector3 h = Vector3.Normalize(wi + wo);
-            float cosH = MathF.Max(0f, Vector3.Dot(n, h));
-
-            Vector3 diffuse = kd / MathF.PI;
-            Vector3 specular = ks * ((exponent + 8f) / (8f * MathF.PI))
-                                  * MathF.Pow(cosH, exponent);
-
-            return diffuse + specular;
+            diff *= (1 / MathF.PI);
+            spec *= specularFactor * ((exponent + 8) / (8 * MathF.PI));
         }
-        else
-        {
-            Vector3 h = Vector3.Normalize(wi + wo);
-            float cosH = MathF.Max(0f, Vector3.Dot(n, h));
-
-            return kd + ks * MathF.Pow(cosH, exponent);
-        }
+        return diff + spec;
     }
 }

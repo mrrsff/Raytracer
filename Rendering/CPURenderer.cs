@@ -32,8 +32,11 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected Vector3 Shade(in IntersectionInfo intersection, float time)
     {
-        return BRDFShading.Shade(intersection, time, this);
-        // return BlinnPhongShading.Shade(intersection, time, this);
+        if (intersection.material == null) return Vector3.Zero;
+        
+        return intersection.material.Brdf == null 
+            ? BlinnPhongShading.Shade(intersection, time, this) 
+            : BRDFShading.Shade(intersection, time, this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

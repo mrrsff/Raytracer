@@ -7,16 +7,14 @@ using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Content.Datas.Camera;
 
-public enum CameraType
-{
-    None,
-    LookAt
-}
+public enum CameraType { None, LookAt }
+public enum Handedness { right, left }
 
 public class Camera
 {
     [JsonPropertyName("_id")] public int Id;
     [JsonPropertyName("_type")] public CameraType Type;
+    private readonly Handedness _handedness = Handedness.right;
     public Vector3 Position;
     public Vector3 Gaze;
     public Vector3 GazePoint;
@@ -59,63 +57,66 @@ public class Camera
             .Append(')').ToString();
     }
 
-    public void InitializeCamera()
+    public void Initialize()
     {
-        // Transform position and orientation
         Position = Transform.ToWorldPoint(Position);
         Gaze = Transform.ToWorldDirection(Gaze);
         Up = Transform.ToWorldDirection(Up);
         
+        float aspect = (float)ImageResolution.Width / ImageResolution.Height;
         if (Type == CameraType.LookAt)
         {
             Gaze = Vector3.Normalize(GazePoint - Position);
 
-            float aspect = (float)ImageResolution.Width / ImageResolution.Height;
             NearPlane.Top = NearDistance * MathF.Tan(FovY * MathF.PI / 360.0f);
             NearPlane.Bottom = -NearPlane.Top;
             NearPlane.Right = aspect * NearPlane.Top;
             NearPlane.Left = -NearPlane.Right;
         }
+        else
+        {
+            FovY = 2.0f * MathF.Atan(NearPlane.Top / NearDistance) * 180.0f / MathF.PI;
+        }
 
         var w = Vector3.Normalize(-Gaze);
         var v = Vector3.Normalize(Up - Vector3.Dot(Up, w) * w);
-        var u = Vector3.Cross(v, w);
+        Vector3 u = _handedness == Handedness.right ? Vector3.Cross(v, w) : Vector3.Cross(w, v);
 
         Forward = -w; // points into scene
         Right = u;
         Up = v;
 
-        m = Position + Forward * NearDistance;
-        q = m + (NearPlane.Left * Right) + (NearPlane.Top * Up);
+        M = Position + Forward * NearDistance;
+        Q = M + (NearPlane.Left * Right) + (NearPlane.Top * Up);
 
-        sUMultiplier = (NearPlane.Right - NearPlane.Left) / ImageResolution.Width;
-        sVMultiplier = (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
+        SUMultiplier = (NearPlane.Right - NearPlane.Left) / ImageResolution.Width;
+        SVMultiplier = (NearPlane.Top - NearPlane.Bottom) / ImageResolution.Height;
     }
 
     public Vector3 Forward;
     public Vector3 Right;
-    private Vector3 m;
-    private Vector3 q;
-    private float sUMultiplier;
-    private float sVMultiplier;
+    private Vector3 M;
+    private Vector3 Q;
+    private float SUMultiplier;
+    private float SVMultiplier;
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ray GenerateRay(float i, float j)
     {
-        float sU = i * sUMultiplier;
-        float sV = j * sVMultiplier;
+        float sU = i * SUMultiplier;
+        float sV = j * SVMultiplier;
 
-        Vector3 s = q + (sU * Right) - (sV * Up);
+        Vector3 s = Q + (sU * Right) - (sV * Up);
         Vector3 d = Vector3.Normalize(s - Position);
         return new Ray(Position, d);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ray GenerateRayDRT(float pixelX, float pixelY, Vector2 lensSample = default, float time = 0.0f)
     {
-        float sU = pixelX * sUMultiplier;
-        float sV = pixelY * sVMultiplier;
+        float sU = pixelX * SUMultiplier;
+        float sV = pixelY * SVMultiplier;
 
-        Vector3 s = q + (sU * Right) - (sV * Up);
+        Vector3 s = Q + (sU * Right) - (sV * Up);
 
         Vector3 dir = Vector3.Normalize(s - Position);
 

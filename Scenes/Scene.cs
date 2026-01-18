@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
+using Raytracer.Core.Lights;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Scenes.Content;
 using Raytracer.Scenes.Content.Datas.Camera;
@@ -21,9 +22,10 @@ public partial class Scene
 
     public List<Geometry> Geometries = [];
     public List<Plane> Planes = [];
-    public BoundingVolumeHierarchy TLAS;
+    public BoundingVolumeHierarchy? TLAS;
     public TextureManager TextureManager = new();
     private Texture? backgroundTexture;
+    private SphericalDirectionalLight? sphericalDirectionalLight;
 
     public Scene()
     {
@@ -33,101 +35,14 @@ public partial class Scene
     {
         Content = content;
     }
-
     public void Initialize()
     {
-        // Load textures
-        TextureManager.LoadTextures(Content);
-        TextureManager.TryGetBackgroundTexture(out backgroundTexture);
-        
-        // create brdf's for materials
-        Content.Materials.CreateBRDFs(Content.BRDFs);
-        
-        if (Content.Lights.PointLight != null)
-        {
-            foreach (var pLight in Content.Lights.PointLight)
-            {
-                if (pLight.Transformations != null)
-                {
-                    Content.Transformations.ApplyTransformations(pLight.Transform, pLight.Transformations);
-                    pLight.CalculatePosition();
-                }
-            }
-        }
-        if (Content.Lights.AreaLight != null)
-        {
-            foreach (var dLight in Content.Lights.AreaLight)
-            {
-                if (dLight.Transformations != null)
-                {
-                    Content.Transformations.ApplyTransformations(dLight.Transform, dLight.Transformations);
-                }
-                dLight.CalculateValues();
-            }
-        }
+        InitializeTextures();
+        InitializeMaterials();
+        InitializeLights();
+        InitGeometries();
+        InitializeCameras();
 
-        foreach (var camera in Content.Cameras.Camera)
-        {
-            if (camera.Transformations != null)
-            {
-                Content.Transformations.ApplyTransformations(camera.Transform, camera.Transformations);
-            }
-        }
-
-        var originalMeshes = new Dictionary<int, Mesh>();
-        foreach (var meshData in Content.Objects.Mesh)
-        {
-            var transform = new Transform();
-            if (meshData.Transformations != null)
-            {
-                Content.Transformations.ApplyTransformations(transform, meshData.Transformations);
-            }
-
-            var mesh = new Mesh(meshData, this, transform);
-
-            
-            Geometries.Add(mesh);
-            originalMeshes.Add(meshData.Id, mesh);
-        }
-
-        foreach (var meshInstance in Content.Objects.MeshInstance)
-        {
-            if (!originalMeshes.TryGetValue(meshInstance.BaseMeshId, out var mesh)) continue;
-
-            var transform = meshInstance.ResetTransform ? new Transform() : mesh.Transform.Copy();
-
-            if (meshInstance.Transformations != null)
-            {
-                Content.Transformations.ApplyTransformations(transform, meshInstance.Transformations);
-            }
-            var instancedMesh = new Mesh(mesh, transform, meshInstance);
-            
-            Geometries.Add(instancedMesh);
-            originalMeshes.TryAdd(meshInstance.Id, instancedMesh);
-        }
-
-        foreach (var sphereData in Content.Objects.Sphere)
-        {
-            var sphere = new Sphere(sphereData, Content.VertexData);
-            if (sphereData.Transformations != null)
-                Content.Transformations.ApplyTransformations(sphere.Transform, sphereData.Transformations);
-            Geometries.Add(sphere);
-        }
-
-        foreach (var planeData in Content.Objects.Plane)
-        {
-            var plane = new Plane(planeData, Content.VertexData);
-            if (planeData.Transformations != null)
-                Content.Transformations.ApplyTransformations(plane.Transform, planeData.Transformations);
-
-            Planes.Add(plane);
-        }
-
-        // Build TLAS if there are enough geometries
-        // if (Geometries.Count > 16)
-        //     TLAS = new BoundingVolumeHierarchy(this);
-
-        
         if (Debug.PrintSceneInfo)
         {
             Debug.Log($"Scene initialized with {Content.Cameras.Camera.Count} cameras, " +
@@ -140,6 +55,97 @@ public partial class Scene
         }
     }
 
+    private void InitializeMaterials()
+    {
+        // create brdf's for materials
+        Content.Materials.CreateBRDFs(Content.BRDFs);
+    }
+
+    private void InitializeTextures()
+    {
+        TextureManager.LoadTextures(Content);
+        TextureManager.TryGetBackgroundTexture(out backgroundTexture);
+    }
+    private void InitializeLights()
+    {
+        Content.Lights.Initialize();
+        
+        var pLightList = Content.Lights.GetPointLights();
+        foreach (var pLight in pLightList) { ApplyTransformations(pLight.Transform, pLight.Transformations); pLight.CalculatePosition(); }
+        
+        var aLightList = Content.Lights.GetAreaLights();
+        foreach (var aLight in aLightList) ApplyTransformations(aLight.Transform, aLight.Transformations);
+        
+        var sphDirLightList = Content.Lights.GetSphericalDirectionalLights();
+        foreach (var sphDirLight in sphDirLightList)
+        {
+            if (TextureManager.GetTexture(sphDirLight.ImageId) is HDRImage image)
+            {
+                sphDirLight.Initialize(image);
+                sphericalDirectionalLight = sphDirLight;
+            }
+            else
+            {
+                Debug.Log($"Failed to initialize SphericalDirectionalLight with Id {sphDirLight.Id}: HDR image with Id {sphDirLight.ImageId} not found.");
+            }
+        }
+    }
+    private void InitializeCameras()
+    {
+        foreach (var camera in Content.Cameras.Camera)
+        {
+            ApplyTransformations(camera.Transform, camera.Transformations);
+            camera.Initialize();
+        }
+    }
+    private void InitGeometries()
+    {
+        var originalMeshes = new Dictionary<int, Mesh>();
+        foreach (var meshData in Content.Objects.Mesh)
+        {
+            var transform = new Transform();
+            
+            ApplyTransformations(transform, meshData.Transformations);
+            var mesh = new Mesh(meshData, this, transform);
+            Geometries.Add(mesh);
+            originalMeshes.TryAdd(meshData.Id, mesh);
+        }
+
+        foreach (var meshInstance in Content.Objects.MeshInstance)
+        {
+            if (!originalMeshes.TryGetValue(meshInstance.BaseMeshId, out var mesh)) continue;
+
+            var transform = meshInstance.ResetTransform ? new Transform() : mesh.Transform.Copy();
+
+            ApplyTransformations(transform, meshInstance.Transformations);
+            var instancedMesh = new Mesh(mesh, transform, meshInstance);
+            
+            Geometries.Add(instancedMesh);
+            originalMeshes.TryAdd(meshInstance.Id, instancedMesh);
+        }
+        foreach (var sphereData in Content.Objects.Sphere)
+        {
+            var sphere = new Sphere(sphereData, Content.VertexData);
+            ApplyTransformations(sphere.Transform, sphereData.Transformations);
+            Geometries.Add(sphere);
+        }
+
+        foreach (var planeData in Content.Objects.Plane)
+        {
+            var plane = new Plane(planeData, Content.VertexData);
+            ApplyTransformations(plane.Transform, planeData.Transformations);
+            Planes.Add(plane);
+        }
+        
+        // Build TLAS if there are enough geometries
+        // if (Geometries.Count > 16)
+        //     TLAS = new BoundingVolumeHierarchy(this);
+    }
+    private void ApplyTransformations(Transform transform, string? transformationList)
+    {
+        if (transformationList == null) return;
+        Content.Transformations.ApplyTransformations(transform, transformationList);
+    }
     public Camera GetCamera(int index)
     {
         var clamped = Math.Clamp(index, 0, Content.Cameras.Camera.Count - 1);
@@ -221,24 +227,34 @@ public partial class Scene
         }
         return textures;
     }
-    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Vector3 GetBackgroundColor(int x, int y, Camera cam)
+    public Vector3 GetBackgroundColor(IntersectionInfo info, Ray ray)
     {
-        if (backgroundTexture == null)
+        if (sphericalDirectionalLight != null) // use spherical directional light mapping
         {
-            return Content.BackgroundColor;
+            Vector3 direction = Vector3.Normalize(ray.Origin + ray.Direction);
+            Vector2 uv = sphericalDirectionalLight.GetUV(direction);
+
+            Vector3 sample = sphericalDirectionalLight.SampleFromUV(uv);
+            return sample;
         }
 
-        // Get UV coordinates based on pixel position
-        float u = (x + 0.5f) / cam.ImageResolution.Width;
-        float v = (y + 0.5f) / cam.ImageResolution.Height;
+        if (backgroundTexture != null)
+        {
+            Camera cam = info.Camera;
+            int x = info.XPixel;
+            int y = info.YPixel;
+        
+            float u = (x + 0.5f) / cam.ImageResolution.Width;
+            float v = (y + 0.5f) / cam.ImageResolution.Height;
 
-        // Stretch (clamp), do NOT wrap
-        u = Math.Clamp(u, 0f, 1f);
-        v = Math.Clamp(v, 0f, 1f);
+            u = Math.Clamp(u, 0f, 1f);
+            v = Math.Clamp(v, 0f, 1f);
 
-        Vector3 sample = backgroundTexture.SampleFromUV(new Vector2(u, v)) * 255f;
-        return sample;
+            Vector3 sample = backgroundTexture.SampleFromUV(new Vector2(u, v)) * 255f;
+            return sample;
+        }
+
+        return Content.BackgroundColor;
     }
 }

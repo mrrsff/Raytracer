@@ -26,7 +26,7 @@ public struct Materials
     {
         foreach (var material in Material)
         {
-            material.Brdf = brdfLibrary.CreateBRDF(material);
+            material.Brdf = brdfLibrary.CreateBRDF(material)!;
         }
     }
 }

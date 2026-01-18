@@ -80,29 +80,22 @@ public class BrdfLibrary
         Debug.Log($"Creating BRDF of type {def.Type} for Material {mat.Id} using BRDF Definition {def.Id}.");
         return def.Type switch
         {
-            BRDFType.OriginalBlinnPhong => new OriginalBlinnPhongBRDF(mat, def),
-            BRDFType.ModifiedBlinnPhong => new ModifiedBlinnPhongBRDF(mat, def),
-            BRDFType.OriginalPhong => new OriginalPhongBRDF(mat, def),
-            BRDFType.ModifiedPhong => new ModifiedPhongBRDF(mat, def),
+            BRDFType.OriginalBlinnPhong => new OriginalBlinnPhongBRDF(def),
+            BRDFType.ModifiedBlinnPhong => new ModifiedBlinnPhongBRDF(def),
+            BRDFType.OriginalPhong => new OriginalPhongBRDF(def),
+            BRDFType.ModifiedPhong => new ModifiedPhongBRDF(def),
             BRDFType.TorranceSparrow => new TorranceSparrowBRDF(mat, def),
             _ => throw new NotImplementedException($"BRDF Type {def.Type} is not implemented.")
         };
     }
-    public IBRDF CreateBRDF(Material mat)
+    public IBRDF? CreateBRDF(Material mat)
     {
         BRDFDefinition? brdfDef = null;
         int? brdfId = mat.BrdfId;
         if (brdfId == null)
         {
             Debug.Log($"Material {mat.Id} does not have a valid BRDF ID.");
-            return new OriginalPhongBRDF(mat, new BRDFDefinition
-            {
-                Id = -1,
-                Exponent = 16f,
-                Normalized = false,
-                KDFresnel = false,
-                Type = BRDFType.OriginalPhong
-            });
+            return null;
         }
         
         InitializeDefinitions();
@@ -126,6 +119,7 @@ public class BRDFDefinition
 {
     [JsonPropertyName("_id")] public int Id;
     [JsonPropertyName("_normalized")] public bool Normalized;
+    [JsonConverter(typeof(StringToBoolConverter))]
     [JsonPropertyName("_kdfresnel")] public bool KDFresnel;
     
     public float Exponent;
