@@ -25,7 +25,9 @@ struct Material
     vec4 absorptionCoefficient;
 
     float refractionIndex;
-    vec3 _pad;
+    float _pad0;
+    float _pad1;
+    float _pad2;
 };
 
 struct SceneGlobals
@@ -44,7 +46,7 @@ struct SceneGlobals
     int numTriangles;
     int numMaterials;
     int numMeshInstances;
-    float _pad3;
+    int numSpheres;
 };
 
 struct Ray

@@ -19,7 +19,7 @@ public struct SceneGlobals
     public int NumTriangles;
     public int NumMaterials;
     public int NumMeshInstances;
-    public float _Padding3;
+    public int NumSpheres;
 
     public override string ToString()
     {
@@ -30,6 +30,7 @@ public struct SceneGlobals
                $"NumVertices={NumVertices}, " +
                $"NumTriangles={NumTriangles}, " +
                $"NumMaterials={NumMaterials}, " +
-               $"NumMeshInstances={NumMeshInstances})";
+               $"NumMeshInstances={NumMeshInstances}), " +
+               $"NumSpheres={NumSpheres})";
     }
 }

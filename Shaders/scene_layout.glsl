@@ -71,4 +71,9 @@ MeshInstance GetMeshInstance(int index)
     return meshInstances[index];
 }
 
+Sphere GetSphere(int index)
+{
+    return spheres[index];
+}
+
 #endif // SCENE_LAYOUT_GLSL

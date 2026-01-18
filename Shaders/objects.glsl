@@ -5,6 +5,7 @@ struct Sphere
 {
     vec3 center;
     float radius;
+    int materialIndex; float pad_0; float pad_1; float pad_2;
 };
 
 struct Vertex

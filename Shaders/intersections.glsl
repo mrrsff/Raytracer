@@ -19,6 +19,60 @@ struct Intersection
     vec2 uv;                // interpolated UV
 };
 
+Intersection intersectSphere(Ray ray, Sphere sphere)
+{
+    Intersection hit;
+    hit.t = -1.0;
+    hit.hit = false;
+
+    vec3 L = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2.0 * dot(ray.direction, L);
+    float c = dot(L, L) - sphere.radius * sphere.radius;
+    float discriminant = b * b - 4.0 * a * c;
+
+    if (discriminant < 0.0)
+    {
+        return hit; // No intersection
+    }
+
+    float sqrtDiscriminant = sqrt(discriminant);
+    float t0 = (-b - sqrtDiscriminant) / (2.0 * a);
+    float t1 = (-b + sqrtDiscriminant) / (2.0 * a);
+
+    // Choose the nearest valid intersection
+    float tHit = -1.0;
+
+    // If t0 is valid (positive and beyond epsilon), use it
+    if (t0 > INTERSECTION_TEST_EPSILON)
+    {
+        tHit = t0;
+    }
+    // Otherwise, try t1
+    else if (t1 > INTERSECTION_TEST_EPSILON)
+    {
+        tHit = t1;
+    }
+    else
+    {
+        return hit; // Both intersections are behind the ray
+    }
+
+    hit.t = tHit;
+    hit.hit = true;
+    hit.position = ray.origin + ray.direction * tHit;
+    hit.geometricNormal = normalize(hit.position - sphere.center);
+    hit.shadingNormal = hit.geometricNormal;
+
+    // UV calculation for sphere
+    float u = 0.5 + atan(hit.geometricNormal.z, hit.geometricNormal.x) / (2.0 * 3.14159265);
+    float v = 0.5 - asin(hit.geometricNormal.y) / 3.14159265;
+    hit.uv = vec2(u, v);
+    hit.materialIndex = sphere.materialIndex;
+
+    return hit;
+}
+
 Intersection intersectTriangle(Ray ray, Vertex v0, Vertex v1, Vertex v2, in bool backfaceCulling, in bool smoothNormals)
 {
     Intersection hit;
@@ -92,7 +146,7 @@ Intersection intersectMeshInstance(Ray ray, int instanceIndex)
         Vertex v1 = GetVertex(mesh.vertexOffset + tri.v1);
         Vertex v2 = GetVertex(mesh.vertexOffset + tri.v2);
         
-        Intersection hit = intersectTriangle(localRay, v0, v1, v2, false, false); 
+        Intersection hit = intersectTriangle(localRay, v0, v1, v2, true, false); 
         
         if (hit.hit)
         {
@@ -140,6 +194,20 @@ Intersection intersectScene(Ray ray)
         }
     }
     
+    const int MAX_SPHERES = 64;
+    for (int i = 0; i < MAX_SPHERES; ++i)
+    {
+        if (i >= sceneGlobals.numSpheres) break;
+        Intersection hit = intersectSphere(ray, GetSphere(i));
+        if (hit.hit)
+        {
+            if (!closestHit.hit || hit.t < closestHit.t)
+            {
+                closestHit = hit;
+            }
+        }
+    }
+    
     return closestHit;
 }
 
@@ -148,6 +216,15 @@ bool IntersectAny(Ray ray, float maxDistance)
     for (int i = 0; i < sceneGlobals.numMeshInstances; ++i)
     {
         Intersection hit = intersectMeshInstance(ray, i);
+        if (hit.hit && hit.t < maxDistance)
+        {
+            return true;
+        }
+    }
+    
+    for (int i = 0; i < sceneGlobals.numSpheres; ++i)
+    {
+        Intersection hit = intersectSphere(ray, spheres[i]);
         if (hit.hit && hit.t < maxDistance)
         {
             return true;

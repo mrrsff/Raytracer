@@ -3,31 +3,193 @@
 #define INTERSECTION_TEST_EPSILON 1e-6
 #define SHADOW_BIAS 1e-3
 
+#define MATERIAL_TYPE_DEFAULT  0
+#define MATERIAL_TYPE_MIRROR   1
+#define MATERIAL_TYPE_CONDUCTOR 2
+#define MATERIAL_TYPE_DIELECTRIC 3
+
 #include "scene_layout.glsl"
 #include "intersections.glsl"
 #include "shading.glsl"
+#include "fresnel.glsl"
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout (rgba8, binding = 0) uniform writeonly image2D outputImage;
 
-vec3 TraceRay(Ray ray)
+struct RayState
+{
+    Ray ray;
+    int depth;
+    vec3 throughput;
+    bool isInside;  // Track if ray is inside a dielectric
+};
+
+vec3 TraceRay(Ray initialRay)
 {
     vec3 finalColor = vec3(0.0);
-    vec3 throughput = vec3(1.0);
 
-    int maxBounces = 6; //sceneGlobals.maxBounces;
-    for (int bounce = 0; bounce < maxBounces; ++bounce)
+    // Stack-based iterative ray tracing
+    const int MAX_STACK_SIZE = 32;
+    RayState stack[MAX_STACK_SIZE];
+    int stackPointer = 0;
+
+    // Push initial ray onto stack
+    stack[stackPointer].ray = initialRay;
+    stack[stackPointer].depth = 0;
+    stack[stackPointer].throughput = vec3(1.0);
+    stack[stackPointer].isInside = false;
+    stackPointer++;
+
+    int maxBounces = 6;
+    int totalIterations = 0;
+    const int MAX_ITERATIONS = 64; // Safety limit
+
+    while (stackPointer > 0 && totalIterations < MAX_ITERATIONS)
     {
-        Intersection intersection = intersectScene(ray);
-        if (intersection.t < INTERSECTION_TEST_EPSILON)
+        totalIterations++;
+
+        // Pop ray state from stack
+        stackPointer--;
+        RayState currentState = stack[stackPointer];
+
+        Ray ray = currentState.ray;
+        int depth = currentState.depth;
+        vec3 throughput = currentState.throughput;
+        bool isInside = currentState.isInside;
+
+        // Check if throughput is too small (Russian roulette termination)
+        float maxThroughput = max(max(throughput.r, throughput.g), throughput.b);
+        if (maxThroughput < 0.001)
         {
-            finalColor += throughput * sceneGlobals.backgroundColor;
-            break;
+            continue;
         }
 
-        vec3 shadedColor = shade(intersection);
-        finalColor += throughput * shadedColor;
-        break;
+        // Check if we've exceeded max depth
+        if (depth > maxBounces)
+        {
+            continue;
+        }
+
+        // Intersect ray with scene
+        Intersection intersection = intersectScene(ray);
+
+        // No hit - add background color and continue
+        if (!intersection.hit || intersection.t < INTERSECTION_TEST_EPSILON)
+        {
+            finalColor += throughput * sceneGlobals.backgroundColor;
+            continue;
+        }
+
+        // Get material
+        Material material = GetMaterial(intersection.materialIndex);
+
+        vec3 N = intersection.shadingNormal;
+        vec3 V = -ray.direction;
+        float cosThetaI = dot(V, N);
+
+        // For dielectrics and conductors, adjust normal if inside
+        if (material.type == MATERIAL_TYPE_DIELECTRIC || material.type == MATERIAL_TYPE_CONDUCTOR)
+        {
+            if (isInside)
+            {
+                N = -N;  // Flip normal when inside
+            }
+            // Recalculate cosThetaI after potential normal flip
+            cosThetaI = dot(V, N);
+        }
+
+        // Only shade for non-transparent materials or if not continuing rays
+        // For dielectrics, we don't add direct shading, only the light that comes through
+        if (material.type != MATERIAL_TYPE_DIELECTRIC)
+        {
+            vec3 shadedColor = shade(intersection);
+            finalColor += throughput * shadedColor;
+        }
+
+        // Calculate reflection direction
+        vec3 R = reflect(-V, N);
+
+        // Handle different material types
+        if (material.type == MATERIAL_TYPE_MIRROR && stackPointer < MAX_STACK_SIZE)
+        {
+            // Perfect mirror reflection
+            Ray reflectedRay;
+            reflectedRay.origin = intersection.position + N * SHADOW_BIAS;
+            reflectedRay.direction = R;
+
+            stack[stackPointer].ray = reflectedRay;
+            stack[stackPointer].depth = depth + 1;
+            stack[stackPointer].throughput = throughput * material.mirrorReflectance.rgb;
+            stack[stackPointer].isInside = false;
+            stackPointer++;
+        }
+        else if (material.type == MATERIAL_TYPE_CONDUCTOR && stackPointer < MAX_STACK_SIZE)
+        {
+            // Conductor (metal) - uses complex Fresnel with absorption
+
+            // Use physically accurate Fresnel for conductors
+            vec3 fresnel = ComputeFresnelConductor(material, cosThetaI);
+
+            Ray reflectedRay;
+            reflectedRay.origin = intersection.position + N * SHADOW_BIAS;
+            reflectedRay.direction = R;
+
+            stack[stackPointer].ray = reflectedRay;
+            stack[stackPointer].depth = depth + 1;
+            stack[stackPointer].throughput = throughput * fresnel * material.mirrorReflectance.rgb;
+            stack[stackPointer].isInside = false;
+            stackPointer++;
+        }
+        else if (material.type == MATERIAL_TYPE_DIELECTRIC && stackPointer < MAX_STACK_SIZE - 1)
+        {
+            // Dielectric (glass) - both reflection and refraction
+
+            const float airRefractionIndex = 1.0;
+            float etai = isInside ? material.refractionIndex : airRefractionIndex;
+            float etat = isInside ? airRefractionIndex : material.refractionIndex;
+            float eta = etai / etat;
+
+            // Use physically accurate Fresnel for dielectrics
+            float fresnel = ComputeFresnelDielectric(etai, etat, abs(cosThetaI));
+
+            // Refraction
+            vec3 refractDir = refract(-V, N, eta);
+
+            if (length(refractDir) > 0.01)
+            {
+                // Push refracted ray with proper offset
+                Ray refractedRay;
+                // Always offset in the direction of the refracted ray to avoid self-intersection
+                vec3 offsetDir = normalize(refractDir);
+                refractedRay.origin = intersection.position + offsetDir * SHADOW_BIAS * 3.0;
+                refractedRay.direction = offsetDir;
+
+                stack[stackPointer].ray = refractedRay;
+                stack[stackPointer].depth = depth + 1;
+                stack[stackPointer].throughput = throughput * (1.0 - fresnel);
+                stack[stackPointer].isInside = !isInside;  // Toggle inside/outside state
+                stackPointer++;
+            }
+            else
+            {
+                // Total internal reflection - no refraction, only reflection
+                fresnel = 1.0;
+            }
+
+            // Reflection (always happens, weighted by fresnel)
+            if (fresnel > 0.001)
+            {
+                Ray reflectedRay;
+                reflectedRay.origin = intersection.position + N * SHADOW_BIAS;
+                reflectedRay.direction = R;
+
+                stack[stackPointer].ray = reflectedRay;
+                stack[stackPointer].depth = depth + 1;
+                stack[stackPointer].throughput = throughput * fresnel;
+                stack[stackPointer].isInside = isInside;  // Keep same inside/outside state
+                stackPointer++;
+            }
+        }
     }
 
     return finalColor;

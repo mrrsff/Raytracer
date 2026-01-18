@@ -68,16 +68,14 @@ vec3 shade(Intersection intersection)
 
     vec3 kd = mat.diffuseReflectance.xyz;
     vec3 ks = mat.specularReflectance.xyz;
-
     vec3 V = normalize(camera.position - intersection.position);
 
     vec3 ambient = sceneGlobals.ambientLight * mat.ambientReflectance.xyz;
     vec3 diffuse = vec3(0);
     vec3 specular = vec3(0);
-    
+
     shadePointLights(intersection.position, intersection.shadingNormal, V, kd, ks, mat.phongExponent, diffuse, specular);
-    
-    vec3 color = ambient + diffuse + specular;
-    return color;
+
+    return ambient + diffuse + specular;
 }
 #endif // SHADING_GLSL

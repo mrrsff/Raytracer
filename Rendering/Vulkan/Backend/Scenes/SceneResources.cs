@@ -83,6 +83,7 @@ public sealed class SceneResources : IDisposable
         TriangleSsbo.SetData(sceneDef.Triangles);
         MaterialSsbo.SetData(sceneDef.Materials);
         MeshInstanceSsbo.SetData(sceneDef.MeshInstances);
+        SphereSsbo.SetData(sceneDef.Spheres);
         Debug.Log(SceneGlobalsUbo.ToString());
         Debug.Log(sceneDef.Camera);
         Debug.Log($"Point light count: {sceneDef.PointLights.Length},[0] => {sceneDef.PointLights[0]}");

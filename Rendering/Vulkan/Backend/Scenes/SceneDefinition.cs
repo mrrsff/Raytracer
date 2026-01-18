@@ -5,6 +5,7 @@ using Raytracer.Core;
 using Raytracer.IO.Meshes;
 using Raytracer.Rendering.Vulkan.Backend.Scenes.Objects;
 using Raytracer.Scenes;
+using Raytracer.Scenes.Runtime;
 using Raytracer.Scenes.Runtime.Meshes;
 
 namespace Raytracer.Rendering.Vulkan.Backend.Scenes;
@@ -18,6 +19,7 @@ public class SceneDefinition
     
     public PointLightGPU[] PointLights;
     
+    public SphereGPU[] Spheres;
     public MeshGPU[] Meshes;
     public MeshInstanceGPU[] MeshInstances;
     public TriangleGPU[] Triangles;
@@ -136,10 +138,24 @@ public class SceneDefinition
             };
         }
         
+        var spheres = scene.Geometries.OfType<Sphere>().ToArray();
+        Spheres = new SphereGPU[spheres.Length];
+        for (int i = 0; i < spheres.Length; i++)
+        {
+            var sphere = spheres[i];
+            Spheres[i] = new SphereGPU
+            {
+                Center = sphere.center,
+                Radius = sphere.radius,
+                MaterialIndex = sphere.MaterialIndex
+            };
+        }
+        
         Globals.NumVertices = Vertices.Length;
         Globals.NumTriangles = Triangles.Length;
         Globals.NumMeshes = Meshes.Length;
         Globals.NumMeshInstances = MeshInstances.Length;
+        Globals.NumSpheres = Spheres.Length;
         
         DumpMeshesAndGeometry("Scene_MeshesAndGeometry_Dump.txt");
     }
@@ -214,7 +230,17 @@ public class SceneDefinition
             sb.AppendLine($"    {inst.Transform.Row1}");
             sb.AppendLine($"    {inst.Transform.Row2}");
         }
-
+        
+        sb.AppendLine("Spheres:");
+        for (int i = 0; i < Spheres.Length; i++)
+        {
+            var sphere = Spheres[i];
+            sb.AppendLine(
+                $"Sphere {i}: Center=({sphere.Center.X.ToString(ci)}, {sphere.Center.Y.ToString(ci)}, {sphere.Center.Z.ToString(ci)}), " +
+                $"Radius={sphere.Radius.ToString(ci)}"
+            );
+        }
+        
         Dump.CreateDump(sb.ToString(), fileName);
     }
     private void CreateMaterials()

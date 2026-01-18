@@ -1,4 +1,4 @@
-[SceneDefinition::DumpMeshesAndGeometry:218] Dump created on 1/18/2026 2:52:05 PM
+[SceneDefinition::DumpMeshesAndGeometry:244] Dump created on 1/18/2026 3:47:55 PM
 ===== MESH / GEOMETRY DUMP =====
 
 --- Mesh 0 ---
@@ -117,4 +117,7 @@ Instance 4: MeshIndex=4, MaterialIndex=3
     <1, 0, 0, 0>
     <0, 1, 0, 0>
     <0, 0, 1, 0>
+Spheres:
+Sphere 0: Center=(5, -6, 1), Radius=4
+Sphere 1: Center=(-5, -6, -5), Radius=4
 
