@@ -18,10 +18,10 @@ public static class ActionMaps
         map.Bind(InputAction.Sprint, new KeyBinding(Key.ShiftLeft));
         map.Bind(InputAction.Look, new MouseMoveBinding());
         map.Bind(InputAction.ToggleMouse, new KeyBinding(Key.Escape));
-        map.Bind(InputAction.IncreaseSpeed, new KeyBinding(Key.PageUp));
-        map.Bind(InputAction.DecreaseSpeed, new KeyBinding(Key.PageDown));
-        map.Bind(InputAction.IncreaseSensitivity, new KeyBinding(Key.Home));
-        map.Bind(InputAction.DecreaseSensitivity, new KeyBinding(Key.End));
+        map.Bind(InputAction.IncreaseSpeed, new KeyBinding(Key.Keypad9));
+        map.Bind(InputAction.DecreaseSpeed, new KeyBinding(Key.Keypad3));
+        map.Bind(InputAction.IncreaseSensitivity, new KeyBinding(Key.Keypad7));
+        map.Bind(InputAction.DecreaseSensitivity, new KeyBinding(Key.Keypad1));
         map.Bind(InputAction.EngageFlythrough, new MouseButtonBinding(MouseButton.Right));
         map.Bind(InputAction.OrbitModifier, new KeyBinding(Key.AltLeft));
         map.Bind(InputAction.PanModifier, new MouseButtonBinding(MouseButton.Middle));

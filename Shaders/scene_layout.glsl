@@ -1,9 +1,6 @@
 #ifndef SCENE_LAYOUT_GLSL
 #define SCENE_LAYOUT_GLSL
 
-#define INTERSECTION_TEST_EPSILON 1e-6
-#define SHADOW_BIAS 1e-3
-
 #extension GL_EXT_scalar_block_layout : enable
 
 #include "definitions.glsl"
@@ -34,6 +31,7 @@ layout(set = 1, binding = 5, std430) readonly buffer TriangleBuffer
 {
     Triangle triangles[];
 };
+
 layout(set = 1, binding = 6, std430) readonly buffer MaterialBuffer
 {
     Material materials[];

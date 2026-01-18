@@ -12,7 +12,7 @@ public struct MeshGPU
     public int TriangleOffset;
     public int TriangleCount;
     
-    public int Flags; Vector3 _pad0;
+    public int Flags; int pad0; int pad1; int pad2;
 
     public override string ToString()
     {

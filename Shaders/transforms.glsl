@@ -1,7 +1,6 @@
 #ifndef TRANSFORMS_GLSL
 #define TRANSFORMS_GLSL
 
-#include "objects.glsl"
 #include "definitions.glsl"
 
 mat3 rotationPart(mat4 m)

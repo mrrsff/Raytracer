@@ -1,9 +1,6 @@
 #ifndef OBJECTS_GLSL
 #define OBJECTS_GLSL
 
-#include "scene_layout.glsl"
-#include "definitions.glsl"
-
 struct Sphere
 {
     vec3 center;
@@ -33,7 +30,7 @@ struct Mesh
     int triangleOffset;
     int triangleCount;
     
-    int flags; vec3 _pad0;
+    int flags;  int p1; int p2; int p3;
 };
 
 struct MeshInstance

@@ -86,9 +86,9 @@ public sealed class SceneResources : IDisposable
         Debug.Log(SceneGlobalsUbo.ToString());
         Debug.Log(sceneDef.Camera);
         Debug.Log($"Point light count: {sceneDef.PointLights.Length},[0] => {sceneDef.PointLights[0]}");
-        Debug.Log($"Mesh count: {sceneDef.Meshes.Length}, [0] => {sceneDef.Meshes[0]}");
-        Debug.Log($"Vertex count: {sceneDef.Vertices.Length}, [0] => {sceneDef.Vertices[0]}");
-        Debug.Log($"Triangle count: {sceneDef.Triangles.Length}, [0] => {sceneDef.Triangles[0]}");
+        Debug.Log($"Mesh count: {sceneDef.Meshes.Length}, [0] => {sceneDef.Meshes[0]}, [-1] => {sceneDef.Meshes[^1]}");
+        Debug.Log($"Vertex count: {sceneDef.Vertices.Length}, [0] => {sceneDef.Vertices[0]}, [-1] => {sceneDef.Vertices[^1]}");
+        Debug.Log($"Triangle count: {sceneDef.Triangles.Length}, [0] => {sceneDef.Triangles[0]}, [-1] => {sceneDef.Triangles[^1]}");
         Debug.Log($"Material count: {sceneDef.Materials.Length}, [0] => {sceneDef.Materials[0]}");
         Debug.Log($"MeshInstance count: {sceneDef.MeshInstances.Length}, [0] => {sceneDef.MeshInstances[0]}");
     }

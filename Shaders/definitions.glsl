@@ -39,11 +39,12 @@ struct SceneGlobals
     int numPointLights;
     int numMeshes;
     int numVertices;
+    float _pad2;
     
     int numTriangles;
     int numMaterials;
     int numMeshInstances;
-    float _pad2;
+    float _pad3;
 };
 
 struct Ray

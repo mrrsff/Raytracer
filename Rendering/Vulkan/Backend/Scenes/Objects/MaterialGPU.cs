@@ -19,7 +19,9 @@ public struct MaterialGPU
     public Vector4 AbsorptionCoefficient;
 
     public float RefractionIndex;
-    private Vector3 _pad; // force 16-byte alignment
+    private float _pad0; // Padding to ensure 16-byte alignment
+    private float _pad1; // Padding to ensure 16-byte alignment
+    private float _pad2; // Padding to ensure 16-byte alignment
 
     public override string ToString()
     {

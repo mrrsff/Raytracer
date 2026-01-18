@@ -121,8 +121,6 @@ public class SceneDefinition
             
             currentVertexOffset += meshDefinition.Vertices.Length;
             currentTriangleOffset += meshDefinition.Triangles.Length;
-            
-            // MeshExporter.ExportToOBJ($"MeshGPU_{i}_Export.obj", Meshes[i], Vertices, Triangles);
         }
 
         var runtimeMeshes = scene.Geometries.OfType<Mesh>().ToArray();
@@ -136,8 +134,6 @@ public class SceneDefinition
                 Transform = MeshTransformGPU.Create(mesh.Transform.Matrix),
                 MaterialIndex = mesh.MaterialIndex
             };
-            
-            // Debug.Log(MeshInstances[instanceIndex - 1].Transform + " vs " + mesh.Transform.Matrix);
         }
         
         Globals.NumVertices = Vertices.Length;

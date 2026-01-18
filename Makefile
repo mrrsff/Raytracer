@@ -34,7 +34,7 @@ linux:
 	@make copy-linux
 
 shader:
-	@glslc .\Shaders\raytracer.comp -o .\Shaders\raytracer.comp.spv
+	glslc .\Shaders\raytracer.comp -o .\Shaders\raytracer.comp.spv
 
 copy-linux: 
 	@cp "$(BUILD_DIR)/linux-x64/publish/$(TARGET)" "./$(TARGET)"
@@ -64,6 +64,7 @@ tar:
 		--exclude=.gitignore \
 		--exclude=Tarfile \
 		--exclude=raytracer \
+		--exclude=render.png \
 		.
 
 

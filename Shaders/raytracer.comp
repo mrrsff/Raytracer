@@ -1,4 +1,8 @@
 #version 460
+
+#define INTERSECTION_TEST_EPSILON 1e-6
+#define SHADOW_BIAS 1e-3
+
 #include "scene_layout.glsl"
 #include "intersections.glsl"
 #include "shading.glsl"
@@ -11,7 +15,7 @@ vec3 TraceRay(Ray ray)
     vec3 finalColor = vec3(0.0);
     vec3 throughput = vec3(1.0);
 
-    int maxBounces = 3; //sceneGlobals.maxBounces;
+    int maxBounces = 6; //sceneGlobals.maxBounces;
     for (int bounce = 0; bounce < maxBounces; ++bounce)
     {
         Intersection intersection = intersectScene(ray);
@@ -20,8 +24,6 @@ vec3 TraceRay(Ray ray)
             finalColor += throughput * sceneGlobals.backgroundColor;
             break;
         }
-        
-//        return (normalize(intersection.shadingNormal) * 0.5 + 0.5);
 
         vec3 shadedColor = shade(intersection);
         finalColor += throughput * shadedColor;
@@ -48,10 +50,10 @@ void main()
 {    
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
     ivec2 size = imageSize(outputImage);
-
+    
     if (pixel.x >= size.x || pixel.y >= size.y)
     return;
-
+    
     Ray ray = generateCameraRay(pixel.x, pixel.y, size.x, size.y, camera);
     vec3 color = TraceRay(ray);
     color = clamp(color, 0, 255.0) / 255.0;

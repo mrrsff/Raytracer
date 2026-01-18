@@ -19,7 +19,7 @@ public class SphericalDirectionalLight : Light
     public void Initialize(HDRImage image)
     {
         _image = image;
-        Debug.Log($"Initialized SphericalDirectionalLight Id: {Id} with ImageId: {ImageId}");
+        // Debug.Log($"Initialized SphericalDirectionalLight Id: {Id} with ImageId: {ImageId}");
     }
     
     public override bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)

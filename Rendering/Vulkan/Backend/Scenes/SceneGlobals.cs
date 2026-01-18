@@ -14,11 +14,12 @@ public struct SceneGlobals
     public int NumPointLights; 
     public int NumMeshes;
     public int NumVertices;
+    public float _Padding2;
     
     public int NumTriangles;
     public int NumMaterials;
     public int NumMeshInstances;
-    public float _Padding2;
+    public float _Padding3;
 
     public override string ToString()
     {
