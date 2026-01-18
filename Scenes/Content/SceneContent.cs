@@ -14,6 +14,7 @@ public class SceneContent
     public Cameras Cameras;
     public float IntersectionTestEpsilon = 1e-6f;
     public Lights Lights;
+    public BrdfLibrary BRDFs;
     public Materials Materials;
     public int MaxRecursionDepth = 1;
     public Objects Objects;

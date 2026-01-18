@@ -38,10 +38,10 @@ public partial class Scene
     {
         // Load textures
         TextureManager.LoadTextures(Content);
-        if (TextureManager.TryGetBackgroundTexture(out backgroundTexture))
-        {
-            
-        }
+        TextureManager.TryGetBackgroundTexture(out backgroundTexture);
+        
+        // create brdf's for materials
+        Content.Materials.CreateBRDFs(Content.BRDFs);
         
         if (Content.Lights.PointLight != null)
         {

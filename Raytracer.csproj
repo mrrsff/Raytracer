@@ -11,6 +11,7 @@
     <ItemGroup>
         <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11"/>
+        <PackageReference Include="TinyEXR.NET" Version="0.3.11" />
     </ItemGroup>
 
     <ItemGroup>

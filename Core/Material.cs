@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
+using Raytracer.Rendering.Shading.BRDFs;
 
 namespace Raytracer.Core;
 
@@ -9,6 +10,8 @@ public class Material
     [JsonPropertyName("_id")] public int Id;
     [JsonPropertyName("_type")] public MaterialType Type;
 
+    [JsonPropertyName("_BRDF")] public int? BrdfId;
+    
     public Vector3 AmbientReflectance;
     public Vector3 DiffuseReflectance;
     public Vector3 SpecularReflectance;
@@ -20,6 +23,8 @@ public class Material
     public Vector3 AbsorptionCoefficient;
     public float RefractionIndex;
     public float AbsorptionIndex;
+
+    public IBRDF Brdf;
 
     public override string ToString()
     {
