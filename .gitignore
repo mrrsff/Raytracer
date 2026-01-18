@@ -6,10 +6,7 @@ riderModule.iml
 **/*.exe
 Outputs/*
 .idea/
-/hw1/
 raytracer
 /Tarfile/raytracer.tar.gz
-/hw2/
-/hw3/
-/hw4/
+hw*/
 /Inputs/
