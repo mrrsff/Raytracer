@@ -1,29 +1,15 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Raytracer.Scenes.Content.Datas.Objects;
 
-public enum ShadingMode
+public class LightMeshData : MeshData
 {
-    Flat,
-    Smooth
-}
-
-public class MeshData
-{
-    [JsonPropertyName("_id")] public int Id;
-    [JsonPropertyName("_shadingMode")] public ShadingMode ShadingMode;
-    public int Material;
-    public string Transformations;
-    public FacesData Faces;
-    public Vector3 MotionBlur;
-    public int[] Textures;
-
-
+    public Vector3 Radiance;
     public override string ToString()
     {
-        return new StringBuilder().Append("Mesh(Id: ")
+        return new StringBuilder().Append("LightMesh(Id: ")
             .Append(Id)
             .Append(", Material Id: ")
             .Append(Material)
@@ -34,6 +20,8 @@ public class MeshData
             .Append(", Vertex Indices: [")
             .Append(Faces)
             .Append("])")
+            .Append(", Radiance: ")
+            .Append(Radiance)
             .ToString();
     }
 }

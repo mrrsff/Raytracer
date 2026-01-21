@@ -12,7 +12,7 @@ namespace Raytracer.Scenes.Runtime.Meshes;
 public class Mesh : Geometry
 {
     public readonly int baseMeshId;
-    private MeshDefinition MeshDefinition { get; set; }
+    protected MeshDefinition MeshDefinition { get; set; }
     private ShadingMode ShadingMode { get; set; }
 
     public override int GetPrimitiveCount() => MeshDefinition.Triangles.Length;

@@ -77,7 +77,7 @@ public class BrdfLibrary
     }
     private IBRDF CreateBRDFFromDefinition(Material mat, BRDFDefinition def)
     {
-        Debug.Log($"Creating BRDF of type {def.Type} for Material {mat.Id} using BRDF Definition {def.Id}.");
+        // Debug.Log($"Creating BRDF of type {def.Type} for Material {mat.Id} using BRDF Definition {def.Id}.");
         return def.Type switch
         {
             BRDFType.OriginalBlinnPhong => new OriginalBlinnPhongBRDF(def),

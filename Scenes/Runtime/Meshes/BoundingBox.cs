@@ -101,4 +101,19 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
     {
         return $"BoundingBox(Min: {Min}, Max: {Max})";
     }
+    
+    public Vector3[] GetCorners()
+    {
+        return
+        [
+            Min,
+            new Vector3(Min.X, Min.Y, Max.Z),
+            new Vector3(Min.X, Max.Y, Min.Z),
+            new Vector3(Max.X, Min.Y, Min.Z),
+            new Vector3(Min.X, Max.Y, Max.Z),
+            new Vector3(Max.X, Min.Y, Max.Z),
+            new Vector3(Max.X, Max.Y, Min.Z),
+            Max
+        ];
+    }
 }

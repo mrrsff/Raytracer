@@ -3,18 +3,26 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
+using Raytracer.IO.SceneLoaders.Converters;
 using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Content.Datas.Camera;
 
 public enum CameraType { None, LookAt }
 public enum Handedness { right, left }
+public enum RendererType { RayTracing, PathTracing }
+public enum RendererParams { NextEventEstimation, MIS_BALANCE, ImportanceSampling, RussianRoulette }
 
 public class Camera
 {
     [JsonPropertyName("_id")] public int Id;
     [JsonPropertyName("_type")] public CameraType Type;
-    private readonly Handedness _handedness = Handedness.right;
+    [JsonPropertyName("_handedness")] public Handedness Handedness = Handedness.right;
+    public RendererType Renderer = RendererType.RayTracing;
+    
+    [JsonConverter(typeof(SingleOrListEnumConverter<RendererParams>))]
+    public List<RendererParams> RendererParams = new List<RendererParams>();
+    
     public Vector3 Position;
     public Vector3 Gaze;
     public Vector3 GazePoint;
@@ -36,25 +44,41 @@ public class Camera
 
     public override string ToString()
     {
-        return new StringBuilder().Append("Camera(Id: ")
-            .Append(Id)
-            .Append(", Position: ")
-            .Append(Position)
-            .Append(", Gaze: ")
-            .Append(Gaze)
-            .Append(", Up: ")
-            .Append(Up)
-            .Append(", NearPlane: ")
-            .Append(NearPlane)
-            .Append(", NearDistance: ")
-            .Append(NearDistance)
-            .Append(", NumSamples: ")
-            .Append(NumSamples)
-            .Append(", ImageResolution: ")
-            .Append(ImageResolution)
-            .Append(", ImageName: ")
-            .Append(ImageName)
-            .Append(')').ToString();
+        var sb = new StringBuilder();
+        sb.Append("Camera(Id: ");
+        sb.Append(Id);
+        sb.Append(", Type: ");
+        sb.Append(Type);
+        sb.Append(", Handedness: ");
+        sb.Append(Handedness);
+        sb.Append(", Renderer: ");
+        sb.Append(Renderer);
+        sb.Append(", Parameters: [");
+        for (int i = 0; i < RendererParams.Count; i++)
+        {
+            sb.Append(RendererParams[i]);
+            if (i < RendererParams.Count - 1)
+                sb.Append(", ");
+        }
+        sb.Append(']');
+        sb.Append(", Position: ");
+        sb.Append(Position);
+        sb.Append(", Gaze: ");
+        sb.Append(Gaze);
+        sb.Append(", Up: ");
+        sb.Append(Up);
+        sb.Append(", NearPlane: ");
+        sb.Append(NearPlane);
+        sb.Append(", NearDistance: ");
+        sb.Append(NearDistance);
+        sb.Append(", NumSamples: ");
+        sb.Append(NumSamples);
+        sb.Append(", ImageResolution: ");
+        sb.Append(ImageResolution);
+        sb.Append(", ImageName: ");
+        sb.Append(ImageName);
+        sb.Append(')');
+        return sb.ToString();
     }
 
     public void Initialize()
@@ -80,7 +104,7 @@ public class Camera
 
         var w = Vector3.Normalize(-Gaze);
         var v = Vector3.Normalize(Up - Vector3.Dot(Up, w) * w);
-        Vector3 u = _handedness == Handedness.right ? Vector3.Cross(v, w) : Vector3.Cross(w, v);
+        Vector3 u = Handedness == Handedness.right ? Vector3.Cross(v, w) : Vector3.Cross(w, v);
 
         Forward = -w; // points into scene
         Right = u;

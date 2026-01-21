@@ -37,7 +37,7 @@ public static class BlinnPhongShading
         Vector3 diffuse = Vector3.Zero;
         Vector3 specular = Vector3.Zero;
         
-        foreach (var light in renderer.Scene.Content.Lights.AllLights)
+        foreach (var light in renderer.Scene.Lights)
         {
             if (light.Sample(P, N, time, renderer, out Vector3 L, out Vector3 irradiance))
             {

@@ -3,7 +3,7 @@ using Raytracer.IO.SceneLoaders.Converters;
 
 namespace Raytracer.Scenes.Content.Datas.Objects;
 
-public struct SphereData
+public class SphereData
 {
     [JsonPropertyName("_id")] public int Id;
     public int Center;

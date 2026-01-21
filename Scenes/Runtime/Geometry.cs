@@ -13,6 +13,8 @@ public abstract class Geometry
     public int MaterialIndex;
     public Vector3 MotionBlur = Vector3.Zero;
     public int[] TextureIndices = [];
+    public virtual bool IsEmitter => false;
+    public virtual Vector3 Emission => Vector3.Zero;
     
     public bool HasMotionBlur => MotionBlur != Vector3.Zero;
     public Vector3 Centroid => Bounds != null ? (Bounds.Min + Bounds.Max) * 0.5f : Vector3.Zero;

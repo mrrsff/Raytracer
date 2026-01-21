@@ -313,8 +313,9 @@ public class RayTracerRenderer : CPURenderer
                     weight *= GetAbsorption(hit.material!.AbsorptionCoefficient, currentDistanceTraveled);
                 }
             }
-
-            finalColor += Shade(hit, ray.Time) * weight;
+            
+            if (hit.HitGeometry.IsEmitter) finalColor += hit.HitGeometry.Emission * weight;
+            else finalColor += Shade(hit, ray.Time) * weight;
             
             Ray reflectedRay = GetReflectedRay(hit, ray);
             switch (hit.material.Type)

@@ -39,8 +39,8 @@ public static class BRDFShading
 
         Vector3 ambient = material.AmbientReflectance * renderer.Scene.Content.Lights.AmbientLight;
         Vector3 Lo = ambient;
-
-        foreach (var light in renderer.Scene.Content.Lights.AllLights)
+        
+        foreach (var light in renderer.Scene.Lights)
         {
             if (light.Sample(point, normal, time, renderer, out Vector3 wi, out Vector3 irradiance))
             {

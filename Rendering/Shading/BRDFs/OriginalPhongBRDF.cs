@@ -22,6 +22,4 @@ public class OriginalPhongBRDF : IBRDF
 
         return (kd + ks * MathF.Pow(cosR, exponent)) / cosI;
     }
-    
-    
 }

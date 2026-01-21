@@ -7,7 +7,7 @@ using Raytracer.Utility;
 
 namespace Raytracer.Core.Lights;
 
-public class AreaLight : Light
+public class AreaLight : ILight
 {
     [JsonPropertyName("_id")] public int Id;
     public string Transformations;
@@ -38,13 +38,13 @@ public class AreaLight : Light
             .Append(')').ToString();
     }
 
-    public override void Initialize()
+    public void Initialize()
     {
         // Generate orthonormal basis (U, V) for the area light's plane
         MathUtility.BuildONB(Normal, out U, out V);
     }
 
-    public override bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
+    public bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
     {
         Vector2 sample = Sampler.UniformRandom();
                 

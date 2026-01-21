@@ -8,7 +8,7 @@ using Raytracer.Utility;
 namespace Raytracer.Core.Lights;
 
 [Serializable]
-public class SphericalDirectionalLight : Light
+public class SphericalDirectionalLight : ILight
 {
     [JsonPropertyName("_id")] public int Id;
     [JsonPropertyName("_type")] public SphericalDirectionalLightType Type;
@@ -22,7 +22,7 @@ public class SphericalDirectionalLight : Light
         // Debug.Log($"Initialized SphericalDirectionalLight Id: {Id} with ImageId: {ImageId}");
     }
     
-    public override bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
+    public bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
     {
         if (_image == null)
         {

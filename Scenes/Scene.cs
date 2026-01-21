@@ -4,7 +4,10 @@ using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Raytracer.Core;
 using Raytracer.Core.Lights;
+using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
+using Raytracer.Rendering.PathTracing;
+using Raytracer.Rendering.Raytracing;
 using Raytracer.Scenes.Content;
 using Raytracer.Scenes.Content.Datas.Camera;
 using Raytracer.Scenes.Runtime;
@@ -21,6 +24,7 @@ public partial class Scene
     [JsonPropertyName("Scene")] public SceneContent Content;
 
     public List<Geometry> Geometries = [];
+    public List<ILight> Lights = [];
     public List<Plane> Planes = [];
     public BoundingVolumeHierarchy? TLAS;
     public TextureManager TextureManager = new();
@@ -39,8 +43,8 @@ public partial class Scene
     {
         InitializeTextures();
         InitializeMaterials();
-        InitializeLights();
         InitGeometries();
+        InitializeLights();
         InitializeCameras();
 
         if (Debug.PrintSceneInfo)
@@ -69,6 +73,7 @@ public partial class Scene
     private void InitializeLights()
     {
         Content.Lights.Initialize();
+        Lights.AddRange(Content.Lights.AllLights);
         
         var pLightList = Content.Lights.GetPointLights();
         foreach (var pLight in pLightList) { ApplyTransformations(pLight.Transform, pLight.Transformations); pLight.CalculatePosition(); }
@@ -110,6 +115,17 @@ public partial class Scene
             Geometries.Add(mesh);
             originalMeshes.TryAdd(meshData.Id, mesh);
         }
+        
+        foreach (var lightMeshData in Content.Objects.LightMesh)
+        {
+            var transform = new Transform();
+            
+            ApplyTransformations(transform, lightMeshData.Transformations);
+            var lightMesh = new LightMesh(lightMeshData, this, transform);
+            Geometries.Add(lightMesh);
+            originalMeshes.TryAdd(lightMeshData.Id, lightMesh);
+            Lights.Add(lightMesh);
+        }
 
         foreach (var meshInstance in Content.Objects.MeshInstance)
         {
@@ -128,6 +144,13 @@ public partial class Scene
             var sphere = new Sphere(sphereData, Content.VertexData);
             ApplyTransformations(sphere.Transform, sphereData.Transformations);
             Geometries.Add(sphere);
+        }
+        foreach (var lightSphereData in Content.Objects.LightSphere)
+        {
+            var lightSphere = new LightSphere(lightSphereData, Content.VertexData);
+            ApplyTransformations(lightSphere.Transform, lightSphereData.Transformations);
+            Geometries.Add(lightSphere);
+            Lights.Add(lightSphere);
         }
 
         foreach (var planeData in Content.Objects.Plane)
@@ -150,6 +173,16 @@ public partial class Scene
     {
         var clamped = Math.Clamp(index, 0, Content.Cameras.Camera.Count - 1);
         return Content.Cameras.Camera[clamped];
+    }
+
+    public Renderer GetRenderer(int cameraIndex)
+    {
+        return GetCamera(cameraIndex).Renderer switch
+        {
+            RendererType.RayTracing => new RayTracerRenderer(this),
+            RendererType.PathTracing => new PathTracerRenderer(this),
+            _ => new RayTracerRenderer(this),
+        };
     }
 
     public IntersectionInfo Intersect(Ray ray)

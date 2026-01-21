@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Raytracer.Core;
 using Raytracer.IO.Images;
+using Raytracer.Rendering;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Rendering.SDL2;
 using Raytracer.Scenes;
@@ -71,7 +72,6 @@ public static class Program
         foreach (var scene in scenes)
         {
             scene.Initialize();
-            var renderer = new RayTracerRenderer(scene);
             
             object bufferLock = new object();
             ImageBuffer buffer = null!;
@@ -79,6 +79,7 @@ public static class Program
             {
                 for (int i = 0; i < scene.Content.Cameras.Camera.Count; i++)
                 {
+                    Renderer renderer = scene.GetRenderer(i);
                     lock (bufferLock)
                     {
                         buffer = renderer.CreateEmptyImageBuffer(i);

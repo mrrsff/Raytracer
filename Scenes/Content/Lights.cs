@@ -25,7 +25,7 @@ public struct Lights
     [JsonConverter(typeof(SingleOrListConverter<SphericalDirectionalLight>))]
     public List<SphericalDirectionalLight> SphericalDirectionalLight;
 
-    public List<Light> AllLights;
+    public List<ILight> AllLights;
     
     public void Initialize()
     {

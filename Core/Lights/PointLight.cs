@@ -5,7 +5,7 @@ using Raytracer.Rendering;
 
 namespace Raytracer.Core.Lights;
 
-public class PointLight : Light
+public class PointLight : ILight
 {
     [JsonPropertyName("_id")] public int Id;
     public string Transformations;
@@ -25,7 +25,7 @@ public class PointLight : Light
             .Append(')').ToString();
     }
 
-    public override bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
+    public bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
     {
         if (renderer.Scene.IsOccluded(P, Position, N, time))
         {

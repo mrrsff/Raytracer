@@ -39,6 +39,12 @@ public class ImageBuffer
         if (x < 0 || x >= Width || y < 0 || y >= Height) return;
         Pixels[y * Width + x] = color;
     }
+    
+    public void AddSample(int x, int y, Vector3 color)
+    {
+        if (x < 0 || x >= Width || y < 0 || y >= Height) return;
+        Pixels[y * Width + x] += color;
+    }
 
     public Vector3 GetPixel(int x, int y)
     {

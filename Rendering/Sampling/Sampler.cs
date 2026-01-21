@@ -61,6 +61,10 @@ public static class Sampler
     {
         return new Vector2(ThreadRng.NextFloat(), ThreadRng.NextFloat());
     }
+    public static float OneDimensionalUniform()
+    {
+        return ThreadRng.NextFloat();
+    }
     public static Vector2[] UniformRandom(int n)
     {
         Vector2[] samples = new Vector2[n];
@@ -83,5 +87,19 @@ public static class Sampler
         }
 
         return samples;
+    }
+    
+    public static Vector3 UniformSampleSphere()
+    {
+        float u1 = ThreadRng.NextFloat();
+        float u2 = ThreadRng.NextFloat();
+
+        float z = 1f - 2f * u1;
+        float r = MathF.Sqrt(MathF.Max(0f, 1f - z * z));
+        float phi = 2f * MathF.PI * u2;
+        float x = r * MathF.Cos(phi);
+        float y = r * MathF.Sin(phi);
+
+        return new Vector3(x, y, z);
     }
 }
