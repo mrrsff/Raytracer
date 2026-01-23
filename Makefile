@@ -51,9 +51,15 @@ tar:
 		--exclude=hw2 \
 		--exclude=hw3 \
 		--exclude=hw4 \
+		--exclude=hw5 \
+		--exclude=hw6 \
 		--exclude=Outputs \
 		--exclude=Inputs \
 		--exclude=.git \
+		--exclude=.github \
+		--exclude=*.user \
+		--exclude=*.csproj \
+		--exclude=*.sln \
 		--exclude=.idea \
 		--exclude=bin \
 		--exclude=obj \
