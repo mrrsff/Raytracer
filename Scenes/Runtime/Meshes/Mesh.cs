@@ -66,7 +66,7 @@ public class Mesh : Geometry
         var finalTransform = GetMotionBlurTransform(ray.Time);
         Ray localRay = finalTransform.ToLocalRay(ray);
 
-        info.IntersectionTestEpsilon = RayTracerRenderer.IntersectionTestEpsilon;
+        info.IntersectionTestEpsilon = Renderer.IntersectionTestEpsilon;
         var hit = MeshDefinition.BVH.Intersect(in localRay, ref info);
         if (!hit) return false;
 

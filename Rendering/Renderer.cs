@@ -7,10 +7,20 @@ using Raytracer.Utility;
 
 namespace Raytracer.Rendering
 {
-    public abstract class Renderer(Scene scene)
+    public abstract class Renderer
     {
-        public Scene Scene { get; } = scene;
+        public Scene Scene { get; }
         public Camera Camera { get; private set; } = null!;
+
+        public static float IntersectionTestEpsilon; 
+        public static float ShadowRayEpsilon;
+
+        protected Renderer(Scene scene)
+        {
+            Scene = scene;
+            IntersectionTestEpsilon = scene.Content.IntersectionTestEpsilon;
+            ShadowRayEpsilon = scene.Content.ShadowRayEpsilon;
+        }
 
         public ImageBuffer CreateEmptyImageBuffer(int cameraIndex)
         {

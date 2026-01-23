@@ -9,7 +9,7 @@ using Raytracer.Utility;
 
 namespace Raytracer.Scenes.Runtime.Meshes;
 
-public class LightMesh : Mesh, ILight
+public class LightMesh : Mesh, IObjectLight
 {
     public override bool IsEmitter => true;
     public override Vector3 Emission => radiance;
@@ -47,47 +47,80 @@ public class LightMesh : Mesh, ILight
             if (dist > boundingSphereRadius)
                 boundingSphereRadius = dist;
         }
-        
     }
 
     public bool Sample(in Vector3 P, in Vector3 N, float time, Renderer renderer, out Vector3 L, out Vector3 irradiance)
     {
-        SelectPoint(out Vector3 pointOnLight, out Vector3 normalOnLight, out float pdf);
-        
-        Ray shadowRay = new Ray(
-            P + N * renderer.Scene.Content.ShadowRayEpsilon,
-            Vector3.Normalize(pointOnLight - P),
-            true,
-            time);
-        IntersectionInfo info = renderer.Scene.Intersect(shadowRay);
-        if (info.Hit && info.HitGeometry != this)
+        L = irradiance = Vector3.Zero;
+
+        SelectPoint(time, out Vector3 x, out Vector3 nL, out float pdfA);
+
+        Vector3 toLight = x - P;
+        float dist2 = toLight.LengthSquared();
+        float dist = MathF.Sqrt(dist2);
+        Vector3 wi = toLight / dist;
+
+        float cosSurface = Vector3.Dot(N, wi);
+        if (cosSurface < 0f)
         {
-            L = irradiance = default;
-            return false;
-        }
-        
-        Vector3 wi = Vector3.Normalize(pointOnLight - P);
-        
-        float solidAngle = pdf * Vector3.Dot(-wi, normalOnLight) / (boundingSphereRadius * boundingSphereRadius);
-        if (solidAngle <= 0f || pdf <= 0f)
-        {
-            L = Vector3.Zero;
-            irradiance = Vector3.Zero;
             return false;
         }
 
+        float cosLight = Vector3.Dot(nL, -wi);
+        if (cosLight <= 0f)
+            return false;
+        
+        Ray shadowRay = new Ray(
+            P + wi * renderer.Scene.Content.ShadowRayEpsilon,
+            wi,
+            true,
+            time
+        );
+
+        IntersectionInfo hit = renderer.Scene.Intersect(shadowRay);
+        if (hit.Hit)
+        {
+            if (hit.HitGeometry != this)
+                return false;
+        }
+
+        // Convert area PDF to solid angle PDF
+        float pdfW = (pdfA * dist2) / cosLight * 2.0f;
+        if (pdfW <= 0f)
+            return false;
+
         L = wi;
-        irradiance = radiance / solidAngle;
+        irradiance = radiance * cosLight / dist2;
         return true;
     }
-    
-    private void SelectPoint(out Vector3 point, out Vector3 normal, out float pdf)
+
+
+    public float Pdf(Vector3 P, Vector3 N, float time, Renderer renderer)
+    {
+        SelectPoint(time, out Vector3 x, out Vector3 nL, out float pdfA);
+
+        Vector3 toLight = x - P;
+        float dist2 = toLight.LengthSquared();
+        Vector3 wi = Vector3.Normalize(toLight);
+
+        float cosLight = Vector3.Dot(nL, -wi);
+        if (cosLight < 0f)
+            cosLight = -cosLight;
+
+        float pdfW = (pdfA * dist2) / cosLight * 2.0f;
+        return pdfW;
+    }
+
+
+    private void SelectPoint(float time, out Vector3 point, out Vector3 normal, out float pdf)
     {
         SelectTriangle(out int triangleIndex, out float trianglePdf);
         var tri = MeshDefinition.Triangles[triangleIndex];
-        Vector3 v0 = Transform.ToWorldPoint(tri.V0);
-        Vector3 v1 = Transform.ToWorldPoint(tri.V1);
-        Vector3 v2 = Transform.ToWorldPoint(tri.V2);
+        
+        var tr = GetMotionBlurTransform(time);
+        Vector3 v0 = tr.ToWorldPoint(tri.V0);
+        Vector3 v1 = tr.ToWorldPoint(tri.V1);
+        Vector3 v2 = tr.ToWorldPoint(tri.V2);
         
         // Sample point on triangle using barycentric coordinates
         float u = Sampler.OneDimensionalUniform();
@@ -97,12 +130,15 @@ public class LightMesh : Mesh, ILight
             u = 1f - u;
             v = 1f - v;
         }
+        
         point = v0 + u * (v1 - v0) + v * (v2 - v0);
         
-        // Compute normal
-        normal = Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
+        Vector3 e1 = v1 - v0;
+        Vector3 e2 = v2 - v0;
+        float area = 0.5f * Vector3.Cross(e1, e2).Length();
+        normal = Vector3.Normalize(Vector3.Cross(e1, e2));
         
-        pdf = trianglePdf / (0.5f * Vector3.Cross(v1 - v0, v2 - v0).Length());
+        pdf = trianglePdf / area;
     }
     private void SelectTriangle(out int triangleIndex, out float trianglePdf)
     {

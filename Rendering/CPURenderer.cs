@@ -40,7 +40,7 @@ public abstract class CPURenderer(Scene scene) : Renderer(scene)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected static bool Refract(in Vector3 I, in Vector3 n, float eta, out Vector3 refractedDir)
+    public static bool Refract(in Vector3 I, in Vector3 n, float eta, out Vector3 refractedDir)
     {
         float cosi = Math.Clamp(Vector3.Dot(I, n), -1f, 1f);
         float k  = 1f - eta * eta * (1f - cosi * cosi);

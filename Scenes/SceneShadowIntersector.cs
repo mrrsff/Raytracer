@@ -51,7 +51,7 @@ public partial class Scene
         RayStats.IncrementShadow();
         var dir = Vector3.Normalize(lightPos - point);
         float maxT = Vector3.Distance(lightPos, point);
-        var ray = new Ray(point + normal * RayTracerRenderer.ShadowRayEpsilon, dir, true, time);
+        var ray = new Ray(point + normal * Renderer.ShadowRayEpsilon, dir, true, time);
         return IntersectAny(ray, maxT);
     }
 }

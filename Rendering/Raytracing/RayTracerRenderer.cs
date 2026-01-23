@@ -14,18 +14,17 @@ namespace Raytracer.Rendering.Raytracing;
 
 public class RayTracerRenderer : CPURenderer
 {
-    public static float IntersectionTestEpsilon;
-    public static float ShadowRayEpsilon;
 
-    public RayTracerRenderer(Scene scene) : base(scene)
-    {
-        IntersectionTestEpsilon = scene.Content.IntersectionTestEpsilon;
-        ShadowRayEpsilon = scene.Content.ShadowRayEpsilon;
-    }
-
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    private CancellationToken cancellationToken;
+    public RayTracerRenderer(Scene scene) : base(scene){}
     protected override void OnRender(ImageBuffer buffer)
     {
+        cancellationToken = cts.Token;
+        RayStats.ThroughputMonitor(TimeSpan.FromSeconds(10), cancellationToken);
         DynamicThreadPoolRender(Camera, buffer);
+        cts.Cancel();
+        RayStats.Reset();
     }
 
     private void ProgressiveRenderPixel(int x, int y, Camera renderCamera, ImageBuffer buffer)
@@ -165,89 +164,89 @@ public class RayTracerRenderer : CPURenderer
     #endregion
 
     #region Ray Tracing
-    // private Vector3 TraceRay(int x, int y, in Ray ray, in int depth, out float distanceTraveled)
-    // {
-    //     distanceTraveled = 0;
-    //     if (depth > Scene.Content.MaxRecursionDepth)
-    //         return ColorUtility.Black;
-    //
-    //     IntersectionInfo hit = Scene.Intersect(ray);
-    //
-    //     if (!hit.Hit)
-    //         return Scene.Content.BackgroundColor;
-    //
-    //     distanceTraveled = hit.Distance;
-    //
-    //     Vector3 finalColor = Vector3.Zero;
-    //
-    //     bool inFront = Vector3.Dot(ray.Direction, hit.Normal) < 0f; // Ray is entering the material (facing normal)
-    //     if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor && !inFront)
-    //     {
-    //         hit.Normal = -hit.Normal;
-    //     }
-    //     else finalColor = Shade(hit, ray.Time);
-    //
-    //     float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.Normal));
-    //
-    //     Vector3 reflectedColor = ColorUtility.Black;
-    //     Ray reflectedRay = GetReflectedRay(hit, ray);
-    //     if (inFront)
-    //     {
-    //         reflectedColor = TraceRay(x, y, reflectedRay, depth + 1, out _);
-    //     }
-    //
-    //     switch (hit.material?.Type)
-    //     {
-    //         case MaterialType.Mirror:
-    //             finalColor += hit.material.MirrorReflectance * reflectedColor;
-    //             break;
-    //         case MaterialType.Conductor:
-    //         {
-    //             var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
-    //             finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
-    //             break;
-    //         }
-    //         case MaterialType.Dielectric:
-    //         {
-    //             const float airRefractionIndex = 1f;
-    //             float etai = inFront ? airRefractionIndex : hit.material.RefractionIndex;
-    //             float etat = inFront ? hit.material.RefractionIndex : airRefractionIndex;
-    //             float eta = etai / etat;
-    //
-    //             if (Refract(ray.Direction, hit.Normal, eta, out Vector3 refrDir))
-    //             {
-    //                 if (hit.material.Roughness > 0f)
-    //                 {
-    //                     refrDir = GlossyReflection.PerturbDirection(refrDir, hit.material.Roughness, Sampler.UniformRandom());
-    //                 }
-    //
-    //                 Ray refractedRay = new Ray(hit.Point - hit.Normal * Scene.Content.ShadowRayEpsilon, refrDir, true);
-    //                 Vector3 refractedColor = TraceRay(x, y, refractedRay, depth + 1, out float insideDistance);
-    //                 if (inFront) // apply absorption only when the ray is entering the material
-    //                 {
-    //                     refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
-    //                 }
-    //
-    //                 float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
-    //
-    //                 finalColor += fresnel * reflectedColor + (1f - fresnel) * refractedColor;
-    //             }
-    //             else // total internal reflection
-    //             {
-    //                 Vector3 tirColor = TraceRay(x, y, reflectedRay, depth + 1, out float traveled);
-    //                 distanceTraveled += traveled;
-    //                 
-    //                 Vector3 absorption = GetAbsorption(hit.material.AbsorptionCoefficient, traveled);
-    //                 tirColor *= absorption;
-    //                 finalColor += tirColor;
-    //             }
-    //
-    //             break;
-    //         }
-    //     }
-    //
-    //     return finalColor;
-    // }
+    private Vector3 TraceRay(int x, int y, in Ray ray, in int depth, out float distanceTraveled)
+    {
+        distanceTraveled = 0;
+        if (depth > Scene.Content.MaxRecursionDepth)
+            return ColorUtility.Black;
+    
+        IntersectionInfo hit = Scene.Intersect(ray);
+    
+        if (!hit.Hit)
+            return Scene.Content.BackgroundColor;
+    
+        distanceTraveled = hit.Distance;
+    
+        Vector3 finalColor = Vector3.Zero;
+    
+        bool inFront = Vector3.Dot(ray.Direction, hit.ShadingNormal) < 0f; // Ray is entering the material (facing normal)
+        if (hit.material?.Type is MaterialType.Dielectric or MaterialType.Conductor && !inFront)
+        {
+            hit.ShadingNormal = -hit.ShadingNormal;
+        }
+        else finalColor = Shade(hit, ray.Time);
+    
+        float cosThetaI = MathF.Abs(Vector3.Dot(-ray.Direction, hit.ShadingNormal));
+    
+        Vector3 reflectedColor = ColorUtility.Black;
+        Ray reflectedRay = GetReflectedRay(hit, ray);
+        if (inFront)
+        {
+            reflectedColor = TraceRay(x, y, reflectedRay, depth + 1, out _);
+        }
+    
+        switch (hit.material?.Type)
+        {
+            case MaterialType.Mirror:
+                finalColor += hit.material.MirrorReflectance * reflectedColor;
+                break;
+            case MaterialType.Conductor:
+            {
+                var fresnel = FresnelComputation.ComputeFresnelConductor(hit.material, cosThetaI);
+                finalColor += fresnel * hit.material.MirrorReflectance * reflectedColor;
+                break;
+            }
+            case MaterialType.Dielectric:
+            {
+                const float airRefractionIndex = 1f;
+                float etai = inFront ? airRefractionIndex : hit.material.RefractionIndex;
+                float etat = inFront ? hit.material.RefractionIndex : airRefractionIndex;
+                float eta = etai / etat;
+    
+                if (Refract(ray.Direction, hit.ShadingNormal, eta, out Vector3 refrDir))
+                {
+                    if (hit.material.Roughness > 0f)
+                    {
+                        refrDir = GlossyReflection.PerturbDirection(refrDir, hit.material.Roughness, Sampler.UniformRandom());
+                    }
+    
+                    Ray refractedRay = new Ray(hit.Point - hit.ShadingNormal * Scene.Content.ShadowRayEpsilon, refrDir, true);
+                    Vector3 refractedColor = TraceRay(x, y, refractedRay, depth + 1, out float insideDistance);
+                    if (inFront) // apply absorption only when the ray is entering the material
+                    {
+                        refractedColor *= GetAbsorption(hit.material.AbsorptionCoefficient, insideDistance);
+                    }
+    
+                    float fresnel = FresnelComputation.ComputeFresnelDielectric(etai, etat, cosThetaI);
+    
+                    finalColor += fresnel * reflectedColor + (1f - fresnel) * refractedColor;
+                }
+                else // total internal reflection
+                {
+                    Vector3 tirColor = TraceRay(x, y, reflectedRay, depth + 1, out float traveled);
+                    distanceTraveled += traveled;
+                    
+                    Vector3 absorption = GetAbsorption(hit.material.AbsorptionCoefficient, traveled);
+                    tirColor *= absorption;
+                    finalColor += tirColor;
+                }
+    
+                break;
+            }
+        }
+    
+        return finalColor;
+    }
 
     private struct RayState
     {

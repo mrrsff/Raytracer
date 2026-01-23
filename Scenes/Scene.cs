@@ -25,6 +25,7 @@ public partial class Scene
 
     public List<Geometry> Geometries = [];
     public List<ILight> Lights = [];
+    public List<IObjectLight> ObjectLights = [];
     public List<Plane> Planes = [];
     public BoundingVolumeHierarchy? TLAS;
     public TextureManager TextureManager = new();
@@ -125,6 +126,7 @@ public partial class Scene
             Geometries.Add(lightMesh);
             originalMeshes.TryAdd(lightMeshData.Id, lightMesh);
             Lights.Add(lightMesh);
+            ObjectLights.Add(lightMesh);
         }
 
         foreach (var meshInstance in Content.Objects.MeshInstance)
@@ -151,6 +153,7 @@ public partial class Scene
             ApplyTransformations(lightSphere.Transform, lightSphereData.Transformations);
             Geometries.Add(lightSphere);
             Lights.Add(lightSphere);
+            ObjectLights.Add(lightSphere);
         }
 
         foreach (var planeData in Content.Objects.Plane)

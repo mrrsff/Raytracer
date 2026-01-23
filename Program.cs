@@ -66,9 +66,6 @@ public static class Program
         if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
         Params.OutputDirectory = outputDir;
 
-        var cts = new CancellationTokenSource();
-        var cancellationToken = cts.Token;
-        RayStats.ThroughputMonitor(TimeSpan.FromSeconds(10), cancellationToken);
         foreach (var scene in scenes)
         {
             scene.Initialize();
@@ -92,6 +89,7 @@ public static class Program
                         renderer.RenderIntoExistingBuffer(i, buffer);
                         var path = MediaSaver.SaveImage(outputDir, buffer);
                         imagePaths.Add(path);
+                        Debug.Log($"Finished rendering scene '{scene.GetCamera(i).ImageName}' to '{path}'");
                     }
                     catch (Exception e)
                     {
@@ -122,7 +120,6 @@ public static class Program
                         if (renderTask.IsCompleted && !finished)
                         {
                             finished = true;
-                            cts.Cancel();
                         }
 
                         Thread.Sleep(25);
@@ -149,9 +146,6 @@ public static class Program
             }
             
             renderTask.Wait();
-            
-            cts.Cancel();
-            Debug.Log($"Finished rendering scene '{scene.GetCamera(0).ImageName}'");
         }
         
         if (Params.IsDirectory)

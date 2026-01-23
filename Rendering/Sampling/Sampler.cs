@@ -88,17 +88,44 @@ public static class Sampler
 
         return samples;
     }
-    
     public static Vector3 UniformSampleSphere()
     {
         float u1 = ThreadRng.NextFloat();
         float u2 = ThreadRng.NextFloat();
+
+        return UniformSampleSpher(new Vector2(u1, u2));
+    }
+    public static Vector3 UniformSampleSpher(Vector2 u)
+    {
+        float u1 = u.X;
+        float u2 = u.Y;
 
         float z = 1f - 2f * u1;
         float r = MathF.Sqrt(MathF.Max(0f, 1f - z * z));
         float phi = 2f * MathF.PI * u2;
         float x = r * MathF.Cos(phi);
         float y = r * MathF.Sin(phi);
+
+        return new Vector3(x, y, z);   
+    }
+    public static Vector3 CosineSampleHemisphere()
+    {
+        float u1 = ThreadRng.NextFloat();
+        float u2 = ThreadRng.NextFloat();
+
+        return CosineSampleHemisphere(new Vector2(u1, u2));
+    }
+    public static Vector3 CosineSampleHemisphere(Vector2 u)
+    {
+        float u1 = u.X;
+        float u2 = u.Y;
+
+        float r = MathF.Sqrt(u1);
+        float theta = 2f * MathF.PI * u2;
+
+        float x = r * MathF.Cos(theta);
+        float y = r * MathF.Sin(theta);
+        float z = MathF.Sqrt(MathF.Max(0f, 1f - u1));
 
         return new Vector3(x, y, z);
     }

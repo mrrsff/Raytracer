@@ -7,9 +7,14 @@ public static class FresnelComputation
 {
     public static Vector3 ComputeFresnelConductor(Material mat, float cosThetaI)
     {
-        Vector3 n = new Vector3(mat.RefractionIndex);
-        Vector3 k = new Vector3(mat.AbsorptionIndex);
+        return ComputeFresnelConductor(mat.RefractionIndex, mat.AbsorptionIndex, cosThetaI);
+    }
 
+    public static Vector3 ComputeFresnelConductor(float refr, float abs, float cosThetaI)
+    {
+        Vector3 n = new Vector3(refr);
+        Vector3 k = new Vector3(abs);
+        
         Vector3 cos2 = new(cosThetaI * cosThetaI);
         Vector3 n2 = n * n;
         Vector3 k2 = k * k;
@@ -21,7 +26,6 @@ public static class FresnelComputation
 
         return 0.5f * (Rs + Rp);
     }
-
     public static float ComputeFresnelDielectric(float etai, float etat, float cosThetaI)
     {
         float cosI = Math.Clamp(cosThetaI, -1f, 1f);

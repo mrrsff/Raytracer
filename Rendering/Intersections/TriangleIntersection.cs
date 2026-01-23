@@ -26,8 +26,8 @@ public static class TriangleIntersection
         Vector3 e1 = v1 - v0;
         Vector3 e2 = v2 - v0;
 
-        if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f) // Backface culling for primary rays
-            return false;
+        // if (!ray.IsSecondary && Vector3.Dot(normal, d) > 0f) // Backface culling for primary rays
+        //     return false;
 
         Vector3 pvec = Vector3.Cross(d, e2);
         float det = Vector3.Dot(e1, pvec);

@@ -48,7 +48,7 @@ public abstract class SDLWindow
     {
         return SDL_CreateTexture(
             renderer,
-            SDL_PIXELFORMAT_ABGR8888,
+            SDL_PIXELFORMAT_ARGB8888,
             (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
             w,
             h

@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
+using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Scenes.Content.Datas;
@@ -45,10 +46,10 @@ public class Sphere : Geometry
 
         float sqrtDiscriminant = MathF.Sqrt(discriminant);
         float t = (-b - sqrtDiscriminant) / (2.0f * a);
-        if (t < RayTracerRenderer.ShadowRayEpsilon)
+        if (t < Renderer.ShadowRayEpsilon)
         {
             t = (-b + sqrtDiscriminant) / (2.0f * a);
-            if (t < RayTracerRenderer.ShadowRayEpsilon)
+            if (t < Renderer.ShadowRayEpsilon)
                 return false;
         }
 

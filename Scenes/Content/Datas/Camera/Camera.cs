@@ -20,9 +20,13 @@ public class Camera
     [JsonPropertyName("_handedness")] public Handedness Handedness = Handedness.right;
     public RendererType Renderer = RendererType.RayTracing;
     
-    [JsonConverter(typeof(SingleOrListEnumConverter<RendererParams>))]
-    public List<RendererParams> RendererParams = new List<RendererParams>();
-    
+    [JsonConverter(typeof(HashSetEnumConverter<RendererParams>))]
+    public HashSet<RendererParams> RendererParams = [];
+
+    public int SplittingFactor = 0;
+    public int MaxRecursionDepth = 0;
+    public int MinRecursionDepth = 0;
+    public float SampleMaxVal = float.MaxValue;
     public Vector3 Position;
     public Vector3 Gaze;
     public Vector3 GazePoint;
@@ -54,13 +58,14 @@ public class Camera
         sb.Append(", Renderer: ");
         sb.Append(Renderer);
         sb.Append(", Parameters: [");
-        for (int i = 0; i < RendererParams.Count; i++)
+        foreach (var p in RendererParams)
         {
-            sb.Append(RendererParams[i]);
-            if (i < RendererParams.Count - 1)
-                sb.Append(", ");
+            sb.Append(p);
+            sb.Append(", ");
         }
         sb.Append(']');
+        sb.Append(", SplittingFactor: ");
+        sb.Append(SplittingFactor);
         sb.Append(", Position: ");
         sb.Append(Position);
         sb.Append(", Gaze: ");
@@ -162,4 +167,5 @@ public class Camera
         ray.Time = MathUtility.Lerp(ShutterOpen, ShutterClose, time);
         return ray;
     }
+    public bool Has(RendererParams p) => RendererParams.Contains(p);
 }

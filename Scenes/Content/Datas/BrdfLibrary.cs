@@ -71,13 +71,12 @@ public class BrdfLibrary
             }
         }
     }
-    private BRDFDefinition? FindBRDFDefinitionById(int id)
+    private BRDFDefinition FindBRDFDefinitionById(int id)
     {
-        return allDefinitions.FirstOrDefault(def => def.Id == id);
+        return allDefinitions.FirstOrDefault(def => def.Id == id)!;
     }
-    private IBRDF CreateBRDFFromDefinition(Material mat, BRDFDefinition def)
+    private static IBRDF CreateBRDFFromDefinition(Material mat, BRDFDefinition def)
     {
-        // Debug.Log($"Creating BRDF of type {def.Type} for Material {mat.Id} using BRDF Definition {def.Id}.");
         return def.Type switch
         {
             BRDFType.OriginalBlinnPhong => new OriginalBlinnPhongBRDF(def),
@@ -88,14 +87,14 @@ public class BrdfLibrary
             _ => throw new NotImplementedException($"BRDF Type {def.Type} is not implemented.")
         };
     }
-    public IBRDF? CreateBRDF(Material mat)
+    public IBRDF CreateBRDF(Material mat)
     {
-        BRDFDefinition? brdfDef = null;
+        BRDFDefinition brdfDef;
         int? brdfId = mat.BrdfId;
         if (brdfId == null)
         {
             Debug.Log($"Material {mat.Id} does not have a valid BRDF ID.");
-            return null;
+            return null!;
         }
         
         InitializeDefinitions();

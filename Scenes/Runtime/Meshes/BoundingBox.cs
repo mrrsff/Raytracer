@@ -33,7 +33,7 @@ public class BoundingBox(Vector3 min, Vector3 max) : Geometry
             float min = Min[i];
             float max = Max[i];
 
-            if (MathF.Abs(direction) < RayTracerRenderer.IntersectionTestEpsilon)
+            if (MathF.Abs(direction) < Renderer.IntersectionTestEpsilon)
             {
                 // Ray is parallel to slab; if origin not within slab, no hit
                 if (origin < min || origin > max)

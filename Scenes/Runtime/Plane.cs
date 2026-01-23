@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Raytracer.Core;
+using Raytracer.Rendering;
 using Raytracer.Rendering.Intersections;
 using Raytracer.Rendering.Raytracing;
 using Raytracer.Scenes.Content.Datas;
@@ -28,7 +29,7 @@ public class Plane : Geometry
 
         // Dot product of ray direction and plane normal
         float denom = Vector3.Dot(localRay.Direction, normal);
-        if (MathF.Abs(denom) < RayTracerRenderer.IntersectionTestEpsilon)
+        if (MathF.Abs(denom) < Renderer.IntersectionTestEpsilon)
             return false; // Ray is parallel to the plane
 
         // Distance along ray

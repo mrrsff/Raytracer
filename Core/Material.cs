@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
+using Raytracer.Rendering.PathTracing.BSDFs;
 using Raytracer.Rendering.Shading.BRDFs;
 
 namespace Raytracer.Core;
@@ -25,7 +26,8 @@ public class Material
     public float AbsorptionIndex;
 
     public IBRDF Brdf;
-
+    public IBSDF Bsdf;
+    
     public override string ToString()
     {
         return new StringBuilder().Append("Material(Id: ")
