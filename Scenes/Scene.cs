@@ -63,6 +63,7 @@ public partial class Scene
     private void InitializeMaterials()
     {
         // create brdf's for materials
+        if (Content.BRDFs == null) return;
         Content.Materials.CreateBRDFs(Content.BRDFs);
     }
 

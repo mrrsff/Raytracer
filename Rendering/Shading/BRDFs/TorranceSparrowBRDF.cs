@@ -34,19 +34,21 @@ public class TorranceSparrowBRDF : IBRDF
         
         float cosBeta = woDotH;
         
-        // Compute Fresnel based on material type
-        Vector3 F_beta;
-        if (mat.AbsorptionIndex > 0f)
+        Vector3 F_beta = Vector3.Zero;
+        switch (mat.Type)
         {
-            // Conductor material - use full Fresnel computation
-            F_beta = FresnelComputation.ComputeFresnelConductor(mat, cosBeta);
-        }
-        else
-        {
-            // Dielectric material - use Schlick's approximation
-            float R0 = ComputeR0(mat.RefractionIndex);
-            float fresnelScalar = ComputeSchlickFresnel(R0, cosBeta);
-            F_beta = new Vector3(fresnelScalar);
+            case MaterialType.Conductor:
+                // Conductor material - use full Fresnel computation
+                F_beta = FresnelComputation.ComputeFresnelConductor(mat, cosBeta);
+                break;
+            case MaterialType.Dielectric:
+            {
+                // Dielectric material - use Schlick's approximation
+                float R0 = ComputeR0(mat.RefractionIndex);
+                float fresnelScalar = ComputeSchlickFresnel(R0, cosBeta);
+                F_beta = new Vector3(fresnelScalar);
+                break;
+            }
         }
         
         Vector3 diffuse = kd * (1f / MathF.PI);

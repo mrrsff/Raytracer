@@ -247,8 +247,8 @@ public sealed class PathTracerRenderer : CPURenderer
 
         if (Has(RendererParams.MIS_BALANCE)) // Multiple Importance Sampling with Balance Heuristic
         {
-            float weight = (pdf) / (pdf + bsdfPdf);
-            return color * weight;
+            float weight = pdf / (pdf + bsdfPdf);
+            color *= weight;
         }
 
         return color / pdf;
