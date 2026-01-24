@@ -17,7 +17,6 @@ public sealed class SceneResources : IDisposable
     public readonly SSBO<TriangleGPU> TriangleSsbo;
     public readonly SSBO<MaterialGPU> MaterialSsbo;
     public readonly SSBO<MeshInstanceGPU> MeshInstanceSsbo;
-
     public DescriptorSetWrapper SceneDescriptorSet;
     public DescriptorSetWrapper PerFrameDescriptorSet;
     public SceneResources(VkContext ctx)
